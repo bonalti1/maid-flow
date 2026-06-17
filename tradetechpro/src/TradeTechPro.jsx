@@ -1,31 +1,39 @@
 import React, { useState, useMemo, useRef, useEffect } from "react";
 
-/* ─── Brand tokens (ALTO Pro: navy + gold) ─── */
+/* ─── Brand tokens (Quick Comp: navy + gold) ─── */
 const C = {
-  navy: "#101B30",
-  navyDeep: "#0B1322",
-  orange: "#F8B408",
-  orangeSoft: "#FEF5DC",
-  bg: "#F4F5F7",
+  navy: "#15244C",      // primary navy — header bar, dark cards, headings
+  navyDeep: "#0B1733",  // deepest navy — gradients, deep panels
+  orange: "#C9973A",    // gold accent — section labels, $/sf, highlights
+  orangeSoft: "#F7EFD8",// soft gold tint — accent card backgrounds
+  bg: "#F1F4FA",        // app background
   card: "#FFFFFF",
-  line: "#E6E8EC",
-  slate: "#67718A",
+  line: "#E4E8F0",
+  slate: "#6E7891",
   green: "#1E9E5A",
   greenSoft: "#E6F5EC",
   red: "#D64545",
   redSoft: "#FBEAEA",
-  yellow: "#C98A06",
-  yellowSoft: "#FCF3DD",
+  yellow: "#C9973A",    // align legacy "yellow" to brand gold
+  yellowSoft: "#F7EFD8",
 };
 
-/* ─── Logo (ALTO Pro monogram: ring + A over gold P) ─── */
-const Logo = ({ size = 44, ring = true, color = null }) => (
-  <svg width={size} height={size} viewBox="0 0 100 100">
-    {ring && <circle cx="50" cy="50" r="45" fill="none" stroke={color || C.navy} strokeWidth="6" />}
-    <text x="60" y="68" textAnchor="middle" fontFamily="'Barlow Condensed', sans-serif" fontWeight="800" fontSize="48" fill={C.orange}>P</text>
-    <text x="44" y="72" textAnchor="middle" fontFamily="'Barlow Condensed', sans-serif" fontWeight="800" fontSize="56" fill={color || C.navy}>A</text>
-  </svg>
-);
+/* ─── Logo (Quick Comp QC monogram) ───
+   color="#fff" (or any light value) renders the white mark for navy backgrounds;
+   default renders the navy mark for light backgrounds. */
+const Logo = ({ size = 44, color = null }) => {
+  const light = !!color && color.toLowerCase() !== C.navy.toLowerCase();
+  return (
+    <img
+      src={light ? "/quick-comp-mark-white.png" : "/quick-comp-mark-navy.png"}
+      alt="Quick Comp"
+      width={size}
+      height={size}
+      draggable={false}
+      style={{ display: "block", objectFit: "contain" }}
+    />
+  );
+};
 
 /* ─── Translations ─── */
 const TR = {
@@ -383,7 +391,7 @@ const mockLookup = (addr) => new Promise((resolve) => {
 /* ─── Shared UI ─── */
 const Btn = ({ children, onClick, color = C.orange, textColor = "#fff", style = {}, disabled }) => (
   <button onClick={onClick} disabled={disabled} className="w-full rounded-xl font-bold text-base tracking-wide active:scale-95 transition-transform"
-    style={{ background: disabled ? C.line : color, color: disabled ? C.slate : textColor, padding: "16px", fontFamily: "'Barlow Condensed', sans-serif", fontSize: 19, letterSpacing: "0.04em", border: "none", ...style }}>
+    style={{ background: disabled ? C.line : color, color: disabled ? C.slate : textColor, padding: "16px", fontFamily: "'Inter', sans-serif", fontSize: 19, letterSpacing: "0.04em", border: "none", ...style }}>
     {children}
   </button>
 );
@@ -936,34 +944,46 @@ export default function TradeTechPro() {
   };
 
   /* ── Shell pieces ── */
-  const LangToggle = () => (
-    <div className="flex rounded-full overflow-hidden" style={{ border: `1.5px solid ${C.line}` }}>
+  const LangToggle = ({ onDark = false }) => (
+    <div className="flex rounded-full overflow-hidden" style={{ border: `1.5px solid ${onDark ? "rgba(255,255,255,.28)" : C.line}` }}>
       {["es", "en"].map(l => (
         <button key={l} onClick={() => setLang(l)} className="px-3 py-1 text-xs font-bold uppercase"
-          style={{ background: lang === l ? C.navy : "#fff", color: lang === l ? "#fff" : C.slate, border: "none" }}>{l}</button>
+          style={{
+            background: lang === l ? (onDark ? C.orange : C.navy) : (onDark ? "transparent" : "#fff"),
+            color: lang === l ? (onDark ? C.navy : "#fff") : (onDark ? "rgba(255,255,255,.8)" : C.slate),
+            border: "none",
+          }}>{l}</button>
       ))}
     </div>
   );
 
   const Header = ({ title, back }) => (
-    <div className="flex items-center gap-3 px-5 pt-5 pb-3">
-      {back && <button onClick={back} className="text-2xl font-bold" style={{ color: C.navy, background: "none", border: "none" }}>‹</button>}
-      <Logo size={30} />
-      <span className="flex-1 font-bold text-lg truncate" style={{ color: C.navy, fontFamily: "'Barlow Condensed', sans-serif", fontSize: 22 }}>{title}</span>
-      <LangToggle />
+    <div className="flex items-center gap-3 px-5 pt-4 pb-3" style={{ background: C.navy }}>
+      {back && <button onClick={back} className="text-2xl font-bold" style={{ color: "#fff", background: "none", border: "none" }}>‹</button>}
+      <Logo size={28} color="#fff" />
+      <span className="flex-1 font-bold text-lg truncate" style={{ color: "#fff", fontWeight: 800, letterSpacing: 0.3 }}>{title}</span>
+      <LangToggle onDark />
     </div>
   );
 
-  const BottomNav = () => (
-    <div className="flex justify-around items-center py-2 px-2" style={{ background: "#fff", borderTop: `1px solid ${C.line}` }}>
-      {[["home", "🏠", t.home], ["jobs", "🔨", t.jobs], ["payments", "💵", t.payments], ["customers", "👤", t.customers]].map(([s, icon, label]) => (
-        <button key={s} onClick={() => setScreen(s)} className="flex flex-col items-center gap-0.5 px-3 py-1 rounded-lg" style={{ background: "none", border: "none" }}>
-          <span className="text-xl">{icon}</span>
-          <span className="text-xs font-bold" style={{ color: screen === s ? C.orange : C.slate }}>{label}</span>
-        </button>
-      ))}
-    </div>
-  );
+  const BottomNav = () => {
+    const items = [["home", t.home], ["jobs", t.jobs], ["payments", t.payments], ["customers", t.customers]];
+    return (
+      <div className="flex justify-around items-center gap-1.5 px-2 py-2" style={{ background: "#fff", borderTop: `1px solid ${C.line}` }}>
+        {items.map(([s, label], i) => {
+          const on = screen === s;
+          return (
+            <button key={s} onClick={() => setScreen(s)}
+              className="flex-1 flex flex-col items-center gap-0.5 py-1.5 rounded-2xl"
+              style={{ background: on ? C.navy : "transparent", border: "none" }}>
+              <span className="text-xs font-extrabold" style={{ color: on ? C.orange : C.slate, letterSpacing: 0.5 }}>{`0${i + 1}`}</span>
+              <span className="text-[11px] font-bold uppercase truncate" style={{ color: on ? "#fff" : C.slate, letterSpacing: 0.5 }}>{label}</span>
+            </button>
+          );
+        })}
+      </div>
+    );
+  };
 
   /* ── Screens ── */
   const Onboard = () => (
@@ -1083,14 +1103,14 @@ export default function TradeTechPro() {
     return (
       <div className="flex-1 px-5 pt-8">
         <div className="flex justify-center mb-3"><Logo size={56} /></div>
-        <h2 className="text-center font-extrabold mb-6" style={{ color: C.navy, fontFamily: "'Barlow Condensed', sans-serif", fontSize: 30 }}>{t.whichTrade}</h2>
+        <h2 className="text-center font-extrabold mb-6" style={{ color: C.navy, fontFamily: "'Inter', sans-serif", fontSize: 30 }}>{t.whichTrade}</h2>
         <div className="grid grid-cols-2 gap-3">
           {trades.map(([key, icon, label, active]) => (
             <button key={key} onClick={() => { if (active) { setTrade(key); saveProfile({ trade: key }); setScreen("home"); } }}
               className="rounded-2xl p-5 flex flex-col items-center gap-2 active:scale-95 transition-transform"
               style={{ background: "#fff", border: active ? `2px solid ${C.orange}` : `1.5px solid ${C.line}`, opacity: active ? 1 : 0.55 }}>
               <span className="text-4xl">{icon}</span>
-              <span className="font-bold" style={{ color: C.navy, fontFamily: "'Barlow Condensed', sans-serif", fontSize: 19 }}>{label}</span>
+              <span className="font-bold" style={{ color: C.navy, fontFamily: "'Inter', sans-serif", fontSize: 19 }}>{label}</span>
               {!active && <span className="text-xs font-semibold" style={{ color: C.slate }}>{t.soon}</span>}
             </button>
           ))}
@@ -1105,14 +1125,14 @@ export default function TradeTechPro() {
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <Logo size={34} color="#fff" />
-            <span className="font-extrabold" style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: 21 }}><span style={{ color: C.orange }}>ALTO</span> <span className="text-white">PRO</span></span>
+            <span className="font-extrabold" style={{ fontFamily: "'Inter', sans-serif", fontSize: 21, letterSpacing: 1 }}><span className="text-white">QUICK</span> <span style={{ color: C.orange }}>COMP</span></span>
           </div>
           <div className="flex items-center gap-2">
-            <LangToggle />
+            <LangToggle onDark />
             <button onClick={() => setScreen("settings")} className="text-lg" style={{ background: "none", border: "none", opacity: 0.8 }}>⚙️</button>
           </div>
         </div>
-        <p className="text-white font-bold text-2xl" style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: 28 }}>{t.hello}, {userName || "Rolando"} 👋</p>
+        <p className="text-white font-bold text-2xl" style={{ fontFamily: "'Inter', sans-serif", fontSize: 28 }}>{t.hello}, {userName || "Rolando"} 👋</p>
         <div className="flex items-center justify-between">
           <p className="text-sm font-semibold" style={{ color: "#9DA8C4" }}>
             {t.theyOwe}: <span style={{ color: C.orange }}>{fmt(owed)}</span> · {jobs.filter(j => j.status !== "paid").length} {t.jobs.toLowerCase()}
@@ -1130,7 +1150,7 @@ export default function TradeTechPro() {
             style={{ background: "#fff", border: `2px solid ${C.orange}`, boxShadow: "0 4px 14px rgba(248,180,8,.18)" }}>
             <span className="text-2xl">🛰️</span>
             <span className="text-left">
-              <span className="block font-extrabold" style={{ color: C.navy, fontFamily: "'Barlow Condensed',sans-serif", fontSize: 20 }}>{trade === "fence" ? t.measureFence : t.measureTitle}</span>
+              <span className="block font-extrabold" style={{ color: C.navy, fontFamily: "'Inter', sans-serif", fontSize: 20 }}>{trade === "fence" ? t.measureFence : t.measureTitle}</span>
               <span className="block text-sm font-semibold" style={{ color: C.slate }}>{t.searchAddress}</span>
             </span>
             <span className="ml-auto text-xl" style={{ color: C.orange }}>→</span>
@@ -1143,7 +1163,7 @@ export default function TradeTechPro() {
             className="w-full rounded-2xl flex items-center gap-3 px-4 py-4 active:scale-95 transition-transform"
             style={{ background: newLeadCount > 0 ? C.navy : "#fff", border: newLeadCount > 0 ? "none" : `1.5px solid ${C.line}`, boxShadow: newLeadCount > 0 ? "0 6px 16px rgba(16,27,48,.3)" : "none" }}>
             <span className="text-2xl">📥</span>
-            <span className="font-extrabold" style={{ color: newLeadCount > 0 ? "#fff" : C.navy, fontFamily: "'Barlow Condensed',sans-serif", fontSize: 20 }}>{t.leads}</span>
+            <span className="font-extrabold" style={{ color: newLeadCount > 0 ? "#fff" : C.navy, fontFamily: "'Inter', sans-serif", fontSize: 20 }}>{t.leads}</span>
             {newLeadCount > 0 && (
               <span className="ml-auto rounded-full px-3 py-1 text-sm font-extrabold" style={{ background: C.orange, color: "#fff" }}>{newLeadCount} {t.leadNew}</span>
             )}
@@ -1161,7 +1181,7 @@ export default function TradeTechPro() {
           <button key={i} onClick={fn} className="rounded-2xl flex flex-col items-center justify-center gap-2 active:scale-95 transition-transform"
             style={{ background: bg, color: fg, height: 110, border: bg === "#fff" ? `1.5px solid ${C.line}` : "none", boxShadow: bg !== "#fff" ? "0 6px 16px rgba(248,180,8,.35)" : "none" }}>
             <span className="text-3xl">{icon}</span>
-            <span className="font-extrabold tracking-wide" style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: 18 }}>{label}</span>
+            <span className="font-extrabold tracking-wide" style={{ fontFamily: "'Inter', sans-serif", fontSize: 18 }}>{label}</span>
           </button>
         ))}
       </div>
@@ -1180,12 +1200,12 @@ export default function TradeTechPro() {
           className="w-full rounded-2xl flex items-center gap-3 px-4 py-4 active:scale-95 transition-transform"
           style={{ background: "#fff", border: `1.5px dashed ${C.orange}` }}>
           <span className="text-2xl">🎤</span>
-          <span className="font-bold" style={{ color: C.navy, fontFamily: "'Barlow Condensed',sans-serif", fontSize: 19 }}>{t.quickInvoice}</span>
+          <span className="font-bold" style={{ color: C.navy, fontFamily: "'Inter', sans-serif", fontSize: 19 }}>{t.quickInvoice}</span>
         </button>
         <button onClick={() => setScreen("ai")} className="w-full rounded-2xl flex items-center gap-3 px-4 py-4 active:scale-95 transition-transform"
           style={{ background: "#fff", border: `1.5px dashed ${C.orange}` }}>
           <span className="text-2xl">🎙️</span>
-          <span className="font-bold" style={{ color: C.navy, fontFamily: "'Barlow Condensed',sans-serif", fontSize: 19 }}>{t.askTTP}</span>
+          <span className="font-bold" style={{ color: C.navy, fontFamily: "'Inter', sans-serif", fontSize: 19 }}>{t.askTTP}</span>
           <span className="ml-auto text-sm font-semibold" style={{ color: C.orange }}>AI</span>
         </button>
       </div>
@@ -1207,7 +1227,7 @@ export default function TradeTechPro() {
         {[[t.cubicYards, calc.yards.toFixed(2)], [t.withWaste, calc.withWaste.toFixed(2)], [t.order, calc.orderY + " yd³"], [t.trucks + " (10 yd³)", calc.trucks]].map(([k, v]) => (
           <div key={k} className="flex justify-between py-1">
             <span className="text-sm font-semibold" style={{ color: "#9DA8C4" }}>{k}</span>
-            <span className="font-extrabold text-white" style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: 20 }}>{v}</span>
+            <span className="font-extrabold text-white" style={{ fontFamily: "'Inter', sans-serif", fontSize: 20 }}>{v}</span>
           </div>
         ))}
       </div>
@@ -1220,8 +1240,8 @@ export default function TradeTechPro() {
         <div className="flex justify-between py-1"><span className="text-sm font-semibold" style={{ color: C.slate }}>{t.material} ({calc.orderY} yd³)</span><span className="font-bold" style={{ color: C.navy }}>{fmt(calc.mat)}</span></div>
         <div className="flex justify-between py-1"><span className="text-sm font-semibold" style={{ color: C.slate }}>{t.labor} ({calc.sqft} sq ft)</span><span className="font-bold" style={{ color: C.navy }}>{fmt(calc.lab)}</span></div>
         <div className="flex justify-between pt-2 mt-1" style={{ borderTop: `1.5px solid ${C.line}` }}>
-          <span className="font-extrabold" style={{ color: C.navy, fontFamily: "'Barlow Condensed',sans-serif", fontSize: 20 }}>{t.estTotal}</span>
-          <span className="font-extrabold" style={{ color: C.orange, fontFamily: "'Barlow Condensed',sans-serif", fontSize: 24 }}>{fmt(calc.total)}</span>
+          <span className="font-extrabold" style={{ color: C.navy, fontFamily: "'Inter', sans-serif", fontSize: 20 }}>{t.estTotal}</span>
+          <span className="font-extrabold" style={{ color: C.orange, fontFamily: "'Inter', sans-serif", fontSize: 24 }}>{fmt(calc.total)}</span>
         </div>
       </div>
       <Btn onClick={() => {
@@ -1489,7 +1509,7 @@ export default function TradeTechPro() {
 
   const PickCustomer = () => (
     <div className="flex-1 px-5">
-      <p className="font-extrabold mb-4" style={{ color: C.navy, fontFamily: "'Barlow Condensed',sans-serif", fontSize: 26 }}>{t.forWho}</p>
+      <p className="font-extrabold mb-4" style={{ color: C.navy, fontFamily: "'Inter', sans-serif", fontSize: 26 }}>{t.forWho}</p>
       {customers.map(c => (
         <button key={c.id} onClick={() => createEstimate(c.id)} className="w-full rounded-2xl p-4 mb-3 flex items-center gap-3 active:scale-95 transition-transform text-left"
           style={{ background: "#fff", border: `1.5px solid ${C.line}` }}>
@@ -1519,9 +1539,9 @@ export default function TradeTechPro() {
       <div className="flex-1 px-5 flex flex-col">
         <div className="rounded-2xl p-5 text-center mb-4" style={{ background: "#fff", border: `1.5px solid ${C.line}` }}>
           <Logo size={48} />
-          <p className="font-extrabold mt-2" style={{ color: C.navy, fontFamily: "'Barlow Condensed',sans-serif", fontSize: 24 }}>{t.estimate} #{activeJob.inv} {t.ready} ✓</p>
+          <p className="font-extrabold mt-2" style={{ color: C.navy, fontFamily: "'Inter', sans-serif", fontSize: 24 }}>{t.estimate} #{activeJob.inv} {t.ready} ✓</p>
           <p className="font-semibold" style={{ color: C.slate }}>{c.name}</p>
-          <p className="font-extrabold mt-1" style={{ color: C.orange, fontFamily: "'Barlow Condensed',sans-serif", fontSize: 32 }}>{fmt(activeJob.amount)}</p>
+          <p className="font-extrabold mt-1" style={{ color: C.orange, fontFamily: "'Inter', sans-serif", fontSize: 32 }}>{fmt(activeJob.amount)}</p>
           <p className="text-sm" style={{ color: C.slate }}>{activeJob.title[lang]}{trade === "concrete" ? " · " + t.finish : ""}</p>
         </div>
         <div className="grid gap-3">
@@ -1553,7 +1573,7 @@ export default function TradeTechPro() {
             </div>
             <p className="text-sm font-semibold" style={{ color: C.slate }}>{j.title[lang]}</p>
             <div className="flex justify-between mt-1">
-              <span className="font-extrabold" style={{ color: C.navy, fontFamily: "'Barlow Condensed',sans-serif", fontSize: 20 }}>{fmt(j.amount)}</span>
+              <span className="font-extrabold" style={{ color: C.navy, fontFamily: "'Inter', sans-serif", fontSize: 20 }}>{fmt(j.amount)}</span>
               {bal > 0 && j.status !== "estimate" && <span className="text-sm font-bold" style={{ color: j.days >= 7 ? C.red : C.yellow }}>{fmt(bal)} · {j.days}{t.daysShort}</span>}
             </div>
           </button>
@@ -1570,7 +1590,7 @@ export default function TradeTechPro() {
       <div className="flex-1 overflow-y-auto px-5 pb-6">
         <div className="rounded-2xl p-4 mb-3" style={{ background: "#fff", border: `1.5px solid ${C.line}` }}>
           <div className="flex items-center justify-between mb-1">
-            <span className="font-extrabold" style={{ color: C.navy, fontFamily: "'Barlow Condensed',sans-serif", fontSize: 22 }}>{activeJob.title[lang]}</span>
+            <span className="font-extrabold" style={{ color: C.navy, fontFamily: "'Inter', sans-serif", fontSize: 22 }}>{activeJob.title[lang]}</span>
             <StatusPill status={activeJob.status} t={t} />
           </div>
           <p className="font-semibold" style={{ color: C.slate }}>{c.name} · {c.phone}</p>
@@ -1602,7 +1622,7 @@ export default function TradeTechPro() {
         <div className="rounded-2xl overflow-hidden mb-4" style={{ background: "#fff", border: `1.5px solid ${C.line}` }}>
           <div className="px-5 py-4 flex items-center justify-between" style={{ background: C.navy }}>
             <div>
-              <p className="font-extrabold text-white" style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: 20 }}>{(bizName || "SOUTH TEXAS ROOFING").toUpperCase()}</p>
+              <p className="font-extrabold text-white" style={{ fontFamily: "'Inter', sans-serif", fontSize: 20 }}>{(bizName || "SOUTH TEXAS ROOFING").toUpperCase()}</p>
               <p className="text-xs font-semibold" style={{ color: "#9DA8C4" }}>{t.invoice} #{activeJob.inv} · 10 Jun 2026</p>
             </div>
             {logo
@@ -1626,8 +1646,8 @@ export default function TradeTechPro() {
             <div className="flex justify-between py-0.5"><span className="text-sm font-semibold" style={{ color: C.slate }}>{t.tax}</span><span className="font-bold" style={{ color: C.navy }}>$0</span></div>
             <div className="flex justify-between py-0.5"><span className="text-sm font-semibold" style={{ color: C.slate }}>{t.depositRec}</span><span className="font-bold" style={{ color: C.green }}>–{fmt(deposit)}</span></div>
             <div className="flex justify-between pt-2 mt-1" style={{ borderTop: `1.5px solid ${C.line}` }}>
-              <span className="font-extrabold" style={{ color: C.navy, fontFamily: "'Barlow Condensed',sans-serif", fontSize: 20 }}>{t.balance}</span>
-              <span className="font-extrabold" style={{ color: paid ? C.green : C.orange, fontFamily: "'Barlow Condensed',sans-serif", fontSize: 24 }}>{paid ? "✓ " + t.paid : fmt(bal)}</span>
+              <span className="font-extrabold" style={{ color: C.navy, fontFamily: "'Inter', sans-serif", fontSize: 20 }}>{t.balance}</span>
+              <span className="font-extrabold" style={{ color: paid ? C.green : C.orange, fontFamily: "'Inter', sans-serif", fontSize: 24 }}>{paid ? "✓ " + t.paid : fmt(bal)}</span>
             </div>
           </div>
         </div>
@@ -1654,7 +1674,7 @@ export default function TradeTechPro() {
       <div className="flex-1 overflow-y-auto px-5 pb-4">
         <div className="rounded-2xl p-4 mb-4" style={{ background: C.navy }}>
           <p className="text-xs font-bold tracking-widest" style={{ color: "#9DA8C4" }}>{t.theyOwe.toUpperCase()}</p>
-          <p className="font-extrabold text-white" style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: 36 }}>{fmt(owed)}</p>
+          <p className="font-extrabold text-white" style={{ fontFamily: "'Inter', sans-serif", fontSize: 36 }}>{fmt(owed)}</p>
         </div>
         {unpaid.map(j => {
           const c = custOf(j);
@@ -1801,7 +1821,7 @@ export default function TradeTechPro() {
         <p className="text-xs font-bold" style={{ color: C.slate }}>{icon} {label}</p>
         <div className="flex items-center justify-center gap-3 mt-1">
           <button onClick={() => set(Math.max(0, v - 1))} className="w-9 h-9 rounded-full text-lg font-extrabold" style={{ background: C.bg, border: `1.5px solid ${C.line}`, color: C.navy }}>−</button>
-          <span className="font-extrabold w-6" style={{ color: C.navy, fontFamily: "'Barlow Condensed',sans-serif", fontSize: 24 }}>{v}</span>
+          <span className="font-extrabold w-6" style={{ color: C.navy, fontFamily: "'Inter', sans-serif", fontSize: 24 }}>{v}</span>
           <button onClick={() => set(v + 1)} className="w-9 h-9 rounded-full text-lg font-extrabold" style={{ background: C.bg, border: `1.5px solid ${C.line}`, color: C.navy }}>+</button>
         </div>
       </div>
@@ -1836,7 +1856,7 @@ export default function TradeTechPro() {
               })}
               {chains.map((ch, ci) => labels(ch).map((l, i) => (
                 <text key={`c${ci}-${i}`} x={l.x} y={l.y} textAnchor="middle" fontSize="46" fontWeight="800" fill={C.navy}
-                  stroke="#fff" strokeWidth="10" paintOrder="stroke" fontFamily="'Barlow Condensed',sans-serif">{l.ft}′</text>
+                  stroke="#fff" strokeWidth="10" paintOrder="stroke" fontFamily="'Inter', sans-serif">{l.ft}′</text>
               )))}
               {[...fRuns, fCur].map((run, ri) => {
                 const px = proj(run);
@@ -1848,7 +1868,7 @@ export default function TradeTechPro() {
                     {px.map((p, i) => <circle key={i} cx={p[0]} cy={p[1]} r="9" fill="#fff" stroke={C.orange} strokeWidth="4" />)}
                     {labels(run).map((l, i) => (
                       <text key={"f" + i} x={l.x} y={l.y} textAnchor="middle" fontSize="46" fontWeight="800" fill={C.navy}
-                        stroke="#fff" strokeWidth="10" paintOrder="stroke" fontFamily="'Barlow Condensed',sans-serif">{l.ft}′</text>
+                        stroke="#fff" strokeWidth="10" paintOrder="stroke" fontFamily="'Inter', sans-serif">{l.ft}′</text>
                     ))}
                   </g>
                 );
@@ -1869,7 +1889,7 @@ export default function TradeTechPro() {
         <div className="rounded-2xl px-4 py-3 mb-3" style={{ background: C.navy }}>
           <div className="flex items-end justify-between">
             <span className="text-xs font-bold tracking-widest" style={{ color: "#9DA8C4" }}>{t.totalLF.toUpperCase()}</span>
-            <span className="font-extrabold text-white" style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: 40 }}>{totalLF.toLocaleString()} ft</span>
+            <span className="font-extrabold text-white" style={{ fontFamily: "'Inter', sans-serif", fontSize: 40 }}>{totalLF.toLocaleString()} ft</span>
           </div>
           <p className="text-xs font-semibold" style={{ color: "#9DA8C4" }}>{panels} {t.panels.toLowerCase()} · {posts} {t.posts.toLowerCase()} · {corners} {t.cornerPosts.toLowerCase()}</p>
         </div>
@@ -1887,8 +1907,8 @@ export default function TradeTechPro() {
           ))}
         </div>
         <div className="rounded-2xl px-4 py-3 mb-3 flex items-center justify-between" style={{ background: "#fff", border: `1.5px solid ${C.line}` }}>
-          <span className="font-extrabold" style={{ color: C.navy, fontFamily: "'Barlow Condensed',sans-serif", fontSize: 20 }}>{t.estTotal}</span>
-          <span className="font-extrabold" style={{ color: C.orange, fontFamily: "'Barlow Condensed',sans-serif", fontSize: 28 }}>{fmt(total)}</span>
+          <span className="font-extrabold" style={{ color: C.navy, fontFamily: "'Inter', sans-serif", fontSize: 20 }}>{t.estTotal}</span>
+          <span className="font-extrabold" style={{ color: C.orange, fontFamily: "'Inter', sans-serif", fontSize: 28 }}>{fmt(total)}</span>
         </div>
         <Btn disabled={totalLF === 0} onClick={() => {
           const title = `${t.lineFence} ${typeLabel[fType]}, ${totalLF} ft`;
@@ -1944,7 +1964,7 @@ export default function TradeTechPro() {
         {aiMsgs.length === 0 && (
           <div className="text-center mt-6">
             <span className="text-4xl">🎙️</span>
-            <p className="font-bold mt-2" style={{ color: C.navy, fontFamily: "'Barlow Condensed',sans-serif", fontSize: 22 }}>{t.askTTP}</p>
+            <p className="font-bold mt-2" style={{ color: C.navy, fontFamily: "'Inter', sans-serif", fontSize: 22 }}>{t.askTTP}</p>
           </div>
         )}
         {aiMsgs.map((m, i) => (
@@ -1994,14 +2014,14 @@ export default function TradeTechPro() {
         {leads.length === 0 && (
           <div className="text-center mt-12 px-6">
             <span className="text-5xl">📥</span>
-            <p className="font-bold mt-3" style={{ color: C.navy, fontFamily: "'Barlow Condensed',sans-serif", fontSize: 22 }}>{t.leadsEmpty}</p>
+            <p className="font-bold mt-3" style={{ color: C.navy, fontFamily: "'Inter', sans-serif", fontSize: 22 }}>{t.leadsEmpty}</p>
             <p className="text-sm mt-2 font-semibold" style={{ color: C.slate }}>{t.leadsEmptySub}</p>
           </div>
         )}
         {leads.map((l) => (
           <div key={l.id} className="rounded-2xl p-4 mb-3" style={{ background: "#fff", border: l.status === "new" ? `2px solid ${C.orange}` : `1.5px solid ${C.line}` }}>
             <div className="flex items-center gap-2">
-              <span className="font-extrabold" style={{ color: C.navy, fontFamily: "'Barlow Condensed',sans-serif", fontSize: 19 }}>{l.name || prettyPhone(l.phone)}</span>
+              <span className="font-extrabold" style={{ color: C.navy, fontFamily: "'Inter', sans-serif", fontSize: 19 }}>{l.name || prettyPhone(l.phone)}</span>
               {l.status === "new" && <span className="rounded-full px-2 py-0.5 text-xs font-extrabold" style={{ background: C.orange, color: "#fff" }}>{t.leadNew}</span>}
               <span className="ml-auto text-xs font-bold" style={{ color: C.slate }}>{when(l.created_at)}</span>
             </div>
@@ -2044,7 +2064,7 @@ export default function TradeTechPro() {
   const withNav = ["home", "jobs", "payments", "customers"];
 
   return (
-    <div className="min-h-screen flex justify-center" style={{ background: "#0B1226" }}>
+    <div className="min-h-screen flex justify-center" style={{ background: C.navyDeep }}>
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,600;0,700;0,800;1,800&family=Inter:wght@400;500;600;700;800&display=swap');
         * { font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
         input::placeholder { color: #A7AEBE; }
@@ -2052,7 +2072,7 @@ export default function TradeTechPro() {
         @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }`}</style>
       <div className="w-full max-w-md flex flex-col relative" style={{ background: C.bg, minHeight: "100vh" }}>
         {!session && screen !== "onboard" && (
-          <div className="px-4 py-2 text-center" style={{ background: "#FEF5DC", borderBottom: "1.5px solid #F8B408" }}>
+          <div className="px-4 py-2 text-center" style={{ background: C.orangeSoft, borderBottom: `1.5px solid ${C.orange}` }}>
             <span className="text-xs font-bold" style={{ color: "#7A5A00" }}>{t.demoBanner}</span>
           </div>
         )}

@@ -1,11 +1,11 @@
 {
-  "name": "ALTO Pro",
-  "short_name": "ALTO Pro",
-  "description": "Cotiza techos en 60 segundos. Estimados, facturas y cobros para contratistas.",
+  "name": "Quick Comp",
+  "short_name": "Quick Comp",
+  "description": "Real estate intelligence, instantly. Search an address, review sold comparables, and prepare a client-ready value range in minutes.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#101B30",
-  "theme_color": "#101B30",
+  "background_color": "#15244C",
+  "theme_color": "#15244C",
   "lang": "es",
   "icons": [
     { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
