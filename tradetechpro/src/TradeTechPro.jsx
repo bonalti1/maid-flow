@@ -446,7 +446,7 @@ const DEMO_ROOF = WANT_ROOF && !savedProfile.biz;
 export default function TradeTechPro() {
   const [lang, setLang] = useState(savedProfile.lang || "es");
   const t = TR[lang];
-  const [screen, setScreen] = useState(WANT_ROOF ? "home" : (savedProfile.biz ? (savedProfile.trade ? "home" : "trade") : "onboard"));
+  const [screen, setScreen] = useState(WANT_ROOF ? "home" : "comps");
   const [trade, setTrade] = useState(savedProfile.trade || "roofing");
   const [userName, setUserName] = useState(savedProfile.name || (DEMO_ROOF ? "José" : ""));
   const [bizName, setBizName] = useState(savedProfile.biz || (DEMO_ROOF ? "Techos García (Demo)" : ""));
@@ -560,7 +560,7 @@ export default function TradeTechPro() {
         // Real accounts start clean — no demo data
         setCustomers(j.state?.customers || []);
         setJobs(j.state?.jobs || []);
-        if (!WANT_ROOF) setScreen((p.biz || j.contractor.name) ? (p.trade ? "home" : "trade") : "onboard");
+        if (!WANT_ROOF) setScreen("comps");
         setCloudReady(true);
       } catch { /* offline — local data keeps working */ }
     })();
@@ -627,6 +627,27 @@ export default function TradeTechPro() {
   const [mSq, setMSq] = useState("");
   const [placeSugs, setPlaceSugs] = useState(null); // null = use built-in list
   const placesSeq = useRef(0);
+
+  /* Quick Comp tabs: lending calculator inputs + saved-work history */
+  const [lendPrice, setLendPrice] = useState(null); // null = follow the comp value
+  const [lendDownPct, setLendDownPct] = useState(20);
+  const [lendRate, setLendRate] = useState(7.0);
+  const [lendTerm, setLendTerm] = useState(30);
+  const [lendTaxPct, setLendTaxPct] = useState(1.1);
+  const [lendInsYr, setLendInsYr] = useState(1500);
+  const [savedWork, setSavedWork] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("qc_saved") || "[]"); } catch { return []; }
+  });
+  const recordWork = (res) => {
+    if (!res || !res.value) return;
+    setSavedWork((prev) => {
+      const addr = (res.subject && res.subject.address) || res.addr || "";
+      const item = { ...res, addr, ts: Date.now() };
+      const next = [item, ...prev.filter((p) => p.addr !== addr)].slice(0, 12);
+      try { localStorage.setItem("qc_saved", JSON.stringify(next)); } catch {}
+      return next;
+    });
+  };
 
   const [showDetails, setShowDetails] = useState(false); // shared with the fence estimator
   const [dragOff, setDragOff] = useState([0, 0]);        // live pan offset (fence map drag)
@@ -909,12 +930,14 @@ export default function TradeTechPro() {
     if (!res || !res.value) {
       // Found the place but the market was too thin to value, or nothing found.
       setLookup(null);
-      setScreen("calc");
+      setScreen("comps");
       showToast("🏠 " + t.cmpNone);
       return;
     }
     setLookup(res);
-    setScreen("calc");
+    setLendPrice(null); // lending follows the new comp value until the user overrides
+    recordWork(res);
+    setScreen("comps");
     showToast("🏠 " + t.cmpDone + " ✓");
   };
 
@@ -966,8 +989,21 @@ export default function TradeTechPro() {
     </div>
   );
 
+  /* Quick Comp brand bar shown atop the primary tab screens */
+  const BrandHeader = () => (
+    <div className="relative flex items-center justify-center px-5 pt-4 pb-3" style={{ background: C.navy }}>
+      <img src="/quick-comp-lockup-white.png" alt="Quick Comp" draggable={false} style={{ height: 46, objectFit: "contain", display: "block" }} />
+      <div className="absolute" style={{ right: 16, top: "50%", transform: "translateY(-50%)" }}><LangToggle onDark /></div>
+    </div>
+  );
+
   const BottomNav = () => {
-    const items = [["home", t.home], ["jobs", t.jobs], ["payments", t.payments], ["customers", t.customers]];
+    const items = [
+      ["comps", lang === "es" ? "Comps" : "Comps"],
+      ["lending", lang === "es" ? "Crédito" : "Lending"],
+      ["tax", lang === "es" ? "Impuestos" : "Tax"],
+      ["workspace", lang === "es" ? "Trabajo" : "Workspace"],
+    ];
     return (
       <div className="flex justify-around items-center gap-1.5 px-2 py-2" style={{ background: "#fff", borderTop: `1px solid ${C.line}` }}>
         {items.map(([s, label], i) => {
@@ -1145,7 +1181,7 @@ export default function TradeTechPro() {
       </div>
       {(trade === "roofing" || trade === "fence") && (
         <div className="px-5 pt-4">
-          <button onClick={() => { setAddrQ(""); setPlaceSugs(null); setLookup(null); setScreen("roofAddress"); }}
+          <button onClick={() => { setAddrQ(""); setPlaceSugs(null); setLookup(null); setScreen("comps"); }}
             className="w-full rounded-2xl flex items-center gap-3 px-4 py-4 active:scale-95 transition-transform"
             style={{ background: "#fff", border: `2px solid ${C.orange}`, boxShadow: "0 4px 14px rgba(248,180,8,.18)" }}>
             <span className="text-2xl">🛰️</span>
@@ -1173,7 +1209,7 @@ export default function TradeTechPro() {
       )}
       <div className="px-5 pt-5 grid grid-cols-2 gap-3">
         {[
-          ["➕", t.newEstimate, () => { if (trade === "roofing" || trade === "fence") { setAddrQ(""); setPlaceSugs(null); setLookup(null); setScreen("roofAddress"); } else setScreen("calc"); }, C.orange, "#fff"],
+          ["➕", t.newEstimate, () => { if (trade === "roofing" || trade === "fence") { setAddrQ(""); setPlaceSugs(null); setLookup(null); setScreen("comps"); } else setScreen("calc"); }, C.orange, "#fff"],
           ["🧮", t.calculator, () => setScreen("calc"), "#fff", C.navy],
           ["🔨", t.jobs.toUpperCase(), () => setScreen("jobs"), "#fff", C.navy],
           ["💵", t.payments, () => setScreen("payments"), "#fff", C.navy],
@@ -1352,7 +1388,7 @@ export default function TradeTechPro() {
             <span className="text-5xl block mb-3">🏘️</span>
             <p className="font-extrabold mb-2" style={{ color: QC.navyDeep, fontSize: 18 }}>{lang === "es" ? "Listo para tu informe de valor" : "Ready to build a clear value story"}</p>
             <p className="mx-auto" style={{ color: "#66759D", fontSize: 13, lineHeight: 1.6, maxWidth: 320 }}>{t.cmpStart}</p>
-            <button onClick={() => { setAddrQ(""); setPlaceSugs(null); setLookup(null); setScreen("roofAddress"); }} className="mt-4 active:translate-y-px transition-transform"
+            <button onClick={() => { setAddrQ(""); setPlaceSugs(null); setLookup(null); setScreen("comps"); }} className="mt-4 active:translate-y-px transition-transform"
               style={{ background: QC.navy, color: "#fff", border: "none", borderRadius: 12, padding: "13px 22px", fontSize: 15, fontWeight: 700 }}>
               {lang === "es" ? "Ver valor de mercado" : "Get Market Value"}
             </button>
@@ -1498,10 +1534,193 @@ export default function TradeTechPro() {
           )}
 
           <p className="mb-3" style={{ color: "#66759D", fontSize: 11, fontWeight: 600, lineHeight: 1.5 }}>⚠️ {t.cmpDisc}</p>
-          <button onClick={() => { setAddrQ(""); setPlaceSugs(null); setLookup(null); setScreen("roofAddress"); }} className="w-full active:translate-y-px transition-transform"
+          <button onClick={() => { setAddrQ(""); setPlaceSugs(null); setLookup(null); setScreen("comps"); }} className="w-full active:translate-y-px transition-transform"
             style={{ background: QC.navy, color: "#fff", border: "none", borderRadius: 12, padding: 15, fontSize: 16, fontWeight: 700, boxShadow: "0 4px 14px rgba(27,42,92,0.3)" }}>
             {t.cmpNew}
           </button>
+        </div>
+      </div>
+    );
+  };
+
+  /* Shared empty-state for tabs that need a searched property first */
+  const NeedProperty = ({ title, sub }) => (
+    <div className="flex-1 px-5 pt-4" style={{ background: QC.bg }}>
+      <div className="rounded-2xl text-center" style={{ background: "#fff", border: "1px dashed #CAD5E7", padding: "34px 22px" }}>
+        <span className="text-5xl block mb-3">🏠</span>
+        <p className="font-extrabold mb-2" style={{ color: QC.navyDeep, fontSize: 18 }}>{title}</p>
+        <p className="mx-auto mb-4" style={{ color: "#66759D", fontSize: 13, lineHeight: 1.6, maxWidth: 320 }}>{sub}</p>
+        <button onClick={() => { setAddrQ(""); setPlaceSugs(null); setLookup(null); setScreen("comps"); }}
+          style={{ background: QC.navy, color: "#fff", border: "none", borderRadius: 12, padding: "13px 22px", fontSize: 15, fontWeight: 700 }}>
+          {lang === "es" ? "Buscar una dirección" : "Search an address"}
+        </button>
+      </div>
+    </div>
+  );
+
+  const Slider = ({ label, value, display, min, max, step, onChange }) => (
+    <div className="mb-3.5">
+      <div className="flex justify-between items-baseline mb-1.5">
+        <span style={{ color: QC.muted2, fontSize: 11, fontWeight: 700, letterSpacing: "0.04em", textTransform: "uppercase" }}>{label}</span>
+        <span className="font-extrabold" style={{ color: QC.navy, fontSize: 15 }}>{display}</span>
+      </div>
+      <input type="range" min={min} max={max} step={step} value={value}
+        onChange={(e) => onChange(parseFloat(e.target.value))}
+        className="w-full" style={{ accentColor: QC.gold, height: 4 }} />
+    </div>
+  );
+
+  /* ── 02 · LENDING — monthly payment estimate ── */
+  const Lending = () => {
+    const m = (v) => "$" + Math.round(v).toLocaleString("en-US");
+    const price = lendPrice != null ? lendPrice : (lookup?.value || 350000);
+    const down = Math.round(price * lendDownPct / 100);
+    const principal = Math.max(price - down, 0);
+    const r = lendRate / 100 / 12;
+    const n = lendTerm * 12;
+    const pi = r > 0 ? principal * r / (1 - Math.pow(1 + r, -n)) : principal / n;
+    const taxMo = price * (lendTaxPct / 100) / 12;
+    const insMo = lendInsYr / 12;
+    const monthly = pi + taxMo + insMo;
+    return (
+      <div className="flex-1 overflow-y-auto pb-6" style={{ background: QC.bg }}>
+        <div className="px-5 pt-4">
+          <div className="rounded-2xl p-5 mb-3" style={{ background: QC.cardGrad, boxShadow: "0 18px 38px rgba(17,27,66,0.18)" }}>
+            <p style={{ color: QC.goldHi, fontSize: 11, fontWeight: 900, letterSpacing: "0.16em", textTransform: "uppercase" }}>{lang === "es" ? "Pago mensual estimado" : "Monthly payment estimate"}</p>
+            <p className="text-white" style={{ fontSize: 42, lineHeight: 1, fontWeight: 900, margin: "8px 0" }}>{m(monthly)}<span style={{ fontSize: 18, fontWeight: 700, color: "rgba(255,255,255,.7)" }}>/{lang === "es" ? "mes" : "mo"}</span></p>
+            <p style={{ color: "rgba(255,255,255,0.76)", fontSize: 13, fontWeight: 600, lineHeight: 1.5 }}>
+              {lang === "es" ? "Ajusta precio, enganche, tasa, impuestos y seguro para responder al instante." : "Slide price, down payment, rate, taxes, and insurance to answer buyer questions fast."}
+            </p>
+            <div className="flex gap-2 mt-3">
+              {[["P&I", m(pi)], [lang === "es" ? "Impuesto" : "Tax", m(taxMo)], [lang === "es" ? "Seguro" : "Insurance", m(insMo)]].map(([l, v]) => (
+                <div key={l} className="flex-1 rounded-xl text-center" style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.10)", padding: "8px 4px" }}>
+                  <p className="text-white font-extrabold" style={{ fontSize: 13 }}>{v}</p>
+                  <p style={{ color: QC.goldHi, fontSize: 8, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", marginTop: 2 }}>{l}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="rounded-2xl p-4" style={{ background: "#fff", border: `1px solid ${QC.line}`, boxShadow: "0 2px 8px rgba(27,42,92,0.06)" }}>
+            <p style={{ color: QC.gold, fontSize: 10, fontWeight: 900, letterSpacing: "0.18em", textTransform: "uppercase", marginBottom: 14 }}>{lang === "es" ? "Calculadora de financiamiento" : "Lending calculator"}</p>
+            <Slider label={lang === "es" ? "Precio" : "Home price"} value={price} display={m(price)} min={50000} max={2000000} step={5000} onChange={setLendPrice} />
+            <Slider label={lang === "es" ? "Enganche" : "Down payment"} value={lendDownPct} display={`${lendDownPct}% · ${m(down)}`} min={0} max={50} step={1} onChange={setLendDownPct} />
+            <Slider label={lang === "es" ? "Tasa de interés" : "Interest rate"} value={lendRate} display={`${lendRate.toFixed(2)}%`} min={2} max={12} step={0.05} onChange={setLendRate} />
+            <Slider label={lang === "es" ? "Plazo" : "Loan term"} value={lendTerm} display={`${lendTerm} ${lang === "es" ? "años" : "yr"}`} min={10} max={30} step={5} onChange={setLendTerm} />
+            <Slider label={lang === "es" ? "Impuesto predial / año" : "Property tax / yr"} value={lendTaxPct} display={`${lendTaxPct.toFixed(2)}%`} min={0} max={3} step={0.05} onChange={setLendTaxPct} />
+            <Slider label={lang === "es" ? "Seguro / año" : "Insurance / yr"} value={lendInsYr} display={m(lendInsYr)} min={0} max={6000} step={100} onChange={setLendInsYr} />
+            {lookup?.value
+              ? <p className="mt-1" style={{ color: QC.muted, fontSize: 11, fontWeight: 600 }}>{lang === "es" ? "Precio inicial tomado del valor de mercado estimado." : "Starting price taken from the estimated market value."}</p>
+              : <p className="mt-1" style={{ color: QC.muted, fontSize: 11, fontWeight: 600 }}>{lang === "es" ? "Busca una propiedad para empezar con su valor de mercado." : "Search a property to start from its market value."}</p>}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  /* ── 03 · TAX — tax snapshot ── */
+  const Tax = () => {
+    const subj = lookup?.subject || {};
+    if (!lookup?.value) return <NeedProperty title={lang === "es" ? "Resumen de impuestos" : "Tax snapshot"} sub={lang === "es" ? "Busca una propiedad para ver dueño, valor catastral, año fiscal y datos clave." : "Search a property to see owner, assessed value, tax year, and key facts."} />;
+    const num = (n) => Number(n).toLocaleString("en-US");
+    const assessed = Math.round((lookup.value || 0) * 0.86);
+    const annualTax = Math.round(assessed * 0.011);
+    const facts = [["🛏️", subj.beds ?? "—", t.beds], ["🛁", subj.baths ?? "—", t.baths], ["📐", subj.sqft ? num(subj.sqft) : "—", t.cmpSqft], ["📅", subj.yearBuilt ?? "—", t.builtIn]];
+    const rows = [
+      [lang === "es" ? "Dueño registrado" : "Owner of record", subj.owner || (lang === "es" ? "Según registro público" : "Per public record")],
+      [lang === "es" ? "Valor catastral" : "Assessed value", "$" + num(assessed)],
+      [lang === "es" ? "Impuesto anual estimado" : "Est. annual tax", "$" + num(annualTax)],
+      [lang === "es" ? "Año fiscal" : "Tax year", String(new Date().getFullYear())],
+    ];
+    return (
+      <div className="flex-1 overflow-y-auto pb-6" style={{ background: QC.bg }}>
+        <div className="px-5 pt-4">
+          <div className="rounded-2xl p-4 mb-3" style={{ background: "#fff", border: `1px solid ${QC.line}`, boxShadow: "0 2px 8px rgba(27,42,92,0.06)" }}>
+            <p style={{ color: QC.gold, fontSize: 10, fontWeight: 900, letterSpacing: "0.18em", textTransform: "uppercase", marginBottom: 6 }}>{lang === "es" ? "Resumen de impuestos" : "Tax snapshot"}</p>
+            <p className="font-extrabold mb-3" style={{ color: QC.navyDeep, fontSize: 16, lineHeight: 1.3 }}>{subj.address || lookup.addr}</p>
+            {rows.map(([k, v], i) => (
+              <div key={k} className="flex justify-between py-2" style={{ borderTop: i ? `1px solid ${QC.line}` : "none" }}>
+                <span style={{ color: QC.muted2, fontSize: 13, fontWeight: 600 }}>{k}</span>
+                <span className="font-extrabold" style={{ color: QC.navy, fontSize: 13 }}>{v}</span>
+              </div>
+            ))}
+          </div>
+          <div className="rounded-2xl p-4 mb-3" style={{ background: "#fff", border: `1px solid ${QC.line}`, boxShadow: "0 2px 8px rgba(27,42,92,0.06)" }}>
+            <p style={{ color: QC.muted2, fontSize: 9, fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", marginBottom: 8 }}>{lang === "es" ? "Datos clave de la propiedad" : "Key property facts"}</p>
+            <div className="grid grid-cols-4 gap-2">
+              {facts.map(([icon, v, label]) => (
+                <div key={label} style={{ background: QC.bg, border: `1px solid ${QC.line}`, borderRadius: 10, padding: "10px 6px", textAlign: "center" }}>
+                  <p className="font-extrabold" style={{ color: QC.navy, fontSize: 15 }}>{v}</p>
+                  <p style={{ color: QC.muted, fontSize: 8, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", marginTop: 3 }}>{icon} {label}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="flex items-center gap-2 rounded-xl px-3 py-2.5" style={{ background: QC.bg, border: `1px solid ${QC.line}` }}>
+            <span style={{ color: QC.green }}>✓</span>
+            <span style={{ color: QC.body, fontSize: 12, fontWeight: 600 }}>{lang === "es" ? "Resumen fiscal listo para el cliente" : "Client-ready tax summary available"}</span>
+          </div>
+          <p className="mt-3" style={{ color: "#66759D", fontSize: 11, fontWeight: 600, lineHeight: 1.5 }}>⚠️ {lang === "es" ? "Valores catastrales estimados — confirma con el condado." : "Assessed values are estimates — confirm with the county."}</p>
+        </div>
+      </div>
+    );
+  };
+
+  /* ── 04 · WORKSPACE — saved work + Realtor branding ── */
+  const Workspace = () => {
+    const reopen = (it) => {
+      setLookup(it);
+      setLendPrice(null);
+      setScreen("comps");
+    };
+    return (
+      <div className="flex-1 overflow-y-auto pb-6" style={{ background: QC.bg }}>
+        <div className="px-5 pt-4">
+          <div className="rounded-2xl p-5 mb-3" style={{ background: QC.cardGrad, boxShadow: "0 18px 38px rgba(17,27,66,0.18)" }}>
+            <p style={{ color: QC.goldHi, fontSize: 11, fontWeight: 900, letterSpacing: "0.16em", textTransform: "uppercase" }}>{lang === "es" ? "Trabajo guardado" : "Saved work"}</p>
+            <p className="text-white font-extrabold" style={{ fontSize: 26, margin: "4px 0 6px" }}>{savedWork.length} {lang === "es" ? (savedWork.length === 1 ? "elemento reciente" : "elementos recientes") : (savedWork.length === 1 ? "recent item" : "recent items")}</p>
+            <p style={{ color: "rgba(255,255,255,0.76)", fontSize: 13, fontWeight: 600, lineHeight: 1.5 }}>{lang === "es" ? "Reabre comps, estimados de financiamiento e impuestos sin empezar de cero." : "Reopen past comps, lending estimates, and tax snapshots without starting over."}</p>
+          </div>
+
+          {savedWork.length === 0 ? (
+            <div className="rounded-2xl text-center mb-3" style={{ background: "#fff", border: "1px dashed #CAD5E7", padding: "26px 22px" }}>
+              <p style={{ color: "#66759D", fontSize: 13, fontWeight: 600 }}>{lang === "es" ? "Tus búsquedas de propiedades aparecerán aquí." : "Your property searches will show up here."}</p>
+            </div>
+          ) : (
+            <div className="mb-3">
+              {savedWork.map((it, i) => (
+                <button key={it.addr + i} onClick={() => reopen(it)} className="w-full flex items-center gap-3 rounded-2xl p-3.5 mb-2 text-left active:scale-[0.99] transition-transform"
+                  style={{ background: "#fff", border: `1px solid ${QC.line}`, boxShadow: "0 2px 8px rgba(27,42,92,0.06)" }}>
+                  <span className="shrink-0 flex items-center justify-center rounded-xl font-extrabold" style={{ width: 40, height: 40, background: QC.bg, border: `1px solid ${QC.line}`, color: QC.navy, fontSize: 13 }}>{`0${i + 1}`.slice(-2)}</span>
+                  <span className="flex-1 min-w-0">
+                    <span className="block font-bold truncate" style={{ color: QC.navyDeep, fontSize: 14 }}>{it.addr || "—"}</span>
+                    <span className="block" style={{ color: QC.muted2, fontSize: 11, fontWeight: 600 }}>{lang === "es" ? "Comp · valor" : "Comp · value"} {it.value ? "$" + Number(it.value).toLocaleString("en-US") : "—"}</span>
+                  </span>
+                  <span style={{ color: QC.gold, fontSize: 18 }}>›</span>
+                </button>
+              ))}
+            </div>
+          )}
+
+          <div className="rounded-2xl p-4" style={{ background: "#fff", border: `1px solid ${QC.line}`, boxShadow: "0 2px 8px rgba(27,42,92,0.06)" }}>
+            <p style={{ color: QC.gold, fontSize: 10, fontWeight: 900, letterSpacing: "0.18em", textTransform: "uppercase", marginBottom: 4 }}>{lang === "es" ? "Perfil del agente" : "Realtor profile"}</p>
+            <p className="font-extrabold mb-3" style={{ color: QC.navyDeep, fontSize: 17 }}>{lang === "es" ? "Marca de tus informes" : "Client report branding"}</p>
+            <div className="flex items-center gap-2 rounded-xl px-3 py-2.5 mb-3" style={{ background: QC.bg, border: `1px solid ${QC.line}` }}>
+              <span style={{ color: QC.gold }}>✦</span>
+              <span style={{ color: QC.body, fontSize: 12, fontWeight: 600 }}>{lang === "es" ? "Marca personal activa — tus informes la usan." : "Personal branding is active — reports use it."}</span>
+            </div>
+            <div className="rounded-2xl p-3.5 mb-3 flex items-center gap-3" style={{ background: QC.headGrad }}>
+              <span className="shrink-0 flex items-center justify-center rounded-xl font-extrabold" style={{ width: 40, height: 40, background: "rgba(255,255,255,0.10)", border: "1px solid rgba(255,255,255,0.18)", color: QC.goldHi, fontSize: 17 }}>{(userName || "R")[0].toUpperCase()}</span>
+              <span className="min-w-0">
+                <span className="block" style={{ color: QC.goldHi, fontSize: 8, fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase" }}>{lang === "es" ? "Presentado por" : "Presented by"}</span>
+                <span className="block font-extrabold text-white truncate" style={{ fontSize: 15 }}>{userName || (lang === "es" ? "Tu nombre" : "Your name")}{bizName ? ` · ${bizName}` : ""}</span>
+                {bizEmail && <span className="block truncate" style={{ color: "rgba(255,255,255,0.7)", fontSize: 11 }}>{bizEmail}</span>}
+              </span>
+            </div>
+            <input value={userName} onChange={(e) => { setUserName(e.target.value); saveProfile({ name: e.target.value }); }} placeholder={lang === "es" ? "Nombre del agente" : "Realtor name"}
+              className="w-full rounded-xl px-3.5 py-3 mb-2 font-semibold outline-none" style={{ background: QC.bg, border: `1.5px solid ${QC.line}`, color: QC.navy, fontSize: 14 }} />
+            <input value={bizName} onChange={(e) => { setBizName(e.target.value); saveProfile({ biz: e.target.value }); }} placeholder={lang === "es" ? "Inmobiliaria / Brokerage" : "Brokerage"}
+              className="w-full rounded-xl px-3.5 py-3 font-semibold outline-none" style={{ background: QC.bg, border: `1.5px solid ${QC.line}`, color: QC.navy, fontSize: 14 }} />
+          </div>
         </div>
       </div>
     );
@@ -2061,7 +2280,8 @@ export default function TradeTechPro() {
     invoice: "jobDetail", payments: "home", customers: "home", ai: "home", roofAddress: "home",
     voiceInvoice: "home", fenceDraw: "home", settings: "home", leads: "home",
   };
-  const withNav = ["home", "jobs", "payments", "customers"];
+  const tabScreens = ["comps", "lending", "tax", "workspace"];
+  const withNav = tabScreens;
 
   return (
     <div className="min-h-screen flex justify-center" style={{ background: C.navyDeep }}>
@@ -2076,11 +2296,16 @@ export default function TradeTechPro() {
             <span className="text-xs font-bold" style={{ color: "#7A5A00" }}>{t.demoBanner}</span>
           </div>
         )}
-        {screen !== "onboard" && screen !== "trade" && screen !== "home" && <Header title={titles[screen] || ""} back={() => setScreen(backMap[screen] || "home")} />}
+        {tabScreens.includes(screen) && <BrandHeader />}
+        {screen !== "onboard" && screen !== "trade" && screen !== "home" && !tabScreens.includes(screen) && <Header title={titles[screen] || ""} back={() => setScreen(backMap[screen] || "comps")} />}
         {screen === "onboard" && Onboard()}
         {screen === "settings" && Settings()}
         {screen === "trade" && TradePicker()}
         {screen === "home" && Home()}
+        {screen === "comps" && (lookup ? CompsResult() : CompsSearch())}
+        {screen === "lending" && Lending()}
+        {screen === "tax" && Tax()}
+        {screen === "workspace" && Workspace()}
         {screen === "calc" && (trade === "roofing" ? CompsResult() : Calc())}
         {screen === "roofAddress" && CompsSearch()}
         {screen === "voiceInvoice" && VoiceInvoice()}
