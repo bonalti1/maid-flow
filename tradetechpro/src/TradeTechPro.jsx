@@ -1534,6 +1534,10 @@ export default function TradeTechPro() {
           )}
 
           <p className="mb-3" style={{ color: "#66759D", fontSize: 11, fontWeight: 600, lineHeight: 1.5 }}>⚠️ {t.cmpDisc}</p>
+          <button onClick={() => setScreen("report")} className="w-full active:translate-y-px transition-transform mb-2.5"
+            style={{ background: `linear-gradient(135deg,${QC.gold},#BD8426)`, color: QC.navyDeep, border: "none", borderRadius: 12, padding: 15, fontSize: 16, fontWeight: 800, letterSpacing: "0.01em", boxShadow: "0 4px 14px rgba(189,132,38,0.35)" }}>
+            📄 {lang === "es" ? "Crear informe para el cliente" : "Create client report"}
+          </button>
           <button onClick={() => { setAddrQ(""); setPlaceSugs(null); setLookup(null); setScreen("comps"); }} className="w-full active:translate-y-px transition-transform"
             style={{ background: QC.navy, color: "#fff", border: "none", borderRadius: 12, padding: 15, fontSize: 16, fontWeight: 700, boxShadow: "0 4px 14px rgba(27,42,92,0.3)" }}>
             {t.cmpNew}
@@ -1721,6 +1725,80 @@ export default function TradeTechPro() {
             <input value={bizName} onChange={(e) => { setBizName(e.target.value); saveProfile({ biz: e.target.value }); }} placeholder={lang === "es" ? "Inmobiliaria / Brokerage" : "Brokerage"}
               className="w-full rounded-xl px-3.5 py-3 font-semibold outline-none" style={{ background: QC.bg, border: `1.5px solid ${QC.line}`, color: QC.navy, fontSize: 14 }} />
           </div>
+        </div>
+      </div>
+    );
+  };
+
+  /* ── Client CMA report (printable / shareable PDF view) ── */
+  const Report = () => {
+    const R = lookup;
+    if (!R || !R.value) return <NeedProperty title={lang === "es" ? "Informe del cliente" : "Client report"} sub={lang === "es" ? "Busca una propiedad para generar un informe con comparables y valor de mercado." : "Search a property to generate a report with comparables and a market value."} />;
+    const subj = R.subject || {};
+    const comps = (Array.isArray(R.comps) ? R.comps : []).filter((c) => !c.excludedAsOutlier).slice(0, 6);
+    const n = R.compsUsed || comps.length;
+    const hasRange = R.low != null && R.high != null;
+    const narrative = lang === "es"
+      ? `El conjunto de comparables respalda un valor de mercado cercano a ${fmt(R.value)}${hasRange ? `, dentro de un rango de ${fmt(R.low)}–${fmt(R.high)}` : ""}. El mayor respaldo proviene de ${n} ${n === 1 ? "venta cercana" : "ventas cercanas"} de tamaño y condición similares${R.avgPpsf ? `, con un promedio de ${fmt(R.avgPpsf)} por pie²` : ""}.`
+      : `The comparable set supports an indicated market value near ${fmt(R.value)}${hasRange ? `, within a ${fmt(R.low)}–${fmt(R.high)} range` : ""}. The strongest support comes from ${n} nearby ${n === 1 ? "sale" : "sales"} of similar size and condition${R.avgPpsf ? `, averaging ${fmt(R.avgPpsf)} per square foot` : ""}.`;
+    const share = async () => {
+      const text = `${subj.address || R.addr} — ${fmt(R.value)}${hasRange ? ` (${fmt(R.low)}–${fmt(R.high)})` : ""}\n${narrative}`;
+      try {
+        if (navigator.share) await navigator.share({ title: "Quick Comp — CMA", text });
+        else { await navigator.clipboard.writeText(text); showToast(lang === "es" ? "Copiado ✓" : "Copied ✓"); }
+      } catch { /* user dismissed */ }
+    };
+    return (
+      <div className="flex-1 overflow-y-auto pb-6" style={{ background: QC.bg }}>
+        <div className="px-5 pt-4">
+          {/* The report document */}
+          <div id="qc-report" className="rounded-2xl overflow-hidden" style={{ background: "#fff", border: `1px solid ${QC.line}`, boxShadow: "0 18px 38px rgba(17,27,66,0.12)" }}>
+            {/* Branded header band */}
+            <div className="flex items-center justify-between gap-3 px-4 py-3.5" style={{ background: QC.headGrad }}>
+              <div className="min-w-0">
+                <p style={{ color: QC.goldHi, fontSize: 8, fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase" }}>{lang === "es" ? "Presentado por" : "Presented by"}</p>
+                <p className="text-white font-extrabold truncate" style={{ fontSize: 14 }}>{userName || (lang === "es" ? "Tu nombre" : "Your name")}</p>
+                {bizName && <p className="truncate" style={{ color: "rgba(255,255,255,0.7)", fontSize: 11 }}>{bizName}</p>}
+              </div>
+              <p className="text-white font-extrabold shrink-0" style={{ fontSize: 13, letterSpacing: "0.03em" }}>{lang === "es" ? "Informe CMA" : "Client CMA Report"}</p>
+            </div>
+            {/* Body */}
+            <div className="px-4 py-4">
+              <p style={{ color: QC.gold, fontSize: 10, fontWeight: 900, letterSpacing: "0.16em", textTransform: "uppercase" }}>{t.cmpValue}</p>
+              <p style={{ color: QC.navyDeep, fontSize: 36, fontWeight: 900, lineHeight: 1, margin: "6px 0" }}>{fmt(R.value)}</p>
+              {hasRange && <p style={{ color: QC.muted2, fontSize: 13, fontWeight: 600 }}>{fmt(R.low)} – {fmt(R.high)} {lang === "es" ? "rango sugerido" : "suggested range"}</p>}
+              <p className="font-bold mt-1.5" style={{ color: QC.navy, fontSize: 13 }}>{subj.address || R.addr}</p>
+
+              {/* Sold comparable support */}
+              <div className="rounded-xl mt-3 px-3.5 py-3" style={{ background: QC.bg, border: `1px solid ${QC.line}` }}>
+                <p style={{ color: QC.navy, fontSize: 12, fontWeight: 800, letterSpacing: "0.02em", marginBottom: 8 }}>{lang === "es" ? "Apoyo de ventas comparables" : "Sold Comparable Support"}</p>
+                {comps.length === 0 && <p style={{ color: QC.muted, fontSize: 12, fontWeight: 600 }}>{lang === "es" ? "Sin comparables disponibles." : "No comparables available."}</p>}
+                {comps.map((c, i) => (
+                  <div key={i} className="flex items-center justify-between gap-3 py-1.5" style={{ borderTop: i ? `1px solid ${QC.line}` : "none" }}>
+                    <span className="truncate" style={{ color: QC.body, fontSize: 12.5, fontWeight: 600 }}>{i + 1}. {c.address}</span>
+                    <span className="shrink-0 font-extrabold" style={{ color: QC.navyDeep, fontSize: 12.5 }}>{fmt(c.soldPrice)}</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* AI-assisted summary */}
+              <div className="rounded-xl mt-3 px-4 py-3.5" style={{ background: QC.cardGrad, border: `1px solid ${QC.gold}55` }}>
+                <p style={{ color: QC.goldHi, fontSize: 9, fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", marginBottom: 6 }}>{lang === "es" ? "Resumen asistido por IA" : "AI-Assisted Summary"}</p>
+                <p className="text-white" style={{ fontSize: 12.5, lineHeight: 1.6, fontWeight: 500 }}>{narrative}</p>
+              </div>
+
+              <p className="mt-3" style={{ color: QC.muted, fontSize: 9.5, fontWeight: 600, lineHeight: 1.5 }}>⚠️ {t.cmpDisc}</p>
+            </div>
+          </div>
+
+          {/* Actions (not printed) */}
+          <div className="no-print flex gap-2 mt-3">
+            <button onClick={() => window.print()} className="flex-1 active:translate-y-px transition-transform"
+              style={{ background: QC.navy, color: "#fff", border: "none", borderRadius: 12, padding: 14, fontSize: 14, fontWeight: 700 }}>🖨️ {lang === "es" ? "Imprimir" : "Print"}</button>
+            <button onClick={share} className="flex-1 active:translate-y-px transition-transform"
+              style={{ background: "#fff", color: QC.navy, border: `1.5px solid ${QC.line}`, borderRadius: 12, padding: 14, fontSize: 14, fontWeight: 700 }}>📤 {lang === "es" ? "Compartir" : "Share"}</button>
+          </div>
+          <p className="no-print text-center mt-3" style={{ color: "#66759D", fontSize: 12, fontWeight: 600 }}>{lang === "es" ? "Comparte, imprime o guarda para después." : "Share, print, or save for later."}</p>
         </div>
       </div>
     );
@@ -2274,8 +2352,10 @@ export default function TradeTechPro() {
     roofAddress: "🏠 " + (trade === "fence" ? t.measureFence : t.searchAddress),
     voiceInvoice: "🎤 " + t.quickInvoice, fenceDraw: "🪵 " + t.fenceTitle,
     settings: "⚙️ " + t.settings, leads: "📥 " + t.leads,
+    report: "📄 " + (lang === "es" ? "Informe del cliente" : "Client report"),
   };
   const backMap = {
+    report: "comps",
     calc: "home", pickCustomer: trade === "fence" ? "fenceDraw" : "calc", send: "jobs", jobs: "home", jobDetail: "jobs",
     invoice: "jobDetail", payments: "home", customers: "home", ai: "home", roofAddress: "home",
     voiceInvoice: "home", fenceDraw: "home", settings: "home", leads: "home",
@@ -2289,15 +2369,22 @@ export default function TradeTechPro() {
         * { font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
         input::placeholder { color: #A7AEBE; }
         @keyframes ttpPulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.18); opacity: .65; } }
-        @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }`}</style>
+        @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+        @media print {
+          body { background: #fff !important; }
+          .no-print { display: none !important; }
+          #qc-report { box-shadow: none !important; border: 1px solid #d9e1ef !important; }
+        }`}</style>
       <div className="w-full max-w-md flex flex-col relative" style={{ background: C.bg, minHeight: "100vh" }}>
         {!session && screen !== "onboard" && (
-          <div className="px-4 py-2 text-center" style={{ background: C.orangeSoft, borderBottom: `1.5px solid ${C.orange}` }}>
+          <div className="no-print px-4 py-2 text-center" style={{ background: C.orangeSoft, borderBottom: `1.5px solid ${C.orange}` }}>
             <span className="text-xs font-bold" style={{ color: "#7A5A00" }}>{t.demoBanner}</span>
           </div>
         )}
         {tabScreens.includes(screen) && <BrandHeader />}
-        {screen !== "onboard" && screen !== "trade" && screen !== "home" && !tabScreens.includes(screen) && <Header title={titles[screen] || ""} back={() => setScreen(backMap[screen] || "comps")} />}
+        {screen !== "onboard" && screen !== "trade" && screen !== "home" && !tabScreens.includes(screen) && (
+          <div className="no-print"><Header title={titles[screen] || ""} back={() => setScreen(backMap[screen] || "comps")} /></div>
+        )}
         {screen === "onboard" && Onboard()}
         {screen === "settings" && Settings()}
         {screen === "trade" && TradePicker()}
@@ -2306,6 +2393,7 @@ export default function TradeTechPro() {
         {screen === "lending" && Lending()}
         {screen === "tax" && Tax()}
         {screen === "workspace" && Workspace()}
+        {screen === "report" && Report()}
         {screen === "calc" && (trade === "roofing" ? CompsResult() : Calc())}
         {screen === "roofAddress" && CompsSearch()}
         {screen === "voiceInvoice" && VoiceInvoice()}
