@@ -990,6 +990,39 @@ app.get("/api/roofimg", async (req, res) => {
   }
 });
 
+/* House photo for a subject/comp address: a real Street View shot when
+ * Google has coverage, otherwise a top-down satellite frame. Proxied so the
+ * Maps key stays server-side. Demo mode (no key) returns 404 → UI hides it. */
+app.get("/api/streetview", async (req, res) => {
+  const { lat, lng } = req.query;
+  if (!GOOGLE_KEY || !lat || !lng) return res.status(404).end();
+  const svIp = String(req.headers["x-forwarded-for"] || "").split(",")[0].trim() || req.socket.remoteAddress || "?";
+  if (overQuota(`sv:${svIp}`, 120)) return res.status(429).end();
+  const loc = `${encodeURIComponent(lat)},${encodeURIComponent(lng)}`;
+  try {
+    // Prefer a street-level photo of the house; check coverage first.
+    let hasStreet = false;
+    try {
+      const meta = await fetch(`https://maps.googleapis.com/maps/api/streetview/metadata?location=${loc}&key=${GOOGLE_KEY}`);
+      if (meta.ok) { const j = await meta.json(); hasStreet = j.status === "OK"; }
+    } catch { /* fall through to satellite */ }
+    const url = hasStreet
+      ? `https://maps.googleapis.com/maps/api/streetview?size=640x400&location=${loc}&fov=75&pitch=8&source=outdoor&key=${GOOGLE_KEY}`
+      : `https://maps.googleapis.com/maps/api/staticmap?size=640x400&scale=2&maptype=satellite&center=${loc}&zoom=20&key=${GOOGLE_KEY}`;
+    const r = await fetch(url);
+    if (!r.ok) {
+      console.error("streetview failed:", r.status, (await r.text()).slice(0, 200));
+      return res.status(404).end();
+    }
+    res.set("Content-Type", r.headers.get("content-type") || "image/jpeg");
+    res.set("Cache-Control", "public, max-age=86400");
+    res.send(Buffer.from(await r.arrayBuffer()));
+  } catch (e) {
+    console.error("streetview failed:", e.message);
+    res.status(404).end();
+  }
+});
+
 /* ── Accounts, login, and saved data ── */
 
 // who is calling? (session token in the Authorization header)
