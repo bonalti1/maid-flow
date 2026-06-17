@@ -1,31 +1,39 @@
 import React, { useState, useMemo, useRef, useEffect } from "react";
 
-/* ─── Brand tokens (ALTO Pro: navy + gold) ─── */
+/* ─── Brand tokens (Quick Comp: navy + gold) ─── */
 const C = {
-  navy: "#101B30",
-  navyDeep: "#0B1322",
-  orange: "#F8B408",
-  orangeSoft: "#FEF5DC",
-  bg: "#F4F5F7",
+  navy: "#15244C",      // primary navy — header bar, dark cards, headings
+  navyDeep: "#0B1733",  // deepest navy — gradients, deep panels
+  orange: "#C9973A",    // gold accent — section labels, $/sf, highlights
+  orangeSoft: "#F7EFD8",// soft gold tint — accent card backgrounds
+  bg: "#F1F4FA",        // app background
   card: "#FFFFFF",
-  line: "#E6E8EC",
-  slate: "#67718A",
+  line: "#E4E8F0",
+  slate: "#6E7891",
   green: "#1E9E5A",
   greenSoft: "#E6F5EC",
   red: "#D64545",
   redSoft: "#FBEAEA",
-  yellow: "#C98A06",
-  yellowSoft: "#FCF3DD",
+  yellow: "#C9973A",    // align legacy "yellow" to brand gold
+  yellowSoft: "#F7EFD8",
 };
 
-/* ─── Logo (ALTO Pro monogram: ring + A over gold P) ─── */
-const Logo = ({ size = 44, ring = true, color = null }) => (
-  <svg width={size} height={size} viewBox="0 0 100 100">
-    {ring && <circle cx="50" cy="50" r="45" fill="none" stroke={color || C.navy} strokeWidth="6" />}
-    <text x="60" y="68" textAnchor="middle" fontFamily="'Barlow Condensed', sans-serif" fontWeight="800" fontSize="48" fill={C.orange}>P</text>
-    <text x="44" y="72" textAnchor="middle" fontFamily="'Barlow Condensed', sans-serif" fontWeight="800" fontSize="56" fill={color || C.navy}>A</text>
-  </svg>
-);
+/* ─── Logo (Quick Comp QC monogram) ───
+   color="#fff" (or any light value) renders the white mark for navy backgrounds;
+   default renders the navy mark for light backgrounds. */
+const Logo = ({ size = 44, color = null }) => {
+  const light = !!color && color.toLowerCase() !== C.navy.toLowerCase();
+  return (
+    <img
+      src={light ? "/quick-comp-mark-white.png" : "/quick-comp-mark-navy.png"}
+      alt="Quick Comp"
+      width={size}
+      height={size}
+      draggable={false}
+      style={{ display: "block", objectFit: "contain" }}
+    />
+  );
+};
 
 /* ─── Translations ─── */
 const TR = {
@@ -383,7 +391,7 @@ const mockLookup = (addr) => new Promise((resolve) => {
 /* ─── Shared UI ─── */
 const Btn = ({ children, onClick, color = C.orange, textColor = "#fff", style = {}, disabled }) => (
   <button onClick={onClick} disabled={disabled} className="w-full rounded-xl font-bold text-base tracking-wide active:scale-95 transition-transform"
-    style={{ background: disabled ? C.line : color, color: disabled ? C.slate : textColor, padding: "16px", fontFamily: "'Barlow Condensed', sans-serif", fontSize: 19, letterSpacing: "0.04em", border: "none", ...style }}>
+    style={{ background: disabled ? C.line : color, color: disabled ? C.slate : textColor, padding: "16px", fontFamily: "'Inter', sans-serif", fontSize: 19, letterSpacing: "0.04em", border: "none", ...style }}>
     {children}
   </button>
 );
@@ -438,7 +446,7 @@ const DEMO_ROOF = WANT_ROOF && !savedProfile.biz;
 export default function TradeTechPro() {
   const [lang, setLang] = useState(savedProfile.lang || "es");
   const t = TR[lang];
-  const [screen, setScreen] = useState(WANT_ROOF ? "home" : (savedProfile.biz ? (savedProfile.trade ? "home" : "trade") : "onboard"));
+  const [screen, setScreen] = useState(WANT_ROOF ? "home" : "comps");
   const [trade, setTrade] = useState(savedProfile.trade || "roofing");
   const [userName, setUserName] = useState(savedProfile.name || (DEMO_ROOF ? "José" : ""));
   const [bizName, setBizName] = useState(savedProfile.biz || (DEMO_ROOF ? "Techos García (Demo)" : ""));
@@ -552,7 +560,7 @@ export default function TradeTechPro() {
         // Real accounts start clean — no demo data
         setCustomers(j.state?.customers || []);
         setJobs(j.state?.jobs || []);
-        if (!WANT_ROOF) setScreen((p.biz || j.contractor.name) ? (p.trade ? "home" : "trade") : "onboard");
+        if (!WANT_ROOF) setScreen("comps");
         setCloudReady(true);
       } catch { /* offline — local data keeps working */ }
     })();
@@ -619,6 +627,27 @@ export default function TradeTechPro() {
   const [mSq, setMSq] = useState("");
   const [placeSugs, setPlaceSugs] = useState(null); // null = use built-in list
   const placesSeq = useRef(0);
+
+  /* Quick Comp tabs: lending calculator inputs + saved-work history */
+  const [lendPrice, setLendPrice] = useState(null); // null = follow the comp value
+  const [lendDownPct, setLendDownPct] = useState(20);
+  const [lendRate, setLendRate] = useState(7.0);
+  const [lendTerm, setLendTerm] = useState(30);
+  const [lendTaxPct, setLendTaxPct] = useState(1.1);
+  const [lendInsYr, setLendInsYr] = useState(1500);
+  const [savedWork, setSavedWork] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("qc_saved") || "[]"); } catch { return []; }
+  });
+  const recordWork = (res) => {
+    if (!res || !res.value) return;
+    setSavedWork((prev) => {
+      const addr = (res.subject && res.subject.address) || res.addr || "";
+      const item = { ...res, addr, ts: Date.now() };
+      const next = [item, ...prev.filter((p) => p.addr !== addr)].slice(0, 12);
+      try { localStorage.setItem("qc_saved", JSON.stringify(next)); } catch {}
+      return next;
+    });
+  };
 
   const [showDetails, setShowDetails] = useState(false); // shared with the fence estimator
   const [dragOff, setDragOff] = useState([0, 0]);        // live pan offset (fence map drag)
@@ -901,12 +930,14 @@ export default function TradeTechPro() {
     if (!res || !res.value) {
       // Found the place but the market was too thin to value, or nothing found.
       setLookup(null);
-      setScreen("calc");
+      setScreen("comps");
       showToast("🏠 " + t.cmpNone);
       return;
     }
     setLookup(res);
-    setScreen("calc");
+    setLendPrice(null); // lending follows the new comp value until the user overrides
+    recordWork(res);
+    setScreen("comps");
     showToast("🏠 " + t.cmpDone + " ✓");
   };
 
@@ -936,34 +967,59 @@ export default function TradeTechPro() {
   };
 
   /* ── Shell pieces ── */
-  const LangToggle = () => (
-    <div className="flex rounded-full overflow-hidden" style={{ border: `1.5px solid ${C.line}` }}>
+  const LangToggle = ({ onDark = false }) => (
+    <div className="flex rounded-full overflow-hidden" style={{ border: `1.5px solid ${onDark ? "rgba(255,255,255,.28)" : C.line}` }}>
       {["es", "en"].map(l => (
         <button key={l} onClick={() => setLang(l)} className="px-3 py-1 text-xs font-bold uppercase"
-          style={{ background: lang === l ? C.navy : "#fff", color: lang === l ? "#fff" : C.slate, border: "none" }}>{l}</button>
+          style={{
+            background: lang === l ? (onDark ? C.orange : C.navy) : (onDark ? "transparent" : "#fff"),
+            color: lang === l ? (onDark ? C.navy : "#fff") : (onDark ? "rgba(255,255,255,.8)" : C.slate),
+            border: "none",
+          }}>{l}</button>
       ))}
     </div>
   );
 
   const Header = ({ title, back }) => (
-    <div className="flex items-center gap-3 px-5 pt-5 pb-3">
-      {back && <button onClick={back} className="text-2xl font-bold" style={{ color: C.navy, background: "none", border: "none" }}>‹</button>}
-      <Logo size={30} />
-      <span className="flex-1 font-bold text-lg truncate" style={{ color: C.navy, fontFamily: "'Barlow Condensed', sans-serif", fontSize: 22 }}>{title}</span>
-      <LangToggle />
+    <div className="flex items-center gap-3 px-5 pt-4 pb-3" style={{ background: C.navy }}>
+      {back && <button onClick={back} className="text-2xl font-bold" style={{ color: "#fff", background: "none", border: "none" }}>‹</button>}
+      <Logo size={28} color="#fff" />
+      <span className="flex-1 font-bold text-lg truncate" style={{ color: "#fff", fontWeight: 800, letterSpacing: 0.3 }}>{title}</span>
+      <LangToggle onDark />
     </div>
   );
 
-  const BottomNav = () => (
-    <div className="flex justify-around items-center py-2 px-2" style={{ background: "#fff", borderTop: `1px solid ${C.line}` }}>
-      {[["home", "🏠", t.home], ["jobs", "🔨", t.jobs], ["payments", "💵", t.payments], ["customers", "👤", t.customers]].map(([s, icon, label]) => (
-        <button key={s} onClick={() => setScreen(s)} className="flex flex-col items-center gap-0.5 px-3 py-1 rounded-lg" style={{ background: "none", border: "none" }}>
-          <span className="text-xl">{icon}</span>
-          <span className="text-xs font-bold" style={{ color: screen === s ? C.orange : C.slate }}>{label}</span>
-        </button>
-      ))}
+  /* Quick Comp brand bar shown atop the primary tab screens */
+  const BrandHeader = () => (
+    <div className="relative flex items-center justify-center px-5 pt-4 pb-3" style={{ background: C.navy }}>
+      <img src="/quick-comp-lockup-white.png" alt="Quick Comp" draggable={false} style={{ height: 46, objectFit: "contain", display: "block" }} />
+      <div className="absolute" style={{ right: 16, top: "50%", transform: "translateY(-50%)" }}><LangToggle onDark /></div>
     </div>
   );
+
+  const BottomNav = () => {
+    const items = [
+      ["comps", lang === "es" ? "Comps" : "Comps"],
+      ["lending", lang === "es" ? "Crédito" : "Lending"],
+      ["tax", lang === "es" ? "Impuestos" : "Tax"],
+      ["workspace", lang === "es" ? "Trabajo" : "Workspace"],
+    ];
+    return (
+      <div className="flex justify-around items-center gap-1.5 px-2 py-2" style={{ background: "#fff", borderTop: `1px solid ${C.line}` }}>
+        {items.map(([s, label], i) => {
+          const on = screen === s;
+          return (
+            <button key={s} onClick={() => setScreen(s)}
+              className="flex-1 flex flex-col items-center gap-0.5 py-1.5 rounded-2xl"
+              style={{ background: on ? C.navy : "transparent", border: "none" }}>
+              <span className="text-xs font-extrabold" style={{ color: on ? C.orange : C.slate, letterSpacing: 0.5 }}>{`0${i + 1}`}</span>
+              <span className="text-[11px] font-bold uppercase truncate" style={{ color: on ? "#fff" : C.slate, letterSpacing: 0.5 }}>{label}</span>
+            </button>
+          );
+        })}
+      </div>
+    );
+  };
 
   /* ── Screens ── */
   const Onboard = () => (
@@ -1083,14 +1139,14 @@ export default function TradeTechPro() {
     return (
       <div className="flex-1 px-5 pt-8">
         <div className="flex justify-center mb-3"><Logo size={56} /></div>
-        <h2 className="text-center font-extrabold mb-6" style={{ color: C.navy, fontFamily: "'Barlow Condensed', sans-serif", fontSize: 30 }}>{t.whichTrade}</h2>
+        <h2 className="text-center font-extrabold mb-6" style={{ color: C.navy, fontFamily: "'Inter', sans-serif", fontSize: 30 }}>{t.whichTrade}</h2>
         <div className="grid grid-cols-2 gap-3">
           {trades.map(([key, icon, label, active]) => (
             <button key={key} onClick={() => { if (active) { setTrade(key); saveProfile({ trade: key }); setScreen("home"); } }}
               className="rounded-2xl p-5 flex flex-col items-center gap-2 active:scale-95 transition-transform"
               style={{ background: "#fff", border: active ? `2px solid ${C.orange}` : `1.5px solid ${C.line}`, opacity: active ? 1 : 0.55 }}>
               <span className="text-4xl">{icon}</span>
-              <span className="font-bold" style={{ color: C.navy, fontFamily: "'Barlow Condensed', sans-serif", fontSize: 19 }}>{label}</span>
+              <span className="font-bold" style={{ color: C.navy, fontFamily: "'Inter', sans-serif", fontSize: 19 }}>{label}</span>
               {!active && <span className="text-xs font-semibold" style={{ color: C.slate }}>{t.soon}</span>}
             </button>
           ))}
@@ -1105,14 +1161,14 @@ export default function TradeTechPro() {
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <Logo size={34} color="#fff" />
-            <span className="font-extrabold" style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: 21 }}><span style={{ color: C.orange }}>ALTO</span> <span className="text-white">PRO</span></span>
+            <span className="font-extrabold" style={{ fontFamily: "'Inter', sans-serif", fontSize: 21, letterSpacing: 1 }}><span className="text-white">QUICK</span> <span style={{ color: C.orange }}>COMP</span></span>
           </div>
           <div className="flex items-center gap-2">
-            <LangToggle />
+            <LangToggle onDark />
             <button onClick={() => setScreen("settings")} className="text-lg" style={{ background: "none", border: "none", opacity: 0.8 }}>⚙️</button>
           </div>
         </div>
-        <p className="text-white font-bold text-2xl" style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: 28 }}>{t.hello}, {userName || "Rolando"} 👋</p>
+        <p className="text-white font-bold text-2xl" style={{ fontFamily: "'Inter', sans-serif", fontSize: 28 }}>{t.hello}, {userName || "Rolando"} 👋</p>
         <div className="flex items-center justify-between">
           <p className="text-sm font-semibold" style={{ color: "#9DA8C4" }}>
             {t.theyOwe}: <span style={{ color: C.orange }}>{fmt(owed)}</span> · {jobs.filter(j => j.status !== "paid").length} {t.jobs.toLowerCase()}
@@ -1125,12 +1181,12 @@ export default function TradeTechPro() {
       </div>
       {(trade === "roofing" || trade === "fence") && (
         <div className="px-5 pt-4">
-          <button onClick={() => { setAddrQ(""); setPlaceSugs(null); setLookup(null); setScreen("roofAddress"); }}
+          <button onClick={() => { setAddrQ(""); setPlaceSugs(null); setLookup(null); setScreen("comps"); }}
             className="w-full rounded-2xl flex items-center gap-3 px-4 py-4 active:scale-95 transition-transform"
             style={{ background: "#fff", border: `2px solid ${C.orange}`, boxShadow: "0 4px 14px rgba(248,180,8,.18)" }}>
             <span className="text-2xl">🛰️</span>
             <span className="text-left">
-              <span className="block font-extrabold" style={{ color: C.navy, fontFamily: "'Barlow Condensed',sans-serif", fontSize: 20 }}>{trade === "fence" ? t.measureFence : t.measureTitle}</span>
+              <span className="block font-extrabold" style={{ color: C.navy, fontFamily: "'Inter', sans-serif", fontSize: 20 }}>{trade === "fence" ? t.measureFence : t.measureTitle}</span>
               <span className="block text-sm font-semibold" style={{ color: C.slate }}>{t.searchAddress}</span>
             </span>
             <span className="ml-auto text-xl" style={{ color: C.orange }}>→</span>
@@ -1143,7 +1199,7 @@ export default function TradeTechPro() {
             className="w-full rounded-2xl flex items-center gap-3 px-4 py-4 active:scale-95 transition-transform"
             style={{ background: newLeadCount > 0 ? C.navy : "#fff", border: newLeadCount > 0 ? "none" : `1.5px solid ${C.line}`, boxShadow: newLeadCount > 0 ? "0 6px 16px rgba(16,27,48,.3)" : "none" }}>
             <span className="text-2xl">📥</span>
-            <span className="font-extrabold" style={{ color: newLeadCount > 0 ? "#fff" : C.navy, fontFamily: "'Barlow Condensed',sans-serif", fontSize: 20 }}>{t.leads}</span>
+            <span className="font-extrabold" style={{ color: newLeadCount > 0 ? "#fff" : C.navy, fontFamily: "'Inter', sans-serif", fontSize: 20 }}>{t.leads}</span>
             {newLeadCount > 0 && (
               <span className="ml-auto rounded-full px-3 py-1 text-sm font-extrabold" style={{ background: C.orange, color: "#fff" }}>{newLeadCount} {t.leadNew}</span>
             )}
@@ -1153,7 +1209,7 @@ export default function TradeTechPro() {
       )}
       <div className="px-5 pt-5 grid grid-cols-2 gap-3">
         {[
-          ["➕", t.newEstimate, () => { if (trade === "roofing" || trade === "fence") { setAddrQ(""); setPlaceSugs(null); setLookup(null); setScreen("roofAddress"); } else setScreen("calc"); }, C.orange, "#fff"],
+          ["➕", t.newEstimate, () => { if (trade === "roofing" || trade === "fence") { setAddrQ(""); setPlaceSugs(null); setLookup(null); setScreen("comps"); } else setScreen("calc"); }, C.orange, "#fff"],
           ["🧮", t.calculator, () => setScreen("calc"), "#fff", C.navy],
           ["🔨", t.jobs.toUpperCase(), () => setScreen("jobs"), "#fff", C.navy],
           ["💵", t.payments, () => setScreen("payments"), "#fff", C.navy],
@@ -1161,7 +1217,7 @@ export default function TradeTechPro() {
           <button key={i} onClick={fn} className="rounded-2xl flex flex-col items-center justify-center gap-2 active:scale-95 transition-transform"
             style={{ background: bg, color: fg, height: 110, border: bg === "#fff" ? `1.5px solid ${C.line}` : "none", boxShadow: bg !== "#fff" ? "0 6px 16px rgba(248,180,8,.35)" : "none" }}>
             <span className="text-3xl">{icon}</span>
-            <span className="font-extrabold tracking-wide" style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: 18 }}>{label}</span>
+            <span className="font-extrabold tracking-wide" style={{ fontFamily: "'Inter', sans-serif", fontSize: 18 }}>{label}</span>
           </button>
         ))}
       </div>
@@ -1180,12 +1236,12 @@ export default function TradeTechPro() {
           className="w-full rounded-2xl flex items-center gap-3 px-4 py-4 active:scale-95 transition-transform"
           style={{ background: "#fff", border: `1.5px dashed ${C.orange}` }}>
           <span className="text-2xl">🎤</span>
-          <span className="font-bold" style={{ color: C.navy, fontFamily: "'Barlow Condensed',sans-serif", fontSize: 19 }}>{t.quickInvoice}</span>
+          <span className="font-bold" style={{ color: C.navy, fontFamily: "'Inter', sans-serif", fontSize: 19 }}>{t.quickInvoice}</span>
         </button>
         <button onClick={() => setScreen("ai")} className="w-full rounded-2xl flex items-center gap-3 px-4 py-4 active:scale-95 transition-transform"
           style={{ background: "#fff", border: `1.5px dashed ${C.orange}` }}>
           <span className="text-2xl">🎙️</span>
-          <span className="font-bold" style={{ color: C.navy, fontFamily: "'Barlow Condensed',sans-serif", fontSize: 19 }}>{t.askTTP}</span>
+          <span className="font-bold" style={{ color: C.navy, fontFamily: "'Inter', sans-serif", fontSize: 19 }}>{t.askTTP}</span>
           <span className="ml-auto text-sm font-semibold" style={{ color: C.orange }}>AI</span>
         </button>
       </div>
@@ -1207,7 +1263,7 @@ export default function TradeTechPro() {
         {[[t.cubicYards, calc.yards.toFixed(2)], [t.withWaste, calc.withWaste.toFixed(2)], [t.order, calc.orderY + " yd³"], [t.trucks + " (10 yd³)", calc.trucks]].map(([k, v]) => (
           <div key={k} className="flex justify-between py-1">
             <span className="text-sm font-semibold" style={{ color: "#9DA8C4" }}>{k}</span>
-            <span className="font-extrabold text-white" style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: 20 }}>{v}</span>
+            <span className="font-extrabold text-white" style={{ fontFamily: "'Inter', sans-serif", fontSize: 20 }}>{v}</span>
           </div>
         ))}
       </div>
@@ -1220,8 +1276,8 @@ export default function TradeTechPro() {
         <div className="flex justify-between py-1"><span className="text-sm font-semibold" style={{ color: C.slate }}>{t.material} ({calc.orderY} yd³)</span><span className="font-bold" style={{ color: C.navy }}>{fmt(calc.mat)}</span></div>
         <div className="flex justify-between py-1"><span className="text-sm font-semibold" style={{ color: C.slate }}>{t.labor} ({calc.sqft} sq ft)</span><span className="font-bold" style={{ color: C.navy }}>{fmt(calc.lab)}</span></div>
         <div className="flex justify-between pt-2 mt-1" style={{ borderTop: `1.5px solid ${C.line}` }}>
-          <span className="font-extrabold" style={{ color: C.navy, fontFamily: "'Barlow Condensed',sans-serif", fontSize: 20 }}>{t.estTotal}</span>
-          <span className="font-extrabold" style={{ color: C.orange, fontFamily: "'Barlow Condensed',sans-serif", fontSize: 24 }}>{fmt(calc.total)}</span>
+          <span className="font-extrabold" style={{ color: C.navy, fontFamily: "'Inter', sans-serif", fontSize: 20 }}>{t.estTotal}</span>
+          <span className="font-extrabold" style={{ color: C.orange, fontFamily: "'Inter', sans-serif", fontSize: 24 }}>{fmt(calc.total)}</span>
         </div>
       </div>
       <Btn onClick={() => {
@@ -1332,7 +1388,7 @@ export default function TradeTechPro() {
             <span className="text-5xl block mb-3">🏘️</span>
             <p className="font-extrabold mb-2" style={{ color: QC.navyDeep, fontSize: 18 }}>{lang === "es" ? "Listo para tu informe de valor" : "Ready to build a clear value story"}</p>
             <p className="mx-auto" style={{ color: "#66759D", fontSize: 13, lineHeight: 1.6, maxWidth: 320 }}>{t.cmpStart}</p>
-            <button onClick={() => { setAddrQ(""); setPlaceSugs(null); setLookup(null); setScreen("roofAddress"); }} className="mt-4 active:translate-y-px transition-transform"
+            <button onClick={() => { setAddrQ(""); setPlaceSugs(null); setLookup(null); setScreen("comps"); }} className="mt-4 active:translate-y-px transition-transform"
               style={{ background: QC.navy, color: "#fff", border: "none", borderRadius: 12, padding: "13px 22px", fontSize: 15, fontWeight: 700 }}>
               {lang === "es" ? "Ver valor de mercado" : "Get Market Value"}
             </button>
@@ -1478,7 +1534,11 @@ export default function TradeTechPro() {
           )}
 
           <p className="mb-3" style={{ color: "#66759D", fontSize: 11, fontWeight: 600, lineHeight: 1.5 }}>⚠️ {t.cmpDisc}</p>
-          <button onClick={() => { setAddrQ(""); setPlaceSugs(null); setLookup(null); setScreen("roofAddress"); }} className="w-full active:translate-y-px transition-transform"
+          <button onClick={() => setScreen("report")} className="w-full active:translate-y-px transition-transform mb-2.5"
+            style={{ background: `linear-gradient(135deg,${QC.gold},#BD8426)`, color: QC.navyDeep, border: "none", borderRadius: 12, padding: 15, fontSize: 16, fontWeight: 800, letterSpacing: "0.01em", boxShadow: "0 4px 14px rgba(189,132,38,0.35)" }}>
+            📄 {lang === "es" ? "Crear informe para el cliente" : "Create client report"}
+          </button>
+          <button onClick={() => { setAddrQ(""); setPlaceSugs(null); setLookup(null); setScreen("comps"); }} className="w-full active:translate-y-px transition-transform"
             style={{ background: QC.navy, color: "#fff", border: "none", borderRadius: 12, padding: 15, fontSize: 16, fontWeight: 700, boxShadow: "0 4px 14px rgba(27,42,92,0.3)" }}>
             {t.cmpNew}
           </button>
@@ -1487,9 +1547,266 @@ export default function TradeTechPro() {
     );
   };
 
+  /* Shared empty-state for tabs that need a searched property first */
+  const NeedProperty = ({ title, sub }) => (
+    <div className="flex-1 px-5 pt-4" style={{ background: QC.bg }}>
+      <div className="rounded-2xl text-center" style={{ background: "#fff", border: "1px dashed #CAD5E7", padding: "34px 22px" }}>
+        <span className="text-5xl block mb-3">🏠</span>
+        <p className="font-extrabold mb-2" style={{ color: QC.navyDeep, fontSize: 18 }}>{title}</p>
+        <p className="mx-auto mb-4" style={{ color: "#66759D", fontSize: 13, lineHeight: 1.6, maxWidth: 320 }}>{sub}</p>
+        <button onClick={() => { setAddrQ(""); setPlaceSugs(null); setLookup(null); setScreen("comps"); }}
+          style={{ background: QC.navy, color: "#fff", border: "none", borderRadius: 12, padding: "13px 22px", fontSize: 15, fontWeight: 700 }}>
+          {lang === "es" ? "Buscar una dirección" : "Search an address"}
+        </button>
+      </div>
+    </div>
+  );
+
+  const Slider = ({ label, value, display, min, max, step, onChange }) => (
+    <div className="mb-3.5">
+      <div className="flex justify-between items-baseline mb-1.5">
+        <span style={{ color: QC.muted2, fontSize: 11, fontWeight: 700, letterSpacing: "0.04em", textTransform: "uppercase" }}>{label}</span>
+        <span className="font-extrabold" style={{ color: QC.navy, fontSize: 15 }}>{display}</span>
+      </div>
+      <input type="range" min={min} max={max} step={step} value={value}
+        onChange={(e) => onChange(parseFloat(e.target.value))}
+        className="w-full" style={{ accentColor: QC.gold, height: 4 }} />
+    </div>
+  );
+
+  /* ── 02 · LENDING — monthly payment estimate ── */
+  const Lending = () => {
+    const m = (v) => "$" + Math.round(v).toLocaleString("en-US");
+    const price = lendPrice != null ? lendPrice : (lookup?.value || 350000);
+    const down = Math.round(price * lendDownPct / 100);
+    const principal = Math.max(price - down, 0);
+    const r = lendRate / 100 / 12;
+    const n = lendTerm * 12;
+    const pi = r > 0 ? principal * r / (1 - Math.pow(1 + r, -n)) : principal / n;
+    const taxMo = price * (lendTaxPct / 100) / 12;
+    const insMo = lendInsYr / 12;
+    const monthly = pi + taxMo + insMo;
+    return (
+      <div className="flex-1 overflow-y-auto pb-6" style={{ background: QC.bg }}>
+        <div className="px-5 pt-4">
+          <div className="rounded-2xl p-5 mb-3" style={{ background: QC.cardGrad, boxShadow: "0 18px 38px rgba(17,27,66,0.18)" }}>
+            <p style={{ color: QC.goldHi, fontSize: 11, fontWeight: 900, letterSpacing: "0.16em", textTransform: "uppercase" }}>{lang === "es" ? "Pago mensual estimado" : "Monthly payment estimate"}</p>
+            <p className="text-white" style={{ fontSize: 42, lineHeight: 1, fontWeight: 900, margin: "8px 0" }}>{m(monthly)}<span style={{ fontSize: 18, fontWeight: 700, color: "rgba(255,255,255,.7)" }}>/{lang === "es" ? "mes" : "mo"}</span></p>
+            <p style={{ color: "rgba(255,255,255,0.76)", fontSize: 13, fontWeight: 600, lineHeight: 1.5 }}>
+              {lang === "es" ? "Ajusta precio, enganche, tasa, impuestos y seguro para responder al instante." : "Slide price, down payment, rate, taxes, and insurance to answer buyer questions fast."}
+            </p>
+            <div className="flex gap-2 mt-3">
+              {[["P&I", m(pi)], [lang === "es" ? "Impuesto" : "Tax", m(taxMo)], [lang === "es" ? "Seguro" : "Insurance", m(insMo)]].map(([l, v]) => (
+                <div key={l} className="flex-1 rounded-xl text-center" style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.10)", padding: "8px 4px" }}>
+                  <p className="text-white font-extrabold" style={{ fontSize: 13 }}>{v}</p>
+                  <p style={{ color: QC.goldHi, fontSize: 8, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", marginTop: 2 }}>{l}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="rounded-2xl p-4" style={{ background: "#fff", border: `1px solid ${QC.line}`, boxShadow: "0 2px 8px rgba(27,42,92,0.06)" }}>
+            <p style={{ color: QC.gold, fontSize: 10, fontWeight: 900, letterSpacing: "0.18em", textTransform: "uppercase", marginBottom: 14 }}>{lang === "es" ? "Calculadora de financiamiento" : "Lending calculator"}</p>
+            <Slider label={lang === "es" ? "Precio" : "Home price"} value={price} display={m(price)} min={50000} max={2000000} step={5000} onChange={setLendPrice} />
+            <Slider label={lang === "es" ? "Enganche" : "Down payment"} value={lendDownPct} display={`${lendDownPct}% · ${m(down)}`} min={0} max={50} step={1} onChange={setLendDownPct} />
+            <Slider label={lang === "es" ? "Tasa de interés" : "Interest rate"} value={lendRate} display={`${lendRate.toFixed(2)}%`} min={2} max={12} step={0.05} onChange={setLendRate} />
+            <Slider label={lang === "es" ? "Plazo" : "Loan term"} value={lendTerm} display={`${lendTerm} ${lang === "es" ? "años" : "yr"}`} min={10} max={30} step={5} onChange={setLendTerm} />
+            <Slider label={lang === "es" ? "Impuesto predial / año" : "Property tax / yr"} value={lendTaxPct} display={`${lendTaxPct.toFixed(2)}%`} min={0} max={3} step={0.05} onChange={setLendTaxPct} />
+            <Slider label={lang === "es" ? "Seguro / año" : "Insurance / yr"} value={lendInsYr} display={m(lendInsYr)} min={0} max={6000} step={100} onChange={setLendInsYr} />
+            {lookup?.value
+              ? <p className="mt-1" style={{ color: QC.muted, fontSize: 11, fontWeight: 600 }}>{lang === "es" ? "Precio inicial tomado del valor de mercado estimado." : "Starting price taken from the estimated market value."}</p>
+              : <p className="mt-1" style={{ color: QC.muted, fontSize: 11, fontWeight: 600 }}>{lang === "es" ? "Busca una propiedad para empezar con su valor de mercado." : "Search a property to start from its market value."}</p>}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  /* ── 03 · TAX — tax snapshot ── */
+  const Tax = () => {
+    const subj = lookup?.subject || {};
+    if (!lookup?.value) return <NeedProperty title={lang === "es" ? "Resumen de impuestos" : "Tax snapshot"} sub={lang === "es" ? "Busca una propiedad para ver dueño, valor catastral, año fiscal y datos clave." : "Search a property to see owner, assessed value, tax year, and key facts."} />;
+    const num = (n) => Number(n).toLocaleString("en-US");
+    const assessed = Math.round((lookup.value || 0) * 0.86);
+    const annualTax = Math.round(assessed * 0.011);
+    const facts = [["🛏️", subj.beds ?? "—", t.beds], ["🛁", subj.baths ?? "—", t.baths], ["📐", subj.sqft ? num(subj.sqft) : "—", t.cmpSqft], ["📅", subj.yearBuilt ?? "—", t.builtIn]];
+    const rows = [
+      [lang === "es" ? "Dueño registrado" : "Owner of record", subj.owner || (lang === "es" ? "Según registro público" : "Per public record")],
+      [lang === "es" ? "Valor catastral" : "Assessed value", "$" + num(assessed)],
+      [lang === "es" ? "Impuesto anual estimado" : "Est. annual tax", "$" + num(annualTax)],
+      [lang === "es" ? "Año fiscal" : "Tax year", String(new Date().getFullYear())],
+    ];
+    return (
+      <div className="flex-1 overflow-y-auto pb-6" style={{ background: QC.bg }}>
+        <div className="px-5 pt-4">
+          <div className="rounded-2xl p-4 mb-3" style={{ background: "#fff", border: `1px solid ${QC.line}`, boxShadow: "0 2px 8px rgba(27,42,92,0.06)" }}>
+            <p style={{ color: QC.gold, fontSize: 10, fontWeight: 900, letterSpacing: "0.18em", textTransform: "uppercase", marginBottom: 6 }}>{lang === "es" ? "Resumen de impuestos" : "Tax snapshot"}</p>
+            <p className="font-extrabold mb-3" style={{ color: QC.navyDeep, fontSize: 16, lineHeight: 1.3 }}>{subj.address || lookup.addr}</p>
+            {rows.map(([k, v], i) => (
+              <div key={k} className="flex justify-between py-2" style={{ borderTop: i ? `1px solid ${QC.line}` : "none" }}>
+                <span style={{ color: QC.muted2, fontSize: 13, fontWeight: 600 }}>{k}</span>
+                <span className="font-extrabold" style={{ color: QC.navy, fontSize: 13 }}>{v}</span>
+              </div>
+            ))}
+          </div>
+          <div className="rounded-2xl p-4 mb-3" style={{ background: "#fff", border: `1px solid ${QC.line}`, boxShadow: "0 2px 8px rgba(27,42,92,0.06)" }}>
+            <p style={{ color: QC.muted2, fontSize: 9, fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", marginBottom: 8 }}>{lang === "es" ? "Datos clave de la propiedad" : "Key property facts"}</p>
+            <div className="grid grid-cols-4 gap-2">
+              {facts.map(([icon, v, label]) => (
+                <div key={label} style={{ background: QC.bg, border: `1px solid ${QC.line}`, borderRadius: 10, padding: "10px 6px", textAlign: "center" }}>
+                  <p className="font-extrabold" style={{ color: QC.navy, fontSize: 15 }}>{v}</p>
+                  <p style={{ color: QC.muted, fontSize: 8, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", marginTop: 3 }}>{icon} {label}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="flex items-center gap-2 rounded-xl px-3 py-2.5" style={{ background: QC.bg, border: `1px solid ${QC.line}` }}>
+            <span style={{ color: QC.green }}>✓</span>
+            <span style={{ color: QC.body, fontSize: 12, fontWeight: 600 }}>{lang === "es" ? "Resumen fiscal listo para el cliente" : "Client-ready tax summary available"}</span>
+          </div>
+          <p className="mt-3" style={{ color: "#66759D", fontSize: 11, fontWeight: 600, lineHeight: 1.5 }}>⚠️ {lang === "es" ? "Valores catastrales estimados — confirma con el condado." : "Assessed values are estimates — confirm with the county."}</p>
+        </div>
+      </div>
+    );
+  };
+
+  /* ── 04 · WORKSPACE — saved work + Realtor branding ── */
+  const Workspace = () => {
+    const reopen = (it) => {
+      setLookup(it);
+      setLendPrice(null);
+      setScreen("comps");
+    };
+    return (
+      <div className="flex-1 overflow-y-auto pb-6" style={{ background: QC.bg }}>
+        <div className="px-5 pt-4">
+          <div className="rounded-2xl p-5 mb-3" style={{ background: QC.cardGrad, boxShadow: "0 18px 38px rgba(17,27,66,0.18)" }}>
+            <p style={{ color: QC.goldHi, fontSize: 11, fontWeight: 900, letterSpacing: "0.16em", textTransform: "uppercase" }}>{lang === "es" ? "Trabajo guardado" : "Saved work"}</p>
+            <p className="text-white font-extrabold" style={{ fontSize: 26, margin: "4px 0 6px" }}>{savedWork.length} {lang === "es" ? (savedWork.length === 1 ? "elemento reciente" : "elementos recientes") : (savedWork.length === 1 ? "recent item" : "recent items")}</p>
+            <p style={{ color: "rgba(255,255,255,0.76)", fontSize: 13, fontWeight: 600, lineHeight: 1.5 }}>{lang === "es" ? "Reabre comps, estimados de financiamiento e impuestos sin empezar de cero." : "Reopen past comps, lending estimates, and tax snapshots without starting over."}</p>
+          </div>
+
+          {savedWork.length === 0 ? (
+            <div className="rounded-2xl text-center mb-3" style={{ background: "#fff", border: "1px dashed #CAD5E7", padding: "26px 22px" }}>
+              <p style={{ color: "#66759D", fontSize: 13, fontWeight: 600 }}>{lang === "es" ? "Tus búsquedas de propiedades aparecerán aquí." : "Your property searches will show up here."}</p>
+            </div>
+          ) : (
+            <div className="mb-3">
+              {savedWork.map((it, i) => (
+                <button key={it.addr + i} onClick={() => reopen(it)} className="w-full flex items-center gap-3 rounded-2xl p-3.5 mb-2 text-left active:scale-[0.99] transition-transform"
+                  style={{ background: "#fff", border: `1px solid ${QC.line}`, boxShadow: "0 2px 8px rgba(27,42,92,0.06)" }}>
+                  <span className="shrink-0 flex items-center justify-center rounded-xl font-extrabold" style={{ width: 40, height: 40, background: QC.bg, border: `1px solid ${QC.line}`, color: QC.navy, fontSize: 13 }}>{`0${i + 1}`.slice(-2)}</span>
+                  <span className="flex-1 min-w-0">
+                    <span className="block font-bold truncate" style={{ color: QC.navyDeep, fontSize: 14 }}>{it.addr || "—"}</span>
+                    <span className="block" style={{ color: QC.muted2, fontSize: 11, fontWeight: 600 }}>{lang === "es" ? "Comp · valor" : "Comp · value"} {it.value ? "$" + Number(it.value).toLocaleString("en-US") : "—"}</span>
+                  </span>
+                  <span style={{ color: QC.gold, fontSize: 18 }}>›</span>
+                </button>
+              ))}
+            </div>
+          )}
+
+          <div className="rounded-2xl p-4" style={{ background: "#fff", border: `1px solid ${QC.line}`, boxShadow: "0 2px 8px rgba(27,42,92,0.06)" }}>
+            <p style={{ color: QC.gold, fontSize: 10, fontWeight: 900, letterSpacing: "0.18em", textTransform: "uppercase", marginBottom: 4 }}>{lang === "es" ? "Perfil del agente" : "Realtor profile"}</p>
+            <p className="font-extrabold mb-3" style={{ color: QC.navyDeep, fontSize: 17 }}>{lang === "es" ? "Marca de tus informes" : "Client report branding"}</p>
+            <div className="flex items-center gap-2 rounded-xl px-3 py-2.5 mb-3" style={{ background: QC.bg, border: `1px solid ${QC.line}` }}>
+              <span style={{ color: QC.gold }}>✦</span>
+              <span style={{ color: QC.body, fontSize: 12, fontWeight: 600 }}>{lang === "es" ? "Marca personal activa — tus informes la usan." : "Personal branding is active — reports use it."}</span>
+            </div>
+            <div className="rounded-2xl p-3.5 mb-3 flex items-center gap-3" style={{ background: QC.headGrad }}>
+              <span className="shrink-0 flex items-center justify-center rounded-xl font-extrabold" style={{ width: 40, height: 40, background: "rgba(255,255,255,0.10)", border: "1px solid rgba(255,255,255,0.18)", color: QC.goldHi, fontSize: 17 }}>{(userName || "R")[0].toUpperCase()}</span>
+              <span className="min-w-0">
+                <span className="block" style={{ color: QC.goldHi, fontSize: 8, fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase" }}>{lang === "es" ? "Presentado por" : "Presented by"}</span>
+                <span className="block font-extrabold text-white truncate" style={{ fontSize: 15 }}>{userName || (lang === "es" ? "Tu nombre" : "Your name")}{bizName ? ` · ${bizName}` : ""}</span>
+                {bizEmail && <span className="block truncate" style={{ color: "rgba(255,255,255,0.7)", fontSize: 11 }}>{bizEmail}</span>}
+              </span>
+            </div>
+            <input value={userName} onChange={(e) => { setUserName(e.target.value); saveProfile({ name: e.target.value }); }} placeholder={lang === "es" ? "Nombre del agente" : "Realtor name"}
+              className="w-full rounded-xl px-3.5 py-3 mb-2 font-semibold outline-none" style={{ background: QC.bg, border: `1.5px solid ${QC.line}`, color: QC.navy, fontSize: 14 }} />
+            <input value={bizName} onChange={(e) => { setBizName(e.target.value); saveProfile({ biz: e.target.value }); }} placeholder={lang === "es" ? "Inmobiliaria / Brokerage" : "Brokerage"}
+              className="w-full rounded-xl px-3.5 py-3 font-semibold outline-none" style={{ background: QC.bg, border: `1.5px solid ${QC.line}`, color: QC.navy, fontSize: 14 }} />
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  /* ── Client CMA report (printable / shareable PDF view) ── */
+  const Report = () => {
+    const R = lookup;
+    if (!R || !R.value) return <NeedProperty title={lang === "es" ? "Informe del cliente" : "Client report"} sub={lang === "es" ? "Busca una propiedad para generar un informe con comparables y valor de mercado." : "Search a property to generate a report with comparables and a market value."} />;
+    const subj = R.subject || {};
+    const comps = (Array.isArray(R.comps) ? R.comps : []).filter((c) => !c.excludedAsOutlier).slice(0, 6);
+    const n = R.compsUsed || comps.length;
+    const hasRange = R.low != null && R.high != null;
+    const narrative = lang === "es"
+      ? `El conjunto de comparables respalda un valor de mercado cercano a ${fmt(R.value)}${hasRange ? `, dentro de un rango de ${fmt(R.low)}–${fmt(R.high)}` : ""}. El mayor respaldo proviene de ${n} ${n === 1 ? "venta cercana" : "ventas cercanas"} de tamaño y condición similares${R.avgPpsf ? `, con un promedio de ${fmt(R.avgPpsf)} por pie²` : ""}.`
+      : `The comparable set supports an indicated market value near ${fmt(R.value)}${hasRange ? `, within a ${fmt(R.low)}–${fmt(R.high)} range` : ""}. The strongest support comes from ${n} nearby ${n === 1 ? "sale" : "sales"} of similar size and condition${R.avgPpsf ? `, averaging ${fmt(R.avgPpsf)} per square foot` : ""}.`;
+    const share = async () => {
+      const text = `${subj.address || R.addr} — ${fmt(R.value)}${hasRange ? ` (${fmt(R.low)}–${fmt(R.high)})` : ""}\n${narrative}`;
+      try {
+        if (navigator.share) await navigator.share({ title: "Quick Comp — CMA", text });
+        else { await navigator.clipboard.writeText(text); showToast(lang === "es" ? "Copiado ✓" : "Copied ✓"); }
+      } catch { /* user dismissed */ }
+    };
+    return (
+      <div className="flex-1 overflow-y-auto pb-6" style={{ background: QC.bg }}>
+        <div className="px-5 pt-4">
+          {/* The report document */}
+          <div id="qc-report" className="rounded-2xl overflow-hidden" style={{ background: "#fff", border: `1px solid ${QC.line}`, boxShadow: "0 18px 38px rgba(17,27,66,0.12)" }}>
+            {/* Branded header band */}
+            <div className="flex items-center justify-between gap-3 px-4 py-3.5" style={{ background: QC.headGrad }}>
+              <div className="min-w-0">
+                <p style={{ color: QC.goldHi, fontSize: 8, fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase" }}>{lang === "es" ? "Presentado por" : "Presented by"}</p>
+                <p className="text-white font-extrabold truncate" style={{ fontSize: 14 }}>{userName || (lang === "es" ? "Tu nombre" : "Your name")}</p>
+                {bizName && <p className="truncate" style={{ color: "rgba(255,255,255,0.7)", fontSize: 11 }}>{bizName}</p>}
+              </div>
+              <p className="text-white font-extrabold shrink-0" style={{ fontSize: 13, letterSpacing: "0.03em" }}>{lang === "es" ? "Informe CMA" : "Client CMA Report"}</p>
+            </div>
+            {/* Body */}
+            <div className="px-4 py-4">
+              <p style={{ color: QC.gold, fontSize: 10, fontWeight: 900, letterSpacing: "0.16em", textTransform: "uppercase" }}>{t.cmpValue}</p>
+              <p style={{ color: QC.navyDeep, fontSize: 36, fontWeight: 900, lineHeight: 1, margin: "6px 0" }}>{fmt(R.value)}</p>
+              {hasRange && <p style={{ color: QC.muted2, fontSize: 13, fontWeight: 600 }}>{fmt(R.low)} – {fmt(R.high)} {lang === "es" ? "rango sugerido" : "suggested range"}</p>}
+              <p className="font-bold mt-1.5" style={{ color: QC.navy, fontSize: 13 }}>{subj.address || R.addr}</p>
+
+              {/* Sold comparable support */}
+              <div className="rounded-xl mt-3 px-3.5 py-3" style={{ background: QC.bg, border: `1px solid ${QC.line}` }}>
+                <p style={{ color: QC.navy, fontSize: 12, fontWeight: 800, letterSpacing: "0.02em", marginBottom: 8 }}>{lang === "es" ? "Apoyo de ventas comparables" : "Sold Comparable Support"}</p>
+                {comps.length === 0 && <p style={{ color: QC.muted, fontSize: 12, fontWeight: 600 }}>{lang === "es" ? "Sin comparables disponibles." : "No comparables available."}</p>}
+                {comps.map((c, i) => (
+                  <div key={i} className="flex items-center justify-between gap-3 py-1.5" style={{ borderTop: i ? `1px solid ${QC.line}` : "none" }}>
+                    <span className="truncate" style={{ color: QC.body, fontSize: 12.5, fontWeight: 600 }}>{i + 1}. {c.address}</span>
+                    <span className="shrink-0 font-extrabold" style={{ color: QC.navyDeep, fontSize: 12.5 }}>{fmt(c.soldPrice)}</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* AI-assisted summary */}
+              <div className="rounded-xl mt-3 px-4 py-3.5" style={{ background: QC.cardGrad, border: `1px solid ${QC.gold}55` }}>
+                <p style={{ color: QC.goldHi, fontSize: 9, fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", marginBottom: 6 }}>{lang === "es" ? "Resumen asistido por IA" : "AI-Assisted Summary"}</p>
+                <p className="text-white" style={{ fontSize: 12.5, lineHeight: 1.6, fontWeight: 500 }}>{narrative}</p>
+              </div>
+
+              <p className="mt-3" style={{ color: QC.muted, fontSize: 9.5, fontWeight: 600, lineHeight: 1.5 }}>⚠️ {t.cmpDisc}</p>
+            </div>
+          </div>
+
+          {/* Actions (not printed) */}
+          <div className="no-print flex gap-2 mt-3">
+            <button onClick={() => window.print()} className="flex-1 active:translate-y-px transition-transform"
+              style={{ background: QC.navy, color: "#fff", border: "none", borderRadius: 12, padding: 14, fontSize: 14, fontWeight: 700 }}>🖨️ {lang === "es" ? "Imprimir" : "Print"}</button>
+            <button onClick={share} className="flex-1 active:translate-y-px transition-transform"
+              style={{ background: "#fff", color: QC.navy, border: `1.5px solid ${QC.line}`, borderRadius: 12, padding: 14, fontSize: 14, fontWeight: 700 }}>📤 {lang === "es" ? "Compartir" : "Share"}</button>
+          </div>
+          <p className="no-print text-center mt-3" style={{ color: "#66759D", fontSize: 12, fontWeight: 600 }}>{lang === "es" ? "Comparte, imprime o guarda para después." : "Share, print, or save for later."}</p>
+        </div>
+      </div>
+    );
+  };
+
   const PickCustomer = () => (
     <div className="flex-1 px-5">
-      <p className="font-extrabold mb-4" style={{ color: C.navy, fontFamily: "'Barlow Condensed',sans-serif", fontSize: 26 }}>{t.forWho}</p>
+      <p className="font-extrabold mb-4" style={{ color: C.navy, fontFamily: "'Inter', sans-serif", fontSize: 26 }}>{t.forWho}</p>
       {customers.map(c => (
         <button key={c.id} onClick={() => createEstimate(c.id)} className="w-full rounded-2xl p-4 mb-3 flex items-center gap-3 active:scale-95 transition-transform text-left"
           style={{ background: "#fff", border: `1.5px solid ${C.line}` }}>
@@ -1519,9 +1836,9 @@ export default function TradeTechPro() {
       <div className="flex-1 px-5 flex flex-col">
         <div className="rounded-2xl p-5 text-center mb-4" style={{ background: "#fff", border: `1.5px solid ${C.line}` }}>
           <Logo size={48} />
-          <p className="font-extrabold mt-2" style={{ color: C.navy, fontFamily: "'Barlow Condensed',sans-serif", fontSize: 24 }}>{t.estimate} #{activeJob.inv} {t.ready} ✓</p>
+          <p className="font-extrabold mt-2" style={{ color: C.navy, fontFamily: "'Inter', sans-serif", fontSize: 24 }}>{t.estimate} #{activeJob.inv} {t.ready} ✓</p>
           <p className="font-semibold" style={{ color: C.slate }}>{c.name}</p>
-          <p className="font-extrabold mt-1" style={{ color: C.orange, fontFamily: "'Barlow Condensed',sans-serif", fontSize: 32 }}>{fmt(activeJob.amount)}</p>
+          <p className="font-extrabold mt-1" style={{ color: C.orange, fontFamily: "'Inter', sans-serif", fontSize: 32 }}>{fmt(activeJob.amount)}</p>
           <p className="text-sm" style={{ color: C.slate }}>{activeJob.title[lang]}{trade === "concrete" ? " · " + t.finish : ""}</p>
         </div>
         <div className="grid gap-3">
@@ -1553,7 +1870,7 @@ export default function TradeTechPro() {
             </div>
             <p className="text-sm font-semibold" style={{ color: C.slate }}>{j.title[lang]}</p>
             <div className="flex justify-between mt-1">
-              <span className="font-extrabold" style={{ color: C.navy, fontFamily: "'Barlow Condensed',sans-serif", fontSize: 20 }}>{fmt(j.amount)}</span>
+              <span className="font-extrabold" style={{ color: C.navy, fontFamily: "'Inter', sans-serif", fontSize: 20 }}>{fmt(j.amount)}</span>
               {bal > 0 && j.status !== "estimate" && <span className="text-sm font-bold" style={{ color: j.days >= 7 ? C.red : C.yellow }}>{fmt(bal)} · {j.days}{t.daysShort}</span>}
             </div>
           </button>
@@ -1570,7 +1887,7 @@ export default function TradeTechPro() {
       <div className="flex-1 overflow-y-auto px-5 pb-6">
         <div className="rounded-2xl p-4 mb-3" style={{ background: "#fff", border: `1.5px solid ${C.line}` }}>
           <div className="flex items-center justify-between mb-1">
-            <span className="font-extrabold" style={{ color: C.navy, fontFamily: "'Barlow Condensed',sans-serif", fontSize: 22 }}>{activeJob.title[lang]}</span>
+            <span className="font-extrabold" style={{ color: C.navy, fontFamily: "'Inter', sans-serif", fontSize: 22 }}>{activeJob.title[lang]}</span>
             <StatusPill status={activeJob.status} t={t} />
           </div>
           <p className="font-semibold" style={{ color: C.slate }}>{c.name} · {c.phone}</p>
@@ -1602,7 +1919,7 @@ export default function TradeTechPro() {
         <div className="rounded-2xl overflow-hidden mb-4" style={{ background: "#fff", border: `1.5px solid ${C.line}` }}>
           <div className="px-5 py-4 flex items-center justify-between" style={{ background: C.navy }}>
             <div>
-              <p className="font-extrabold text-white" style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: 20 }}>{(bizName || "SOUTH TEXAS ROOFING").toUpperCase()}</p>
+              <p className="font-extrabold text-white" style={{ fontFamily: "'Inter', sans-serif", fontSize: 20 }}>{(bizName || "SOUTH TEXAS ROOFING").toUpperCase()}</p>
               <p className="text-xs font-semibold" style={{ color: "#9DA8C4" }}>{t.invoice} #{activeJob.inv} · 10 Jun 2026</p>
             </div>
             {logo
@@ -1626,8 +1943,8 @@ export default function TradeTechPro() {
             <div className="flex justify-between py-0.5"><span className="text-sm font-semibold" style={{ color: C.slate }}>{t.tax}</span><span className="font-bold" style={{ color: C.navy }}>$0</span></div>
             <div className="flex justify-between py-0.5"><span className="text-sm font-semibold" style={{ color: C.slate }}>{t.depositRec}</span><span className="font-bold" style={{ color: C.green }}>–{fmt(deposit)}</span></div>
             <div className="flex justify-between pt-2 mt-1" style={{ borderTop: `1.5px solid ${C.line}` }}>
-              <span className="font-extrabold" style={{ color: C.navy, fontFamily: "'Barlow Condensed',sans-serif", fontSize: 20 }}>{t.balance}</span>
-              <span className="font-extrabold" style={{ color: paid ? C.green : C.orange, fontFamily: "'Barlow Condensed',sans-serif", fontSize: 24 }}>{paid ? "✓ " + t.paid : fmt(bal)}</span>
+              <span className="font-extrabold" style={{ color: C.navy, fontFamily: "'Inter', sans-serif", fontSize: 20 }}>{t.balance}</span>
+              <span className="font-extrabold" style={{ color: paid ? C.green : C.orange, fontFamily: "'Inter', sans-serif", fontSize: 24 }}>{paid ? "✓ " + t.paid : fmt(bal)}</span>
             </div>
           </div>
         </div>
@@ -1654,7 +1971,7 @@ export default function TradeTechPro() {
       <div className="flex-1 overflow-y-auto px-5 pb-4">
         <div className="rounded-2xl p-4 mb-4" style={{ background: C.navy }}>
           <p className="text-xs font-bold tracking-widest" style={{ color: "#9DA8C4" }}>{t.theyOwe.toUpperCase()}</p>
-          <p className="font-extrabold text-white" style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: 36 }}>{fmt(owed)}</p>
+          <p className="font-extrabold text-white" style={{ fontFamily: "'Inter', sans-serif", fontSize: 36 }}>{fmt(owed)}</p>
         </div>
         {unpaid.map(j => {
           const c = custOf(j);
@@ -1801,7 +2118,7 @@ export default function TradeTechPro() {
         <p className="text-xs font-bold" style={{ color: C.slate }}>{icon} {label}</p>
         <div className="flex items-center justify-center gap-3 mt-1">
           <button onClick={() => set(Math.max(0, v - 1))} className="w-9 h-9 rounded-full text-lg font-extrabold" style={{ background: C.bg, border: `1.5px solid ${C.line}`, color: C.navy }}>−</button>
-          <span className="font-extrabold w-6" style={{ color: C.navy, fontFamily: "'Barlow Condensed',sans-serif", fontSize: 24 }}>{v}</span>
+          <span className="font-extrabold w-6" style={{ color: C.navy, fontFamily: "'Inter', sans-serif", fontSize: 24 }}>{v}</span>
           <button onClick={() => set(v + 1)} className="w-9 h-9 rounded-full text-lg font-extrabold" style={{ background: C.bg, border: `1.5px solid ${C.line}`, color: C.navy }}>+</button>
         </div>
       </div>
@@ -1836,7 +2153,7 @@ export default function TradeTechPro() {
               })}
               {chains.map((ch, ci) => labels(ch).map((l, i) => (
                 <text key={`c${ci}-${i}`} x={l.x} y={l.y} textAnchor="middle" fontSize="46" fontWeight="800" fill={C.navy}
-                  stroke="#fff" strokeWidth="10" paintOrder="stroke" fontFamily="'Barlow Condensed',sans-serif">{l.ft}′</text>
+                  stroke="#fff" strokeWidth="10" paintOrder="stroke" fontFamily="'Inter', sans-serif">{l.ft}′</text>
               )))}
               {[...fRuns, fCur].map((run, ri) => {
                 const px = proj(run);
@@ -1848,7 +2165,7 @@ export default function TradeTechPro() {
                     {px.map((p, i) => <circle key={i} cx={p[0]} cy={p[1]} r="9" fill="#fff" stroke={C.orange} strokeWidth="4" />)}
                     {labels(run).map((l, i) => (
                       <text key={"f" + i} x={l.x} y={l.y} textAnchor="middle" fontSize="46" fontWeight="800" fill={C.navy}
-                        stroke="#fff" strokeWidth="10" paintOrder="stroke" fontFamily="'Barlow Condensed',sans-serif">{l.ft}′</text>
+                        stroke="#fff" strokeWidth="10" paintOrder="stroke" fontFamily="'Inter', sans-serif">{l.ft}′</text>
                     ))}
                   </g>
                 );
@@ -1869,7 +2186,7 @@ export default function TradeTechPro() {
         <div className="rounded-2xl px-4 py-3 mb-3" style={{ background: C.navy }}>
           <div className="flex items-end justify-between">
             <span className="text-xs font-bold tracking-widest" style={{ color: "#9DA8C4" }}>{t.totalLF.toUpperCase()}</span>
-            <span className="font-extrabold text-white" style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize: 40 }}>{totalLF.toLocaleString()} ft</span>
+            <span className="font-extrabold text-white" style={{ fontFamily: "'Inter', sans-serif", fontSize: 40 }}>{totalLF.toLocaleString()} ft</span>
           </div>
           <p className="text-xs font-semibold" style={{ color: "#9DA8C4" }}>{panels} {t.panels.toLowerCase()} · {posts} {t.posts.toLowerCase()} · {corners} {t.cornerPosts.toLowerCase()}</p>
         </div>
@@ -1887,8 +2204,8 @@ export default function TradeTechPro() {
           ))}
         </div>
         <div className="rounded-2xl px-4 py-3 mb-3 flex items-center justify-between" style={{ background: "#fff", border: `1.5px solid ${C.line}` }}>
-          <span className="font-extrabold" style={{ color: C.navy, fontFamily: "'Barlow Condensed',sans-serif", fontSize: 20 }}>{t.estTotal}</span>
-          <span className="font-extrabold" style={{ color: C.orange, fontFamily: "'Barlow Condensed',sans-serif", fontSize: 28 }}>{fmt(total)}</span>
+          <span className="font-extrabold" style={{ color: C.navy, fontFamily: "'Inter', sans-serif", fontSize: 20 }}>{t.estTotal}</span>
+          <span className="font-extrabold" style={{ color: C.orange, fontFamily: "'Inter', sans-serif", fontSize: 28 }}>{fmt(total)}</span>
         </div>
         <Btn disabled={totalLF === 0} onClick={() => {
           const title = `${t.lineFence} ${typeLabel[fType]}, ${totalLF} ft`;
@@ -1944,7 +2261,7 @@ export default function TradeTechPro() {
         {aiMsgs.length === 0 && (
           <div className="text-center mt-6">
             <span className="text-4xl">🎙️</span>
-            <p className="font-bold mt-2" style={{ color: C.navy, fontFamily: "'Barlow Condensed',sans-serif", fontSize: 22 }}>{t.askTTP}</p>
+            <p className="font-bold mt-2" style={{ color: C.navy, fontFamily: "'Inter', sans-serif", fontSize: 22 }}>{t.askTTP}</p>
           </div>
         )}
         {aiMsgs.map((m, i) => (
@@ -1994,14 +2311,14 @@ export default function TradeTechPro() {
         {leads.length === 0 && (
           <div className="text-center mt-12 px-6">
             <span className="text-5xl">📥</span>
-            <p className="font-bold mt-3" style={{ color: C.navy, fontFamily: "'Barlow Condensed',sans-serif", fontSize: 22 }}>{t.leadsEmpty}</p>
+            <p className="font-bold mt-3" style={{ color: C.navy, fontFamily: "'Inter', sans-serif", fontSize: 22 }}>{t.leadsEmpty}</p>
             <p className="text-sm mt-2 font-semibold" style={{ color: C.slate }}>{t.leadsEmptySub}</p>
           </div>
         )}
         {leads.map((l) => (
           <div key={l.id} className="rounded-2xl p-4 mb-3" style={{ background: "#fff", border: l.status === "new" ? `2px solid ${C.orange}` : `1.5px solid ${C.line}` }}>
             <div className="flex items-center gap-2">
-              <span className="font-extrabold" style={{ color: C.navy, fontFamily: "'Barlow Condensed',sans-serif", fontSize: 19 }}>{l.name || prettyPhone(l.phone)}</span>
+              <span className="font-extrabold" style={{ color: C.navy, fontFamily: "'Inter', sans-serif", fontSize: 19 }}>{l.name || prettyPhone(l.phone)}</span>
               {l.status === "new" && <span className="rounded-full px-2 py-0.5 text-xs font-extrabold" style={{ background: C.orange, color: "#fff" }}>{t.leadNew}</span>}
               <span className="ml-auto text-xs font-bold" style={{ color: C.slate }}>{when(l.created_at)}</span>
             </div>
@@ -2035,32 +2352,48 @@ export default function TradeTechPro() {
     roofAddress: "🏠 " + (trade === "fence" ? t.measureFence : t.searchAddress),
     voiceInvoice: "🎤 " + t.quickInvoice, fenceDraw: "🪵 " + t.fenceTitle,
     settings: "⚙️ " + t.settings, leads: "📥 " + t.leads,
+    report: "📄 " + (lang === "es" ? "Informe del cliente" : "Client report"),
   };
   const backMap = {
+    report: "comps",
     calc: "home", pickCustomer: trade === "fence" ? "fenceDraw" : "calc", send: "jobs", jobs: "home", jobDetail: "jobs",
     invoice: "jobDetail", payments: "home", customers: "home", ai: "home", roofAddress: "home",
     voiceInvoice: "home", fenceDraw: "home", settings: "home", leads: "home",
   };
-  const withNav = ["home", "jobs", "payments", "customers"];
+  const tabScreens = ["comps", "lending", "tax", "workspace"];
+  const withNav = tabScreens;
 
   return (
-    <div className="min-h-screen flex justify-center" style={{ background: "#0B1226" }}>
+    <div className="min-h-screen flex justify-center" style={{ background: C.navyDeep }}>
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,600;0,700;0,800;1,800&family=Inter:wght@400;500;600;700;800&display=swap');
         * { font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
         input::placeholder { color: #A7AEBE; }
         @keyframes ttpPulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.18); opacity: .65; } }
-        @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }`}</style>
+        @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+        @media print {
+          body { background: #fff !important; }
+          .no-print { display: none !important; }
+          #qc-report { box-shadow: none !important; border: 1px solid #d9e1ef !important; }
+        }`}</style>
       <div className="w-full max-w-md flex flex-col relative" style={{ background: C.bg, minHeight: "100vh" }}>
         {!session && screen !== "onboard" && (
-          <div className="px-4 py-2 text-center" style={{ background: "#FEF5DC", borderBottom: "1.5px solid #F8B408" }}>
+          <div className="no-print px-4 py-2 text-center" style={{ background: C.orangeSoft, borderBottom: `1.5px solid ${C.orange}` }}>
             <span className="text-xs font-bold" style={{ color: "#7A5A00" }}>{t.demoBanner}</span>
           </div>
         )}
-        {screen !== "onboard" && screen !== "trade" && screen !== "home" && <Header title={titles[screen] || ""} back={() => setScreen(backMap[screen] || "home")} />}
+        {tabScreens.includes(screen) && <BrandHeader />}
+        {screen !== "onboard" && screen !== "trade" && screen !== "home" && !tabScreens.includes(screen) && (
+          <div className="no-print"><Header title={titles[screen] || ""} back={() => setScreen(backMap[screen] || "comps")} /></div>
+        )}
         {screen === "onboard" && Onboard()}
         {screen === "settings" && Settings()}
         {screen === "trade" && TradePicker()}
         {screen === "home" && Home()}
+        {screen === "comps" && (lookup ? CompsResult() : CompsSearch())}
+        {screen === "lending" && Lending()}
+        {screen === "tax" && Tax()}
+        {screen === "workspace" && Workspace()}
+        {screen === "report" && Report()}
         {screen === "calc" && (trade === "roofing" ? CompsResult() : Calc())}
         {screen === "roofAddress" && CompsSearch()}
         {screen === "voiceInvoice" && VoiceInvoice()}
