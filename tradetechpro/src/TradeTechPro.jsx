@@ -1446,16 +1446,26 @@ export default function TradeTechPro() {
           </div>
 
           {/* Subject card */}
-          <div className="rounded-2xl p-4 mb-3" style={{ background: "#fff", border: `1px solid ${QC.line}`, boxShadow: "0 2px 8px rgba(27,42,92,0.06)" }}>
-            <p style={{ color: QC.muted2, fontSize: 9, fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", marginBottom: 5 }}>{t.cmpSubject}</p>
-            <p className="font-extrabold mb-3" style={{ color: QC.navyDeep, fontSize: 16, lineHeight: 1.3 }}>{subj.address || R.addr}</p>
-            <div className="grid grid-cols-4 gap-2">
-              {[["🛏️", subj.beds ?? "—", t.beds], ["🛁", subj.baths ?? "—", t.baths], ["📐", subj.sqft ? num(subj.sqft) : "—", t.cmpSqft], ["📅", subj.yearBuilt ?? "—", t.builtIn]].map(([icon, v, label]) => (
-                <div key={label} style={{ background: QC.bg, border: `1px solid ${QC.line}`, borderRadius: 10, padding: "10px 6px", textAlign: "center" }}>
-                  <p className="font-extrabold" style={{ color: QC.navy, fontSize: 15 }}>{v}</p>
-                  <p style={{ color: QC.muted, fontSize: 8, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", marginTop: 3 }}>{icon} {label}</p>
-                </div>
-              ))}
+          <div className="rounded-2xl overflow-hidden mb-3" style={{ background: "#fff", border: `1px solid ${QC.line}`, boxShadow: "0 2px 8px rgba(27,42,92,0.06)" }}>
+            {sLat != null && sLng != null && (
+              <img
+                src={`/api/streetview?lat=${sLat}&lng=${sLng}`}
+                alt={subj.address || R.addr}
+                onError={(e) => { e.currentTarget.style.display = "none"; }}
+                style={{ width: "100%", height: 170, objectFit: "cover", display: "block", background: QC.bg }}
+              />
+            )}
+            <div className="p-4">
+              <p style={{ color: QC.muted2, fontSize: 9, fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", marginBottom: 5 }}>{t.cmpSubject}</p>
+              <p className="font-extrabold mb-3" style={{ color: QC.navyDeep, fontSize: 16, lineHeight: 1.3 }}>{subj.address || R.addr}</p>
+              <div className="grid grid-cols-4 gap-2">
+                {[["🛏️", subj.beds ?? "—", t.beds], ["🛁", subj.baths ?? "—", t.baths], ["📐", subj.sqft ? num(subj.sqft) : "—", t.cmpSqft], ["📅", subj.yearBuilt ?? "—", t.builtIn]].map(([icon, v, label]) => (
+                  <div key={label} style={{ background: QC.bg, border: `1px solid ${QC.line}`, borderRadius: 10, padding: "10px 6px", textAlign: "center" }}>
+                    <p className="font-extrabold" style={{ color: QC.navy, fontSize: 15 }}>{v}</p>
+                    <p style={{ color: QC.muted, fontSize: 8, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", marginTop: 3 }}>{icon} {label}</p>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
 
