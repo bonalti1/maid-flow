@@ -3753,7 +3753,7 @@ app.post("/api/onboarding/publish", async (req, res) => {
 app.get("/equipo", (req, res) => {
   const base = canonBase(req);
   res.send(`<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ALTO Pro · Equipo</title><link rel="icon" href="/icon-192.png"><style>
+<title>Quick Comp · Equipo</title><link rel="icon" href="/icon-192.png"><style>
 @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;1,9..144,600&family=Inter:wght@400;500;600;700;800&display=swap');
 *{box-sizing:border-box;font-family:Inter,Arial,sans-serif;margin:0;-webkit-tap-highlight-color:transparent}
 :root{--navy:#101B30;--navy2:#0B1226;--gold:#F8B408;--mut:#9DA8C4;--line:rgba(255,255,255,.1)}
@@ -3817,16 +3817,16 @@ ul.pts li b{color:var(--gold);flex-shrink:0}
 @media(max-width:899px){aside{position:fixed;z-index:60;left:0;top:0;bottom:0;transform:translateX(-100%);transition:.25s;width:250px}aside.open{transform:none}.mtop{display:flex}.scrim{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:55;display:none}.scrim.on{display:block}}
 </style></head><body>
 <div class="layout">
-<aside id="sb"><div class="sb-brand"><img src="/brand-logo.png" alt=""></div><div class="sb-label">ALTO PRO</div><nav id="nav"></nav><div class="sb-foot">Presentación del rol</div></aside>
+<aside id="sb"><div class="sb-brand"><img src="/brand-logo.png" alt=""></div><div class="sb-label">QUICK COMP</div><nav id="nav"></nav><div class="sb-foot">Presentación del rol</div></aside>
 <div class="scrim" id="scrim" onclick="sb(false)"></div>
 <main>
-<div class="mtop"><button onclick="sb(true)">☰ Menú</button><b style="font-weight:800">ALTO <span style="color:#F8B408">PRO</span></b><span style="width:64px"></span></div>
+<div class="mtop"><button onclick="sb(true)">☰ Menú</button><b style="font-weight:800">QUICK <span style="color:#F8B408">COMP</span></b><span style="width:64px"></span></div>
 <div class="stage" id="stage">
 
 <section class="slide" data-t="El rol">
   <img class="s-bg" src="/api/roofimg?lat=26.3828&lng=-98.8198&zoom=17" alt=""><div class="s-veil"></div>
   <div class="s-in">
-    <p class="kick">ALTO PRO · MARKETING Y TECNOLOGÍA PARA ROFEROS</p>
+    <p class="kick">QUICK COMP · MARKETING Y TECNOLOGÍA PARA AGENTES DE BIENES RAÍCES</p>
     <h1>Dos trabajos, <em>un solo rol.</em></h1>
     <div class="rule"></div>
     <p class="body">El rol combina dos cosas: <b style="color:#fff">cerrar ventas</b> y <b style="color:#fff">crear el contenido</b> que trae esos clientes. En esta presentación vas a ver, en vivo, los productos que venderías y grabarías.</p>
@@ -3837,13 +3837,13 @@ ul.pts li b{color:var(--gold);flex-shrink:0}
   <div class="s-veil"></div>
   <div class="s-in">
     <p class="kick">01 · A QUIÉN LE VENDES</p>
-    <h1>Contratistas hispanos <em>de techos.</em></h1>
+    <h1>Agentes hispanos <em>de bienes raíces.</em></h1>
     <div class="rule"></div>
     <ul class="pts">
-      <li><b>🇲🇽</b> Hablan español, trabajan con las manos, odian la tecnología complicada</li>
-      <li><b>📞</b> Consiguen trabajo por recomendación — pero pierden llamadas cuando están en un techo</li>
-      <li><b>💵</b> Un techo les deja $2,000–$4,000 de ganancia — tienen con qué pagar</li>
-      <li><b>🎯</b> Empezamos SOLO con roferos — enfocados</li>
+      <li><b>🇲🇽</b> Hablan español, trabajan por relación, odian la tecnología complicada</li>
+      <li><b>📞</b> Consiguen clientes por recomendación — pero pierden vendedores que no saben que su casa ya subió de valor</li>
+      <li><b>💵</b> Una comisión les deja miles de dólares — tienen con qué pagar</li>
+      <li><b>🎯</b> Empezamos SOLO con agentes hispanos — enfocados</li>
     </ul>
     <p class="body" style="margin-top:16px"><b style="color:var(--gold)">Háblales como un amigo que entiende su negocio — no como vendedor de tecnología.</b></p>
   </div>
@@ -3853,12 +3853,12 @@ ul.pts li b{color:var(--gold);flex-shrink:0}
   <div class="s-veil"></div>
   <div class="s-in">
     <p class="kick">02 · QUÉ VENDEMOS</p>
-    <h1>Una máquina que <em>trae trabajos.</em></h1>
+    <h1>Una máquina que <em>trae clientes.</em></h1>
     <div class="rule"></div>
     <div class="grid">
       <div class="card"><div class="ic">🌐</div><h3>Página web</h3><p>Profesional, con su marca. Lista en 10-14 días.</p></div>
-      <div class="card"><div class="ic">🛰️</div><h3>Cotizador satelital</h3><p>El cliente pone su dirección y ve su precio en 60 seg.</p></div>
-      <div class="card"><div class="ic">📲</div><h3>La app ALTO Pro</h3><p>Mide techos, hace facturas, recibe los leads.</p></div>
+      <div class="card"><div class="ic">🏡</div><h3>Valuador de casas</h3><p>El dueño pone su dirección y ve el valor de su casa en 60 seg.</p></div>
+      <div class="card"><div class="ic">📲</div><h3>La app Quick Comp</h3><p>Valúa casas, arma el CMA, recibe los leads.</p></div>
       <div class="card"><div class="ic">🤖</div><h3>Secretaria IA</h3><p>Contesta y agenda citas a cualquier hora.</p></div>
     </div>
     <div class="glass"><div><b>$297</b><span>para empezar</span></div><div><b>$297</b><span>al mes</span></div></div>
@@ -3881,14 +3881,14 @@ ul.pts li b{color:var(--gold);flex-shrink:0}
 <section class="slide" data-t="El cotizador (wow)">
   <div class="s-veil"></div>
   <div class="s-in" style="max-width:1000px">
-    <p class="kick">04 · EL COTIZADOR · EL WOW</p>
+    <p class="kick">04 · EL VALUADOR · EL WOW</p>
     <h1>Pon una <em>dirección.</em></h1>
     <div class="duo">
       <div>
-        <p class="body">El momento "wow" de toda la venta. Escribe una dirección real y mira cómo el satélite mide el techo y da un precio. ESTO es lo que grabas para los anuncios.</p>
+        <p class="body">El momento "wow" de toda la venta. Escribe una dirección real y mira cómo aparece el valor de la casa con ventas comparables reales. ESTO es lo que grabas para los anuncios.</p>
         <a class="link" href="/demo" target="_blank">Ver la presentación de venta →</a>
       </div>
-      <div class="frame"><iframe data-src="/w/alto-demo" title="Cotizador"></iframe></div>
+      <div class="frame"><iframe data-src="/w/alto-demo" title="Valuador"></iframe></div>
     </div>
   </div>
 </section>
@@ -3901,9 +3901,9 @@ ul.pts li b{color:var(--gold);flex-shrink:0}
     <div class="duo">
       <div>
         <ul class="pts" style="margin-top:0">
-          <li><b>🛰️</b> Mide techos: dirección, GPS, o con el dedo</li>
+          <li><b>🏡</b> Valúa casas: dirección o GPS, con ventas comparables reales</li>
           <li><b>📥</b> Los leads le llegan con botón de WhatsApp</li>
-          <li><b>🧾</b> Cotizaciones y facturas con su marca</li>
+          <li><b>🧾</b> Reportes CMA profesionales con su marca</li>
         </ul>
         <p class="body" style="font-size:14px;margin-top:14px">👉 La app de la derecha está EN VIVO — tócala.</p>
       </div>
@@ -3921,7 +3921,7 @@ ul.pts li b{color:var(--gold);flex-shrink:0}
     <ul class="pts">
       <li><b>1</b> El prospecto agenda una llamada (de los anuncios que TÚ grabas)</li>
       <li><b>2</b> Compartes pantalla y caminas la presentación: <b style="color:#fff">/demo</b></li>
-      <li><b>3</b> En vivo pones SU dirección y le mides SU techo — ahí cambia todo</li>
+      <li><b>3</b> En vivo pones SU dirección y le valúas SU casa — ahí cambia todo</li>
       <li><b>4</b> Le mandas el link de pago y cierras en la misma llamada</li>
     </ul>
     <p class="body" style="margin-top:14px">Tu portal privado tiene el guion, los links y las respuestas a objeciones:</p>
@@ -3935,12 +3935,12 @@ ul.pts li b{color:var(--gold);flex-shrink:0}
     <p class="kick">07 · TU SEGUNDO TRABAJO · CONTENIDO</p>
     <h1>El contenido que <em>trae clientes.</em></h1>
     <div class="rule"></div>
-    <p class="body">Corremos anuncios en WhatsApp e Instagram/Facebook, en español, para roferos. Tu contenido es el motor del negocio.</p>
+    <p class="body">Corremos anuncios en WhatsApp e Instagram/Facebook, en español, para agentes. Tu contenido es el motor del negocio.</p>
     <div class="grid">
       <div class="card"><div class="ic">🎬</div><h3>Anuncios cortos (9:16)</h3><p>15-40 seg para WhatsApp/Reels. Hook fuerte en los primeros 3 seg.</p></div>
       <div class="card"><div class="ic">🎥</div><h3>VSL (1-2 min)</h3><p>Video para la página explicando la oferta — tú a cámara, directo.</p></div>
-      <div class="card"><div class="ic">📱</div><h3>Grabación de pantalla</h3><p>Midiendo un techo en 60 seg — el wow en video.</p></div>
-      <div class="card"><div class="ic">📸</div><h3>Fotos del equipo</h3><p>Tú y el equipo con la camisa ALTO en un techo real.</p></div>
+      <div class="card"><div class="ic">📱</div><h3>Grabación de pantalla</h3><p>Valuando una casa en 60 seg — el wow en video.</p></div>
+      <div class="card"><div class="ic">📸</div><h3>Fotos del equipo</h3><p>Tú y el equipo con la camisa Quick Comp, profesionales.</p></div>
     </div>
   </div>
 </section>
@@ -3951,13 +3951,13 @@ ul.pts li b{color:var(--gold);flex-shrink:0}
     <p class="kick">08 · TUS PRIMEROS VIDEOS</p>
     <h1>Lista para <em>grabar ya.</em></h1>
     <ul class="pts">
-      <li><b>🎯</b> "¿Cuántos trabajos pierdes mientras estás arriba de un techo?" — hook de dolor, a cámara</li>
-      <li><b>🛰️</b> "Mira cómo cotizo un techo en 60 segundos sin subirme" — grabación de pantalla</li>
+      <li><b>🎯</b> "¿Cuántos vendedores pierdes porque no saben lo que vale su casa?" — hook de dolor, a cámara</li>
+      <li><b>🏡</b> "Mira cómo valúo una casa en 60 segundos con ventas reales" — grabación de pantalla</li>
       <li><b>💬</b> "Tus clientes te llegan directo al WhatsApp" — muestra el lead llegando</li>
       <li><b>🌐</b> "Tu página web vende sola, 24/7" — muestra la página de ejemplo</li>
       <li><b>🤖</b> "Una secretaria con IA que nunca duerme" — muestra el chat contestando</li>
     </ul>
-    <p class="body" style="margin-top:12px">Regla de oro: <b style="color:#fff">habla como rofero, no como tecnología.</b></p>
+    <p class="body" style="margin-top:12px">Regla de oro: <b style="color:#fff">habla como agente, no como tecnología.</b></p>
   </div>
 </section>
 
@@ -3970,7 +3970,7 @@ ul.pts li b{color:var(--gold);flex-shrink:0}
     <ul class="pts">
       <li><b>1</b> Explora la presentación de venta y el portal del closer</li>
       <li><b>2</b> Graba los primeros 3 anuncios de la lista esta semana</li>
-      <li><b>3</b> Agenda la foto del equipo con la camisa ALTO</li>
+      <li><b>3</b> Agenda la foto del equipo con la camisa Quick Comp</li>
     </ul>
     <div style="margin-top:20px">
       <a class="link" href="/demo" target="_blank">/demo · venta</a>
@@ -4077,8 +4077,8 @@ ${paid
   : `<p style="background:#FEF5DC;border:1.5px solid #F8B408;color:#7A5A00;border-radius:12px;padding:10px 14px;font-weight:700">⏳ El link de acceso se ACTIVA solo cuando Stripe confirme su pago (≈1 min después de pagar). Si pagó por otro medio, el admin la activa desde su tablero.</p>`}
 <p><b>1.</b> Copia su <b>link de acceso</b> y pégalo en el mensaje de bienvenida (tecla B en la presentación):</p>
 <div class="link"><span><b>🔑 Acceso a su app</b><br><small>${base}/invite/${invite}</small></span><button onclick="navigator.clipboard.writeText('${base}/invite/${invite}');this.textContent='✓'">Copiar</button></div>
-<p><b>2.</b> Su cotizador (va dentro de su página web):</p>
-<div class="link"><span><b>🛰️ Widget</b><br><small>${base}/w/${c.slug}</small></span><button onclick="navigator.clipboard.writeText('${base}/w/${c.slug}');this.textContent='✓'">Copiar</button></div>
+<p><b>2.</b> Su valuador (va dentro de su página web):</p>
+<div class="link"><span><b>🏡 Widget</b><br><small>${base}/w/${c.slug}</small></span><button onclick="navigator.clipboard.writeText('${base}/w/${c.slug}');this.textContent='✓'">Copiar</button></div>
 <p><b>3.</b> Personaliza su página web (plantilla, color, fotos):</p>
 <div class="link"><span><b>🎨 Onboarding de su página</b></span><a href="/onboarding?key=${K}&slug=${c.slug}" style="margin-left:auto;background:#F8B408;color:#101B30;border-radius:8px;padding:8px 14px;font-weight:800;text-decoration:none">Abrir →</a></div>
 <a href="/closer?key=${K}">← Volver al portal del closer</a></body></html>`);
