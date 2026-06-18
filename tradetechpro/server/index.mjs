@@ -3091,7 +3091,7 @@ ${attention.length ? `<div class="panel">
   <details><summary>El cliente quiere cambiar su info (teléfono, nombre, color, historia)</summary><div class="gb"><ol><li>En "Clientes" o en la tarea, toca <b>✏️ Editar</b>.</li><li>Cambia lo que pide en los pasos.</li><li>En el último paso toca <b>Enviar / Guardar</b> y luego <b>🚀 Publicar página</b>.</li><li>Marca la tarea <b>✓ Hecho</b>.</li></ol></div></details>
   <details><summary>El cliente quiere subir fotos nuevas</summary><div class="gb"><ol><li>Pídele las fotos por <b>💬 WhatsApp</b>.</li><li><b>✏️ Editar</b> → paso <b>Logo y fotos</b> → súbelas.</li><li>Guarda y <b>Publica</b>. Marca <b>Hecho</b>.</li></ol></div></details>
   <details><summary>La página está "en construcción" / sin publicar</summary><div class="gb"><ol><li><b>✏️ Editar</b> y revisa que esté completa.</li><li>En el último paso toca <b>🚀 Publicar página al cliente</b>.</li></ol></div></details>
-  <details><summary>El cliente quiere su propio dominio (ej. sutecho.com)</summary><div class="gb"><ol><li><b>✏️ Editar</b> → paso <b>Su dominio</b> → buscar/conectar.</li><li>Pásale el registro <b>CNAME</b> para que lo ponga en su dominio.</li></ol></div></details>
+  <details><summary>El cliente quiere su propio dominio (ej. sucasa.com)</summary><div class="gb"><ol><li><b>✏️ Editar</b> → paso <b>Su dominio</b> → buscar/conectar.</li><li>Pásale el registro <b>CNAME</b> para que lo ponga en su dominio.</li></ol></div></details>
   <details><summary>Dice que su página "no aparece" en Google</summary><div class="gb">Su página ya está en línea (sitio + cotizador). Salir en Google toma tiempo. Confírmale que su link funciona y que ya puede compartirlo por WhatsApp y redes.</div></details>
   <details><summary>Pago falló / cuenta pausada</summary><div class="gb">Recuérdale por <b>💬 WhatsApp</b> actualizar su tarjeta. Cuando pague, la cuenta se reactiva sola. Si pagó por otro medio, avísale al admin.</div></details>
   <details><summary>Aparece "📱 link compartido"</summary><div class="gb">Su cuenta se está abriendo en muchos teléfonos — su equipo la está compartiendo. Ofrécele por <b>💬 WhatsApp</b> cuentas para su equipo (más venta para nosotros).</div></details>
@@ -3123,7 +3123,7 @@ app.get("/onboarding", async (req, res) => {
   if (!slug) {
     const list = (await db.listContractors()).filter((c) => !["alto-demo", "alto-ventas"].includes(c.slug));
     return res.send(`<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ALTO Pro · Onboarding</title><link rel="icon" href="/icon-192.png"><style>
+<title>Quick Comp · Onboarding</title><link rel="icon" href="/icon-192.png"><style>
 *{box-sizing:border-box;font-family:Inter,Arial,sans-serif;margin:0}body{background:#F4F6FA;color:#101B30}
 header{background:#101B30;color:#fff;padding:14px 22px;display:flex;align-items:center;gap:12px}
 header img{height:32px;background:#fff;border-radius:8px;padding:4px 6px}header b em{color:#F8B408;font-style:normal}
@@ -3305,19 +3305,19 @@ textarea.big{min-height:150px;font-size:16px}
           <label>Años en el negocio</label><input id="years" type="number" value="${v(st.years)}" placeholder="15">
           <label>Servicios que ofrece</label>
           <div class="chips" id="services">
-            <label class="chip"><input type="checkbox" value="Reparación de techos" ${chk("Reparación de techos")}>Reparación</label>
-            <label class="chip"><input type="checkbox" value="Techo nuevo / reemplazo" ${chk("Techo nuevo / reemplazo")}>Techo nuevo</label>
-            <label class="chip"><input type="checkbox" value="Inspección gratis" ${chk("Inspección gratis")}>Inspección gratis</label>
-            <label class="chip"><input type="checkbox" value="Daño por granizo / seguro" ${chk("Daño por granizo / seguro")}>Granizo / seguro</label>
-            <label class="chip"><input type="checkbox" value="Techo de metal" ${chk("Techo de metal")}>Metal</label>
-            <label class="chip"><input type="checkbox" value="Shingle / asfalto" ${chk("Shingle / asfalto")}>Shingle</label>
-            <label class="chip"><input type="checkbox" value="Teja" ${chk("Teja")}>Teja</label>
-            <label class="chip"><input type="checkbox" value="Emergencias 24/7" ${chk("Emergencias 24/7")}>Emergencias 24/7</label>
-            <label class="chip"><input type="checkbox" value="Financiamiento" ${chk("Financiamiento")}>Financiamiento</label>
+            <label class="chip"><input type="checkbox" value="Venta de casas (listing)" ${chk("Venta de casas (listing)")}>Venta / listing</label>
+            <label class="chip"><input type="checkbox" value="Representación de compradores" ${chk("Representación de compradores")}>Compradores</label>
+            <label class="chip"><input type="checkbox" value="Valuación / CMA gratis" ${chk("Valuación / CMA gratis")}>Valuación / CMA</label>
+            <label class="chip"><input type="checkbox" value="Primera casa" ${chk("Primera casa")}>Primera casa</label>
+            <label class="chip"><input type="checkbox" value="Inversionistas" ${chk("Inversionistas")}>Inversionistas</label>
+            <label class="chip"><input type="checkbox" value="Casas de lujo" ${chk("Casas de lujo")}>Lujo</label>
+            <label class="chip"><input type="checkbox" value="Comercial" ${chk("Comercial")}>Comercial</label>
+            <label class="chip"><input type="checkbox" value="Renta / property management" ${chk("Renta / property management")}>Renta</label>
+            <label class="chip"><input type="checkbox" value="Crédito / financiamiento" ${chk("Crédito / financiamiento")}>Crédito</label>
           </div>
-          <label>Garantía que ofrece</label><input id="warranty" value="${v(st.warranty)}" placeholder="Ej. 10 años por escrito en mano de obra">
-          <label>¿Qué los hace diferentes? (opcional)</label><input id="diff" value="${v(st.diff)}" placeholder="Ej. familia local, mismo dueño en cada trabajo">
-          <label>Licencia / seguro (opcional)</label><input id="license" value="${v(p.license)}" placeholder="RCAT-12345 · asegurado">
+          <label>Especialidad o enfoque (opcional)</label><input id="warranty" value="${v(st.warranty)}" placeholder="Ej. familias hispanas, primera casa, Starr County">
+          <label>¿Qué te hace diferente? (opcional)</label><input id="diff" value="${v(st.diff)}" placeholder="Ej. agente local, atención personal en cada cierre">
+          <label>Licencia / designaciones (opcional)</label><input id="license" value="${v(p.license)}" placeholder="TREC #123456 · Realtor®">
         </div>
       </div>
     </section>
@@ -3348,7 +3348,7 @@ textarea.big{min-height:150px;font-size:16px}
         <h1>Cuéntanos <em>su historia.</em></h1>
         <div class="fcard">
           <label>Cuéntanos del negocio — habla o escribe</label>
-          <textarea id="rough" class="big" placeholder="¿Cómo empezó? ¿Cuántos techos han hecho? ¿Qué los hace diferentes? ¿Su garantía? Puedes hablar con el micrófono — no tiene que estar bonito, la IA lo acomoda."></textarea>
+          <textarea id="rough" class="big" placeholder="¿Cómo empezó en bienes raíces? ¿Cuántas casas ha vendido? ¿En qué se especializa? ¿Qué lo hace diferente? Puedes hablar con el micrófono — no tiene que estar bonito, la IA lo acomoda."></textarea>
           <div class="microw" style="margin-top:8px">
             <button type="button" id="aibtn" onclick="aiWrite()" class="btn-dark">✨ Escribir con IA</button>
             <button type="button" class="micbtn" onclick="dictate('rough',this)" title="Hablar en vez de escribir">🎤</button>
@@ -3356,7 +3356,7 @@ textarea.big{min-height:150px;font-size:16px}
           </div>
           <hr style="border:none;border-top:1px solid #EDF0F5;margin:18px 0">
           <label>Titular (opcional)</label><input id="hero" value="${v(st.hero)}" placeholder="Déjalo vacío para usar el de la plantilla">
-          <label>Frase corta</label><input id="tagline" value="${v(st.tagline)}" placeholder="Techos con garantía por escrito en toda la región.">
+          <label>Frase corta</label><input id="tagline" value="${v(st.tagline)}" placeholder="Vende tu casa al mejor precio, con ventas reales de tu zona.">
           <label>Su historia (lo que va en la página)</label>
           <div class="microw">
             <textarea id="about" class="big" placeholder="2-3 oraciones sobre el negocio — la IA la llena desde tus notas de arriba.">${v(st.about)}</textarea>
@@ -3396,7 +3396,7 @@ textarea.big{min-height:150px;font-size:16px}
           <p class="hint" id="dsearchhint" style="margin-top:4px"></p>
           <hr style="border:none;border-top:1px solid #EDF0F5;margin:14px 0">
           <label>Dominio del cliente (conectar)</label>
-          <div style="display:flex;gap:8px"><input id="domain" value="${v(st.domain)}" placeholder="mirandaroofing.com" style="flex:1"><button type="button" onclick="connectDomain()" id="dombtn" class="btn-dark" style="white-space:nowrap">Conectar</button></div>
+          <div style="display:flex;gap:8px"><input id="domain" value="${v(st.domain)}" placeholder="casabellarealty.com" style="flex:1"><button type="button" onclick="connectDomain()" id="dombtn" class="btn-dark" style="white-space:nowrap">Conectar</button></div>
           <div id="dommsg" class="hint" style="margin-top:8px"></div>
         </div>
       </div>
@@ -3658,14 +3658,14 @@ app.post("/api/onboarding/ai", async (req, res) => {
     b.biz ? `Negocio: ${b.biz}` : "",
     b.city ? `Ciudad/área: ${b.city}` : "",
     b.years ? `Años en el negocio: ${b.years}` : "",
-    b.rough ? `Notas del contratista: ${b.rough}` : "",
+    b.rough ? `Notas del agente: ${b.rough}` : "",
   ].filter(Boolean).join("\n").slice(0, 1000);
   if (!facts) return res.status(400).json({ error: "faltan datos" });
   if (!aiLive) return res.json({ source: "demo", error: "ai_off" });
   try {
     const raw = await aiChat({
       maxTokens: 400,
-      system: `Eres redactor publicitario de una compañía de techos (roofing) hispana en Texas. Con los datos que te doy, escribe el texto de su página web en español, cálido y confiable, sin exagerar ni inventar datos que no te dieron. Responde SOLO con un objeto JSON: {"hero": titular corto y fuerte (máx 6 palabras), "tagline": una frase de apoyo (máx 18 palabras), "about": párrafo de "nuestra historia" en 2-3 oraciones, en primera persona del negocio}. Nada de markdown, nada de comillas tipográficas.`,
+      system: `Eres redactor publicitario para un agente de bienes raíces (realtor) hispano en Texas. Con los datos que te doy, escribe el texto de su página web en español, cálido y confiable, enfocado en ayudar a la gente a vender o comprar su casa, sin exagerar ni inventar datos que no te dieron. Responde SOLO con un objeto JSON: {"hero": titular corto y fuerte (máx 6 palabras), "tagline": una frase de apoyo (máx 18 palabras), "about": párrafo de "nuestra historia" en 2-3 oraciones, en primera persona del agente}. Nada de markdown, nada de comillas tipográficas.`,
       messages: [{ role: "user", content: facts }],
     });
     const j = JSON.parse(raw.match(/\{[\s\S]*\}/)?.[0] || "{}");
@@ -3688,7 +3688,7 @@ function domainCandidates(input) {
   const base = raw.replace(/[^a-z0-9]/g, "");
   if (!base || base.length < 2) return [];
   const variations = [base + ".com", base + ".net", base + ".co", "get" + base + ".com"];
-  variations.push(base.includes("roofing") ? base + "tx.com" : base + "roofing.com");
+  variations.push(/realty|homes|realtor|properties/.test(base) ? base + "tx.com" : base + "realty.com");
   return variations.filter((d, i, a) => a.indexOf(d) === i).slice(0, 6);
 }
 async function rdapAvailable(domain) {
