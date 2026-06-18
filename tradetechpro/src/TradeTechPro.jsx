@@ -152,243 +152,45 @@ function CompMap({ subjectLL, comps, satellite, focus, lang, fallbackSrc }) {
 /* ─── Translations ─── */
 const TR = {
   es: {
-    hello: "Hola", today: "Hoy", theyOwe: "Te deben", jobs: "Trabajos",
-    newEstimate: "NUEVO ESTIMADO", calculator: "CALCULADORA", payments: "COBROS",
-    askTTP: "Pregúntale a ALTO", home: "Inicio", customers: "Clientes",
-    yourName: "Tu nombre", bizName: "Nombre de tu negocio", phone: "Tu teléfono",
-    continue: "CONTINUAR", whichTrade: "¿Cuál es tu oficio?", soon: "Próximamente",
-    concrete: "Concreto", roofing: "Techos", plumbing: "Plomería", electric: "Eléctrico",
-    painting: "Pintura", fence: "Cercas", landscaping: "Jardinería", pressure: "Lavado a presión",
-    length: "Largo (ft)", width: "Ancho (ft)", thickness: "Grosor (in)", waste: "Desperdicio",
-    result: "RESULTADO", cubicYards: "Yardas cúbicas", withWaste: "Con desperdicio",
-    order: "Pide", trucks: "Camiones", optPrice: "OPCIONAL: PRECIO",
-    pricePerYard: "Precio por yarda ($)", laborSqFt: "Mano de obra ($/sq ft)",
-    material: "Material", labor: "Mano de obra", estTotal: "TOTAL ESTIMADO",
-    toEstimate: "CONVERTIR A ESTIMADO →", forWho: "¿Para qué cliente?",
-    addCustomer: "+ Agregar cliente", name: "Nombre", save: "GUARDAR",
-    estimate: "Estimado", ready: "listo", sendText: "📱 ENVIAR POR TEXTO",
-    sendEmail: "✉️ ENVIAR POR EMAIL", sentTo: "Enviado por texto a",
-    simulateAccept: "▶ Demo: el cliente aceptó", accepted: "Aceptado",
-    estimateSt: "Estimado", scheduled: "Programado", inProgress: "En Progreso",
-    done: "Terminado", paid: "Pagado", pending: "PENDIENTE", partial: "PARCIAL",
-    overdue: "Vencido", daysShort: "d", remind: "Recordar", reminderSent: "Recordatorio enviado a",
-    genInvoice: "GENERAR FACTURA", invoice: "Factura", subtotal: "Subtotal",
-    tax: "Impuesto (si aplica)", depositRec: "Depósito recibido", balance: "SALDO PENDIENTE",
-    payNow: "💳 PAGAR AHORA", markPaid: "✓ Marcar como pagado", paidToast: "Pago registrado",
-    job: "Trabajo", jobAddr: "Dirección del trabajo", photos: "Fotos", addPhoto: "📷 Agregar foto",
-    notes: "Notas", status: "Estado", newJob: "+ NUEVO", noJobs: "Sin trabajos todavía. Crea tu primer estimado.",
-    call: "Llamar", text: "Texto", history: "Historial",
-    aiHint: "Escribe o usa los botones…", aiThinking: "Pensando…",
-    aiChip1: "¿Cuántas yardas para 20×30, 4 pulgadas?",
-    aiChip2: "¿Quién me debe dinero?",
-    aiChip3: "Redacta un recordatorio de pago amable",
-    back: "Atrás", total: "Total", deposit: "Depósito (30%)",
-    lineSlab: "Losa de concreto", lineMesh: "Malla de refuerzo", lineBase: "Base de gravilla",
-    addons: "Extras", finish: "Acabado: escoba",
-    welcome1: "Cotiza en 2 minutos.", welcome2: "Cobra más rápido.",
-    madeFor: "HECHO PARA CONTRATISTAS",
-    alreadyClient: "¿Ya eres cliente de ALTO Pro?",
+    accepted: "Aceptado",
+    estimateSt: "Estimado", inProgress: "En Progreso",
+    done: "Terminado", paid: "Pagado",
     demoBanner: "🧪 Modo demo — tus datos no se guardan en la nube. ¿Cliente? Entra con tu link de WhatsApp.",
     demoLimit: "El modo demo incluye 6 valuaciones de prueba y ya las usaste. Los clientes de Quick Comp valúan sin límite.",
-    alreadyClientHint: "Entra con el link que te mandamos por WhatsApp — es tu llave personal. ¿Lo perdiste? Escríbenos y te mandamos uno nuevo.",
-    aiErr: "No pude conectar. Intenta de nuevo.",
-    estCreated: "Estimado creado",
-    footprint: "Área de la casa (sq ft)", stories: "Pisos", pitch: "Inclinación (pitch)",
-    roofArea: "Área del techo", squares: "Cuadros (squares)", matSquares: "Material (+10%)",
-    materialType: "Material", tearOff: "Tear-off (quitar techo viejo)", layers: "Capas existentes",
-    shingle3: "Shingle 3-tab", archShingle: "Shingle arquitectónico", metalRoof: "Metal", tileRoof: "Teja",
-    matPerSq: "Material ($/sq)", laborPerSq: "Mano de obra ($/sq)", tearPerSq: "Tear-off ($/sq)",
-    accessories: "Underlayment, drip edge, clavos", tearOffLine: "Tear-off y disposición",
-    lineRoof: "Techo nuevo", storyNote: "+10% mano de obra por piso extra",
-    measureTitle: "Medir techo", searchAddress: "Escribe la dirección…",
     measuring1: "Buscando la propiedad…", measuring2: "Analizando ventas comparables…", measuring3: "Calculando el valor…",
-    satMeasured: "MEDIDO POR SATÉLITE", verifyOnSite: "Estimado satelital — verifica en sitio",
-    segments: "Secciones del techo", propertyInfo: "DATOS DE LA PROPIEDAD",
-    beds: "Recámaras", baths: "Baños", builtIn: "Construida", livingArea: "Área habitable",
-    editSquares: "Cuadros (puedes editar)", manualMode: "✏️ Medir manualmente",
-    noRoofData: "Sin datos satelitales para esta dirección. Usa la calculadora.",
-    roofMeasured: "Techo medido", useThisAddr: "Buscar", suggestions: "SUGERENCIAS",
-    sourceNote: "Datos reales de Google", imageryFrom: "imagen satelital de",
-    verifyManual: "Confirma en sitio o ajusta los cuadros abajo",
-    traceTitle: "Trazar techo", traceHint: "Toca las esquinas · arrastra para mover · +/− para acercar",
-    verifyBtn: "✏️ VERIFICAR MANUAL",
-    undo: "↩ Deshacer", clearAll: "✕ Borrar", closeSection: "✓ Cerrar sección",
-    modePts: "Puntos", modeSq: "Cuadros", addSquare: "➕ Cuadro", delShape: "🗑 Borrar",
-    sqHint: "Arrastra el cuadro · jala las esquinas para ajustar · gíralo con el puntito de arriba",
-    howMeasure: "¿Cómo quieres medir el techo?",
-    pressArea: "Presiona el área", pressAreaSub: "marca las esquinas",
-    makeSquares: "Haz cuadros", makeSquaresSub: "pon y ajusta cuadros",
-    measMaybeOff: "La medición puede estar incompleta",
-    measMaybeOffSub: "El satélite no alcanzó a captar todo el techo aquí. Mídelo a mano en ~10 segundos para cobrar con seguridad.",
-    measManualBtn: "Medir a mano con cuadros",
-    tracedArea: "Área trazada", useMeasure: "USAR ESTA MEDIDA →",
-    traceOnPhoto: "✏️ Trazar en la foto", traced: "TRAZADO",
-    tracedNote: "Trazado a mano sobre imagen de Google",
-    noRoofTrace: "Sin medición automática — traza el techo en la foto",
-    adjustDetails: "Ajustar detalles", shortVerify: "Verifica en sitio",
+    beds: "Recámaras", baths: "Baños", builtIn: "Construida",
     useMyLocation: "Usar mi ubicación", myLocation: "Mi ubicación", locating: "Buscando tu ubicación…",
-    cmpValue: "Valor estimado de mercado", cmpRange: "Rango", cmpDone: "Valor listo",
+    cmpValue: "Valor estimado de mercado", cmpDone: "Valor listo",
     cmpConfStrong: "Confianza alta", cmpConfGood: "Confianza buena", cmpConfLimited: "Confianza limitada", cmpConfLow: "Confianza baja",
     cmpSubject: "Propiedad evaluada", cmpComps: "Ventas comparables", cmpSold: "Vendida", cmpPerSqft: "/pie²",
-    cmpMatch: "coincidencia", cmpMap: "Mapa de comparables", cmpWithin: "dentro de", cmpComp: "comps",
+    cmpMatch: "coincidencia", cmpMap: "Mapa de comparables",
     cmpDisc: "Estimado basado en ventas recientes comparables — no es un avalúo.",
     cmpNone: "No se encontraron ventas comparables cerca. Prueba otra dirección.",
     cmpNew: "Nueva búsqueda", cmpExcluded: "Atípico", cmpSqft: "pie²",
     cmpStart: "Empieza con una dirección. Buscaremos ventas cercanas y te daremos un valor de mercado.",
     locErr: "No pude obtener tu ubicación. Activa el GPS y permite el acceso.",
-    leads: "Leads", leadNew: "NUEVO", leadDone: "✓ Contactado", leadUndo: "Marcar nuevo",
-    leadWhats: "WhatsApp", leadCall: "Llamar", leadEst: "Estimado",
-    leadsEmpty: "Aquí caen los clientes que piden precio en tu página web.",
-    leadsEmptySub: "Cuando alguien deja su teléfono en tu sitio, te aparece aquí al instante.",
-    leadMsg: (n, a, who) => `Hola${n ? " " + n : ""} 👋 Soy ${who}. Vi que pediste precio para tu techo${a ? " en " + a : ""}. ¿Cuándo puedo pasar a verlo? Es gratis y sin compromiso.`,
-    settings: "Ajustes", brandSection: "TU MARCA", saved: "Guardado",
-    bizSection: "MI NEGOCIO", emailLbl: "Email", licenseLbl: "Licencia / RCAT # (opcional)",
-    pricesSection: "MIS PRECIOS", pricesHint: "Tus precios por cuadro (square). Cada estimado nuevo los usa automáticamente.",
-    paySection: "PAGOS", zelleLbl: "Número de Zelle", zelleHint: "Vacío = usamos tu teléfono",
-    acctSection: "MI CUENTA", changeTrade: "🔨 Cambiar oficio", logout: "Cerrar sesión",
-    logoutQ: "¿Cerrar sesión? Tus datos quedan guardados en la nube.",
-    viewPdf: "📄 VER PDF / IMPRIMIR", brandHint: "Tu logo aparece en estimados, facturas y el PDF que recibe tu cliente.",
-    accHigh: "✓ Precisión alta · típicamente ±5%",
-    accOld: "⚠️ Imagen antigua — verifica antes de ordenar",
-    accMed: "⚠️ Calidad media — verifica antes de ordenar",
-    accEst: "⚠️ Estimado del área de la casa — verifica",
-    accTraced: "✏️ Medido por ti en la foto",
-    quickInvoice: "Factura rápida (hablada)", viSpeak: "Toca el micrófono y di: cliente, trabajo y monto",
-    viExample: "“Factura para María García, reparación de techo, 450 dólares”",
-    viHeard: "Escuché", cust: "Cliente", concept: "Concepto", amount: "Monto ($)",
-    createInvoice: "CREAR FACTURA →", howToPay: "CÓMO PAGAR", payCash: "Efectivo o cheque aceptado",
-    linkCopied: "Enlace copiado — pégalo en un mensaje", invMsg: "Factura", estMsg: "Estimado", fromMsg: "de",
-    logoOpt: "LOGO DE TU NEGOCIO (OPCIONAL)", uploadLogo: "📷 Subir logo", removeLogo: "Quitar",
-    installHint: "Instala la app: toca Compartir ⬆️ y luego “Agregar a pantalla de inicio”",
-    measureFence: "Medir cerca", fenceTitle: "Dibujar cerca",
-    fenceHint: "Toca a lo largo de la cerca · arrastra para mover · +/− acercar",
-    endRun: "✓ Terminar línea", totalLF: "Pies lineales", panels: "Paneles (8 ft)",
-    posts: "Postes", cornerPosts: "Esquinas", walkGate: "Puerta sencilla", doubleGate: "Puerta doble",
-    perLF: "Precio por pie ($)", walkPrice: "Puerta sencilla ($)", dblPrice: "Puerta doble ($)",
-    markup: "Margen materiales (%)", cedar: "Cedro", vinyl: "Vinilo", chain: "Malla", alum: "Aluminio", custom: "Otro",
-    lineFence: "Cerca", lineGates: "Puertas", lineMarkup: "Margen de materiales",
     fenceDrawn: "Cerca medida",
-    propLine: "Línea de propiedad cargada — toca un lado para quitarlo o agregarlo",
     noParcel: "Sin línea de propiedad para esta dirección — dibuja la cerca en la foto",
   },
   en: {
-    hello: "Hi", today: "Today", theyOwe: "They owe you", jobs: "Jobs",
-    newEstimate: "NEW ESTIMATE", calculator: "CALCULATOR", payments: "PAYMENTS",
-    askTTP: "Ask ALTO", home: "Home", customers: "Customers",
-    yourName: "Your name", bizName: "Your business name", phone: "Your phone",
-    continue: "CONTINUE", whichTrade: "What's your trade?", soon: "Coming soon",
-    concrete: "Concrete", roofing: "Roofing", plumbing: "Plumbing", electric: "Electrical",
-    painting: "Painting", fence: "Fence", landscaping: "Landscaping", pressure: "Pressure washing",
-    length: "Length (ft)", width: "Width (ft)", thickness: "Thickness (in)", waste: "Waste",
-    result: "RESULT", cubicYards: "Cubic yards", withWaste: "With waste",
-    order: "Order", trucks: "Trucks", optPrice: "OPTIONAL: PRICING",
-    pricePerYard: "Price per yard ($)", laborSqFt: "Labor ($/sq ft)",
-    material: "Material", labor: "Labor", estTotal: "ESTIMATED TOTAL",
-    toEstimate: "CONVERT TO ESTIMATE →", forWho: "Which customer?",
-    addCustomer: "+ Add customer", name: "Name", save: "SAVE",
-    estimate: "Estimate", ready: "ready", sendText: "📱 SEND BY TEXT",
-    sendEmail: "✉️ SEND BY EMAIL", sentTo: "Sent by text to",
-    simulateAccept: "▶ Demo: customer accepted", accepted: "Accepted",
-    estimateSt: "Estimate", scheduled: "Scheduled", inProgress: "In Progress",
-    done: "Done", paid: "Paid", pending: "PENDING", partial: "PARTIAL",
-    overdue: "Overdue", daysShort: "d", remind: "Remind", reminderSent: "Reminder sent to",
-    genInvoice: "GENERATE INVOICE", invoice: "Invoice", subtotal: "Subtotal",
-    tax: "Tax (if applies)", depositRec: "Deposit received", balance: "BALANCE DUE",
-    payNow: "💳 PAY NOW", markPaid: "✓ Mark as paid", paidToast: "Payment recorded",
-    job: "Job", jobAddr: "Job address", photos: "Photos", addPhoto: "📷 Add photo",
-    notes: "Notes", status: "Status", newJob: "+ NEW", noJobs: "No jobs yet. Create your first estimate.",
-    call: "Call", text: "Text", history: "History",
-    aiHint: "Type or use the buttons…", aiThinking: "Thinking…",
-    aiChip1: "How many yards for 20×30, 4 inches?",
-    aiChip2: "Who owes me money?",
-    aiChip3: "Draft a friendly payment reminder",
-    back: "Back", total: "Total", deposit: "Deposit (30%)",
-    lineSlab: "Concrete slab", lineMesh: "Reinforcement mesh", lineBase: "Gravel base",
-    addons: "Add-ons", finish: "Finish: broom",
-    welcome1: "Quote in 2 minutes.", welcome2: "Get paid faster.",
-    madeFor: "BUILT FOR CONTRACTORS",
-    alreadyClient: "Already an ALTO Pro client?",
+    accepted: "Accepted",
+    estimateSt: "Estimate", inProgress: "In Progress",
+    done: "Done", paid: "Paid",
     demoBanner: "🧪 Demo mode — your data isn't saved to the cloud. Client? Enter with your WhatsApp link.",
     demoLimit: "The demo includes 6 trial valuations and you've used them. Quick Comp clients value with no limits.",
-    alreadyClientHint: "Enter with the link we sent you on WhatsApp — it's your personal key. Lost it? Message us and we'll send a new one.",
-    aiErr: "Couldn't connect. Try again.",
-    estCreated: "Estimate created",
-    footprint: "House footprint (sq ft)", stories: "Stories", pitch: "Pitch",
-    roofArea: "Roof area", squares: "Squares", matSquares: "Material (+10%)",
-    materialType: "Material", tearOff: "Tear-off (remove old roof)", layers: "Existing layers",
-    shingle3: "3-tab shingle", archShingle: "Architectural shingle", metalRoof: "Metal", tileRoof: "Tile",
-    matPerSq: "Material ($/sq)", laborPerSq: "Labor ($/sq)", tearPerSq: "Tear-off ($/sq)",
-    accessories: "Underlayment, drip edge, nails", tearOffLine: "Tear-off & disposal",
-    lineRoof: "New roof", storyNote: "+10% labor per extra story",
-    measureTitle: "Measure roof", searchAddress: "Type the address…",
     measuring1: "Finding the property…", measuring2: "Analyzing comparable sales…", measuring3: "Calculating the value…",
-    satMeasured: "MEASURED BY SATELLITE", verifyOnSite: "Satellite estimate — verify on site",
-    segments: "Roof sections", propertyInfo: "PROPERTY INFO",
-    beds: "Bedrooms", baths: "Baths", builtIn: "Built", livingArea: "Living area",
-    editSquares: "Squares (you can edit)", manualMode: "✏️ Measure manually",
-    noRoofData: "No satellite data for this address. Use the calculator.",
-    roofMeasured: "Roof measured", useThisAddr: "Search", suggestions: "SUGGESTIONS",
-    sourceNote: "Real data from Google", imageryFrom: "satellite imagery from",
-    verifyManual: "Confirm on site or adjust the squares below",
-    traceTitle: "Trace roof", traceHint: "Tap the corners · drag to move · +/− to zoom",
-    verifyBtn: "✏️ VERIFY MANUALLY",
-    undo: "↩ Undo", clearAll: "✕ Clear", closeSection: "✓ Close section",
-    modePts: "Points", modeSq: "Squares", addSquare: "➕ Square", delShape: "🗑 Delete",
-    sqHint: "Drag the box · pull the corners to fit · rotate with the top dot",
-    howMeasure: "How do you want to measure?",
-    pressArea: "Press the area", pressAreaSub: "tap the corners",
-    makeSquares: "Make squares", makeSquaresSub: "drop & adjust boxes",
-    measMaybeOff: "This measurement may be incomplete",
-    measMaybeOffSub: "The satellite didn't capture the whole roof here. Measure it by hand in ~10 seconds to quote with confidence.",
-    measManualBtn: "Measure by hand with squares",
-    tracedArea: "Traced area", useMeasure: "USE THIS MEASUREMENT →",
-    traceOnPhoto: "✏️ Trace on the photo", traced: "TRACED",
-    tracedNote: "Hand-traced on Google imagery",
-    noRoofTrace: "No automatic measurement — trace the roof on the photo",
-    adjustDetails: "Adjust details", shortVerify: "Verify on site",
+    beds: "Bedrooms", baths: "Baths", builtIn: "Built",
     useMyLocation: "Use my location", myLocation: "My location", locating: "Finding your location…",
-    cmpValue: "Estimated Market Value", cmpRange: "Range", cmpDone: "Value ready",
+    cmpValue: "Estimated Market Value", cmpDone: "Value ready",
     cmpConfStrong: "High confidence", cmpConfGood: "Good confidence", cmpConfLimited: "Limited confidence", cmpConfLow: "Low confidence",
     cmpSubject: "Subject Property", cmpComps: "Sold Comparables", cmpSold: "Sold", cmpPerSqft: "/sq ft",
-    cmpMatch: "match", cmpMap: "Comparable Map", cmpWithin: "within", cmpComp: "comps",
+    cmpMatch: "match", cmpMap: "Comparable Map",
     cmpDisc: "Estimate based on recent comparable sales — not an appraisal.",
     cmpNone: "No comparable sales found nearby. Try another address.",
     cmpNew: "New search", cmpExcluded: "Outlier", cmpSqft: "sq ft",
     cmpStart: "Start with a property address. We'll find nearby sales and shape a market value.",
     locErr: "Couldn't get your location. Turn on GPS and allow access.",
-    leads: "Leads", leadNew: "NEW", leadDone: "✓ Contacted", leadUndo: "Mark new",
-    leadWhats: "WhatsApp", leadCall: "Call", leadEst: "Estimate",
-    leadsEmpty: "Customers who ask for a price on your website land here.",
-    leadsEmptySub: "When someone leaves their phone on your site, it shows up here instantly.",
-    leadMsg: (n, a, who) => `Hi${n ? " " + n : ""} 👋 This is ${who}. I saw you asked for a roof price${a ? " at " + a : ""}. When can I stop by? It's free, no obligation.`,
-    settings: "Settings", brandSection: "YOUR BRAND", saved: "Saved",
-    bizSection: "MY BUSINESS", emailLbl: "Email", licenseLbl: "License # (optional)",
-    pricesSection: "MY PRICES", pricesHint: "Your prices per square. Every new estimate uses them automatically.",
-    paySection: "PAYMENTS", zelleLbl: "Zelle number", zelleHint: "Empty = we use your phone",
-    acctSection: "MY ACCOUNT", changeTrade: "🔨 Change trade", logout: "Log out",
-    logoutQ: "Log out? Your data stays saved in the cloud.",
-    viewPdf: "📄 VIEW PDF / PRINT", brandHint: "Your logo appears on estimates, invoices, and the PDF your client receives.",
-    accHigh: "✓ High accuracy · typically ±5%",
-    accOld: "⚠️ Older imagery — verify before ordering",
-    accMed: "⚠️ Medium quality — verify before ordering",
-    accEst: "⚠️ Estimated from home size — verify",
-    accTraced: "✏️ Measured by you on the photo",
-    quickInvoice: "Quick invoice (spoken)", viSpeak: "Tap the mic and say: customer, job, and amount",
-    viExample: "“Invoice for María García, roof repair, 450 dollars”",
-    viHeard: "Heard", cust: "Customer", concept: "Description", amount: "Amount ($)",
-    createInvoice: "CREATE INVOICE →", howToPay: "HOW TO PAY", payCash: "Cash or check accepted",
-    linkCopied: "Link copied — paste it in a message", invMsg: "Invoice", estMsg: "Estimate", fromMsg: "from",
-    logoOpt: "YOUR BUSINESS LOGO (OPTIONAL)", uploadLogo: "📷 Upload logo", removeLogo: "Remove",
-    installHint: "Install the app: tap Share ⬆️ then “Add to Home Screen”",
-    measureFence: "Measure fence", fenceTitle: "Draw fence",
-    fenceHint: "Tap along the fence line · drag to move · +/− zoom",
-    endRun: "✓ End line", totalLF: "Linear feet", panels: "Panels (8 ft)",
-    posts: "Posts", cornerPosts: "Corners", walkGate: "Walk gate", doubleGate: "Double gate",
-    perLF: "Price per foot ($)", walkPrice: "Walk gate ($)", dblPrice: "Double gate ($)",
-    markup: "Material markup (%)", cedar: "Cedar", vinyl: "Vinyl", chain: "Chain link", alum: "Aluminum", custom: "Custom",
-    lineFence: "Fence", lineGates: "Gates", lineMarkup: "Material markup",
     fenceDrawn: "Fence measured",
-    propLine: "Property line loaded — tap a side to remove or add it",
     noParcel: "No property line for this address — draw the fence on the photo",
   },
 };
@@ -399,24 +201,20 @@ const seedCustomers = [
   { id: 2, name: "José Pérez", phone: "(956) 555-0188", addr: "210 Mesquite Ln, Roma, TX" },
   { id: 3, name: "Ana Ríos", phone: "(956) 555-0102", addr: "88 Palma St, La Grulla, TX" },
 ];
-const seedJobs = [
-  { id: 101, inv: 1040, custId: 1, title: { es: "Techo nuevo 24 sq, arquitectónico", en: "New roof 24 sq, architectural" }, amount: 8580, paidAmt: 2574, status: "accepted", days: 3, photos: 2, lines: [["lineRoof", 2970], ["accessories", 810], ["tearOffLine", 1200], ["labor", 3600]] },
-  { id: 102, inv: 1038, custId: 2, title: { es: "Techo metálico 31 sq", en: "Metal roof 31 sq" }, amount: 14200, paidAmt: 14200, status: "paid", days: 0, photos: 6, lines: [["lineRoof", 8500], ["accessories", 1100], ["labor", 4600]] },
-  { id: 103, inv: 1035, custId: 3, title: { es: "Reparación de goteras", en: "Leak repair" }, amount: 1150, paidAmt: 0, status: "done", days: 12, photos: 3, lines: [["labor", 1150]] },
-];
+const seedJobs = [];
 
 const fmt = (n) => "$" + Number(n).toLocaleString("en-US", { maximumFractionDigits: 0 });
 
-/* ─── Roof / property lookup (DEMO — simulated data; swap for Google Solar API + property data API) ─── */
-const PITCH_FACTORS = { 3: 1.031, 4: 1.054, 5: 1.083, 6: 1.118, 7: 1.158, 8: 1.202, 9: 1.25, 10: 1.302, 12: 1.414 };
+/* ─── Property lookup (DEMO — simulated data; swap for a property data API) ─── */
 const MAT_PRICES = { three: 95, arch: 110, metal: 250, tile: 350 };
 const FENCE_PRICES = { cedar: 28, vinyl: 38, chain: 18, alum: 45, custom: 30 };
 
+// Address pool for the built-in suggestion list (only `addr` is consumed by the live screens).
 const MOCK_PROPERTIES = [
-  { addr: "456 Oak Dr, Rio Grande City, TX", roofArea: 2460, pitch: "6", stories: 1, beds: 3, baths: 2, sqft: 1850, year: 2004, segments: 4 },
-  { addr: "210 Mesquite Ln, Roma, TX", roofArea: 3120, pitch: "4", stories: 1, beds: 4, baths: 2, sqft: 2400, year: 1998, segments: 6 },
-  { addr: "88 Palma St, La Grulla, TX", roofArea: 1690, pitch: "5", stories: 1, beds: 2, baths: 1, sqft: 1240, year: 1987, segments: 2 },
-  { addr: "1204 Cenizo Ct, Rio Grande City, TX", roofArea: 3890, pitch: "8", stories: 2, beds: 4, baths: 3, sqft: 2980, year: 2019, segments: 8 },
+  { addr: "456 Oak Dr, Rio Grande City, TX", beds: 3, baths: 2, sqft: 1850, year: 2004 },
+  { addr: "210 Mesquite Ln, Roma, TX", beds: 4, baths: 2, sqft: 2400, year: 1998 },
+  { addr: "88 Palma St, La Grulla, TX", beds: 2, baths: 1, sqft: 1240, year: 1987 },
+  { addr: "1204 Cenizo Ct, Rio Grande City, TX", beds: 4, baths: 3, sqft: 2980, year: 2019 },
   { addr: "35 Rancho Viejo Rd, Garciasville, TX", noData: true },
 ];
 
@@ -575,7 +373,6 @@ export default function TradeTechPro() {
 
   // contractor's saved price beats the default
   const priceOf = (k) => (myPrices[k] != null && myPrices[k] !== "" ? Number(myPrices[k]) : MAT_PRICES[k]);
-  const zelleNum = zelle || userPhone;
 
   const saveProfile = (patch) => {
     try {
@@ -620,10 +417,7 @@ export default function TradeTechPro() {
   };
   const [customers, setCustomers] = useState(seedCustomers);
   const [jobs, setJobs] = useState(seedJobs);
-  const [activeJobId, setActiveJobId] = useState(null);
   const [toast, setToast] = useState(null);
-  const [pendingEstimate, setPendingEstimate] = useState(null);
-  const [newCust, setNewCust] = useState(null);
 
   /* ── Cloud account (invite link → everything saved on the server) ── */
   const [session, setSession] = useState(() => {
@@ -698,23 +492,11 @@ export default function TradeTechPro() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session, cloudReady, customers, jobs, userName, bizName, userPhone, logo, lang, trade, bizEmail, license, zelle, myPrices]);
 
-  // calculator state
-  const [L, setL] = useState("30"), [W, setW] = useState("20"), [TH, setTH] = useState("4"), [waste, setWaste] = useState("10");
-  const [ppy, setPpy] = useState("160"), [laborRate, setLaborRate] = useState("2.50");
-
-  // roofing calculator state
-  const [fp, setFp] = useState("1800"), [stories, setStories] = useState("1"), [pitch, setPitch] = useState("6");
-  const [roofMat, setRoofMat] = useState("arch"), [tearOff, setTearOff] = useState(true), [layers, setLayers] = useState("1");
-  const [matSq, setMatSq] = useState(String(savedProfile.prices?.arch ?? 110)),
-    [labSq, setLabSq] = useState(String(savedProfile.prices?.labor ?? 150)),
-    [tearSq, setTearSq] = useState(String(savedProfile.prices?.tear ?? 50));
-
   // address lookup state (demo data for now)
   const [addrQ, setAddrQ] = useState("");
   const [measuring, setMeasuring] = useState(false);
   const [measurePhase, setMeasurePhase] = useState(0);
   const [lookup, setLookup] = useState(null);
-  const [mSq, setMSq] = useState("");
   const [placeSugs, setPlaceSugs] = useState(null); // null = use built-in list
   const placesSeq = useRef(0);
 
@@ -812,45 +594,7 @@ export default function TradeTechPro() {
       .catch(() => {}); // backend not running — keep the built-in list
   };
 
-  const [aiMsgs, setAiMsgs] = useState([]);
-  const [aiInput, setAiInput] = useState("");
-  const [aiBusy, setAiBusy] = useState(false);
-
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(null), 2400); };
-
-  const calc = useMemo(() => {
-    const l = parseFloat(L) || 0, w = parseFloat(W) || 0, th = parseFloat(TH) || 0, ws = parseFloat(waste) || 0;
-    const yards = (l * w * (th / 12)) / 27;
-    const withWaste = yards * (1 + ws / 100);
-    const orderY = Math.ceil(withWaste * 2) / 2;
-    const trucks = Math.max(1, Math.ceil(orderY / 10));
-    const mat = orderY * (parseFloat(ppy) || 0);
-    const lab = l * w * (parseFloat(laborRate) || 0);
-    return { yards, withWaste, orderY, trucks, mat, lab, total: mat + lab, sqft: l * w };
-  }, [L, W, TH, waste, ppy, laborRate]);
-
-  const owed = jobs.filter(j => j.status !== "paid" && j.status !== "estimate").reduce((s, j) => s + (j.amount - j.paidAmt), 0);
-  const activeJob = jobs.find(j => j.id === activeJobId);
-  const custOf = (j) => customers.find(c => c.id === j.custId) || {};
-
-  const createEstimate = (custId) => {
-    const p = pendingEstimate || {
-      title: lang === "es" ? `Losa ${L}×${W}, ${TH}″` : `Slab ${L}×${W}, ${TH}″`,
-      lines: [["lineSlab", Math.round(calc.mat)], ["labor", Math.round(calc.lab)]],
-      total: Math.round(calc.total),
-    };
-    const id = Date.now();
-    const job = {
-      id, inv: 1040 + jobs.length + 1, custId, title: { es: p.title, en: p.title },
-      amount: p.total, paidAmt: 0, status: "estimate", days: 0, photos: 0, lines: p.lines,
-      addr: p.addr || "", meas: p.meas || null,
-    };
-    setJobs([job, ...jobs]);
-    setActiveJobId(id);
-    setPendingEstimate(null);
-    setScreen("send");
-    showToast(t.estCreated + " ✓");
-  };
 
   const startLookup = async (addr, placeId = null, gps = null, target = "comps") => {
     // Demo mode gets 6 measurements TOTAL (not per day) — a taste, not a tool.
@@ -966,31 +710,6 @@ export default function TradeTechPro() {
     recordWork(res);
     setScreen("comps");
     showToast("🏠 " + t.cmpDone + " ✓");
-  };
-
-  const askAI = async (q) => {
-    if (!q.trim() || aiBusy) return;
-    const userMsg = { role: "user", content: q };
-    const history = [...aiMsgs, userMsg];
-    setAiMsgs(history);
-    setAiInput("");
-    setAiBusy(true);
-    try {
-      const data = {
-        jobs: jobs.map(j => ({ customer: custOf(j).name, title: j.title[lang], total: j.amount, paid: j.paidAmt, status: j.status, daysOutstanding: j.days })),
-      };
-      const res = await fetch("/api/ai", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages: history, lang, trade, bizName, data }),
-      });
-      const out = await res.json();
-      const text = out.text || TR[lang].aiErr;
-      setAiMsgs([...history, { role: "assistant", content: text }]);
-    } catch {
-      setAiMsgs([...history, { role: "assistant", content: TR[lang].aiErr }]);
-    }
-    setAiBusy(false);
   };
 
   /* ── Shell pieces ── */
