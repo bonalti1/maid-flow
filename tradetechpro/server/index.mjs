@@ -2548,7 +2548,7 @@ app.get("/ejemplo", (req, res) => {
   const embed = req.query.embed != null;
   res.send(`<!doctype html><html lang="es"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Techos García — Ejemplo ALTO Pro</title>
+<title>Casa Bella Realty — Ejemplo Quick Comp</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&display=swap');
 *{box-sizing:border-box;font-family:Inter,Arial,sans-serif;margin:0;-webkit-tap-highlight-color:transparent}
@@ -2635,7 +2635,7 @@ footer a{color:#9AA0AC}
 .fade.on{opacity:1;transform:none}
 @media (prefers-reduced-motion: reduce){.fade{opacity:1;transform:none;transition:none}}
 </style></head><body>
-${embed ? "" : `<div class="ribbon">📋 PÁGINA DE EJEMPLO — imagina TU logo y TU nombre aquí. Así se vería tu página con ALTO Pro.</div>`}
+${embed ? "" : `<div class="ribbon">📋 PÁGINA DE EJEMPLO — imagina TU logo y TU nombre aquí. Así se vería tu página con Quick Comp.</div>`}
 <header><div class="wrap hrow">
   <span class="logo-ph">TU LOGO</span>
   <span class="hcall"><small>Lun–Sáb · 7am–7pm</small><a class="callbtn" href="tel:+19565550100">📞 (956) 555-0100</a></span>
@@ -2645,29 +2645,29 @@ ${embed ? "" : `<div class="ribbon">📋 PÁGINA DE EJEMPLO — imagina TU logo 
   <img class="bgimg" src="/api/roofimg?lat=26.3828&lng=-98.8198&zoom=18" alt="">
   <div class="veil"></div>
   <div class="wrap in">
-    <span class="kick">TECHOS RESIDENCIALES · TU CIUDAD, TX</span>
-    <h1>Un techo que protege<br>lo que <em>más importa</em></h1>
-    <p>Reemplazo y reparación de techos con garantía por escrito. Cotiza el tuyo ahora mismo, medido por satélite — sin que nadie te visite.</p>
-    <a class="cta" href="#cotiza">COTIZA EN 60 SEGUNDOS</a><a class="cta ghost" href="tel:+19565550100">Llámanos</a>
+    <span class="kick">BIENES RAÍCES · TU CIUDAD, TX</span>
+    <h1>Vende tu casa por<br>lo que <em>de verdad vale</em></h1>
+    <p>Descubre el valor de tu casa al instante, con ventas reales cercanas — gratis y sin que nadie te visite.</p>
+    <a class="cta" href="#cotiza">VALÚA TU CASA EN 60 SEGUNDOS</a><a class="cta ghost" href="tel:+19565550100">Llámanos</a>
   </div>
   <div class="wrap stats">
     <div class="stat"><b>15+</b><span>años</span></div>
-    <div class="stat"><b>500+</b><span>techos</span></div>
-    <div class="stat"><b>100%</b><span>garantía escrita</span></div>
+    <div class="stat"><b>300+</b><span>casas vendidas</span></div>
+    <div class="stat"><b>100%</b><span>dedicación</span></div>
   </div>
 </div>
 
 <div class="wrap"><section id="cotiza">
-  <p class="eyebrow">Cotización instantánea</p>
-  <h2 class="t">Tu precio, <em>sin esperar</em></h2>
+  <p class="eyebrow">Valuación instantánea</p>
+  <h2 class="t">El valor de tu casa, <em>sin esperar</em></h2>
   <div class="qwrap fade">
     <div class="qgrid">
       <div class="qcopy">
-        <h3>Escribe tu dirección.<br>El satélite hace el resto.</h3>
-        <p>Nuestro sistema mide tu techo desde imágenes satelitales y te da un precio estimado al instante — gratis y sin compromiso.</p>
-        <ul><li>Medición real de TU casa</li><li>Precio en menos de un minuto</li><li>Inspección gratis para el precio exacto</li></ul>
+        <h3>Escribe tu dirección.<br>Las ventas reales hacen el resto.</h3>
+        <p>Nuestro sistema analiza ventas comparables recientes y te da el valor estimado al instante — gratis y sin compromiso.</p>
+        <ul><li>Valor real de TU casa</li><li>Estimado en menos de un minuto</li><li>Análisis completo (CMA) gratis</li></ul>
       </div>
-      <div class="qframe"><iframe src="/w/alto-demo" loading="lazy" title="Cotizador"></iframe></div>
+      <div class="qframe"><iframe src="/w/alto-demo" loading="lazy" title="Valuador"></iframe></div>
     </div>
   </div>
 </section></div>
@@ -2676,21 +2676,21 @@ ${embed ? "" : `<div class="ribbon">📋 PÁGINA DE EJEMPLO — imagina TU logo 
   <p class="eyebrow">Servicios</p>
   <h2 class="t">Lo que hacemos <em>bien</em></h2>
   <div style="margin-top:44px">
-    <div class="svc fade"><span class="no">01</span><div><h3>Reemplazo de techo</h3><p>Teja arquitectónica, metal o teja de barro. Trabajo limpio, rápido y con garantía por escrito.</p></div><span class="arr">→</span></div>
-    <div class="svc fade"><span class="no">02</span><div><h3>Reparaciones</h3><p>Goteras, tejas voladas por el viento, flasheo. Respuesta el mismo día cuando es posible.</p></div><span class="arr">→</span></div>
-    <div class="svc fade"><span class="no">03</span><div><h3>Reclamos de seguro</h3><p>Te acompañamos en la inspección y el papeleo después de granizo o tormenta.</p></div><span class="arr">→</span></div>
-    <div class="svc fade"><span class="no">04</span><div><h3>Inspección gratuita</h3><p>Revisamos tu techo y te decimos la verdad — aunque no necesites nada todavía.</p></div><span class="arr">→</span></div>
+    <div class="svc fade"><span class="no">01</span><div><h3>Vende tu casa</h3><p>Te ponemos al precio correcto desde el día uno, con un plan de marketing que atrae compradores reales.</p></div><span class="arr">→</span></div>
+    <div class="svc fade"><span class="no">02</span><div><h3>Compra tu casa</h3><p>Te representamos como comprador — buscamos, negociamos y cuidamos cada detalle hasta las llaves.</p></div><span class="arr">→</span></div>
+    <div class="svc fade"><span class="no">03</span><div><h3>Valuación / CMA gratis</h3><p>Un análisis comparativo de mercado con ventas reales cercanas para saber qué vale tu casa hoy.</p></div><span class="arr">→</span></div>
+    <div class="svc fade"><span class="no">04</span><div><h3>Asesoría de mercado</h3><p>Te decimos la verdad del mercado — cuándo vender, cuándo esperar — aunque no sea hoy.</p></div><span class="arr">→</span></div>
   </div>
 </section></div>
 
 <div class="wrap"><section style="padding-top:10px">
-  <p class="eyebrow">Proyectos recientes</p>
-  <h2 class="t">Techos medidos <em>desde el cielo</em></h2>
-  <p class="sub">Cada proyecto empieza con una medición satelital exacta — así cotizamos justo, sin sorpresas.</p>
+  <p class="eyebrow">Ventas recientes</p>
+  <h2 class="t">Casas vendidas <em>al mejor precio</em></h2>
+  <p class="sub">Cada venta empieza con un precio correcto, basado en ventas comparables reales — así vendemos rápido y sin dejar dinero en la mesa.</p>
   <div class="projgrid">
-    <div class="proj fade"><img loading="lazy" src="/api/roofimg?lat=26.3827418&lng=-98.8196915&zoom=20" alt=""><span class="tag">Reemplazo completo<small>Teja arquitectónica · 24 sq</small></span></div>
-    <div class="proj fade"><img loading="lazy" src="/api/roofimg?lat=26.3795779&lng=-98.8186812&zoom=20" alt=""><span class="tag">Techo nuevo<small>Teja arquitectónica · 31 sq</small></span></div>
-    <div class="proj fade"><img loading="lazy" src="/api/roofimg?lat=26.3807212&lng=-98.8148616&zoom=20" alt=""><span class="tag">Reparación mayor<small>Después de granizo · seguro</small></span></div>
+    <div class="proj fade"><img loading="lazy" src="/api/roofimg?lat=26.3827418&lng=-98.8196915&zoom=20" alt=""><span class="tag">Vendida en 9 días<small>3 rec · 2 baños · sobre el precio de lista</small></span></div>
+    <div class="proj fade"><img loading="lazy" src="/api/roofimg?lat=26.3795779&lng=-98.8186812&zoom=20" alt=""><span class="tag">Vendida en 14 días<small>4 rec · 3 baños · al precio de lista</small></span></div>
+    <div class="proj fade"><img loading="lazy" src="/api/roofimg?lat=26.3807212&lng=-98.8148616&zoom=20" alt=""><span class="tag">Comprador representado<small>Cerró $12k bajo el precio de lista</small></span></div>
   </div>
 </section></div>
 
@@ -2698,9 +2698,9 @@ ${embed ? "" : `<div class="ribbon">📋 PÁGINA DE EJEMPLO — imagina TU logo 
   <p class="eyebrow">Nuestro proceso</p>
   <h2 class="t">Simple, <em>de principio a fin</em></h2>
   <div class="steps">
-    <div class="pstep fade"><div class="pn">1</div><h3>Inspección</h3><p>Confirmamos la medida satelital en sitio y revisamos la condición real de tu techo. Gratis.</p></div>
-    <div class="pstep fade"><div class="pn">2</div><h3>Propuesta clara</h3><p>Precio por escrito, materiales y fechas. Sin letras chiquitas ni cargos sorpresa.</p></div>
-    <div class="pstep fade"><div class="pn">3</div><h3>Instalación</h3><p>Equipo propio, limpieza total al terminar y garantía por escrito en tu mano.</p></div>
+    <div class="pstep fade"><div class="pn">1</div><h3>Valuación</h3><p>Analizamos ventas comparables reales para saber exactamente qué vale tu casa hoy. Gratis.</p></div>
+    <div class="pstep fade"><div class="pn">2</div><h3>Estrategia de precio</h3><p>Un plan claro de precio y marketing por escrito para vender rápido y al mejor valor.</p></div>
+    <div class="pstep fade"><div class="pn">3</div><h3>Cierre</h3><p>Negociamos por ti y cuidamos cada detalle del papeleo hasta que recibes tu cheque.</p></div>
   </div>
 </section></div></div>
 
@@ -2717,13 +2717,13 @@ ${embed ? "" : `<div class="ribbon">📋 PÁGINA DE EJEMPLO — imagina TU logo 
   <img class="bgimg" src="/api/roofimg?lat=26.3828&lng=-98.8198&zoom=17" alt="">
   <div class="veil"></div>
   <div class="in">
-    <h2>¿Listo para un techo<br><em>hecho bien?</em></h2>
-    <p>Cotiza en 60 segundos o mándanos un WhatsApp.</p>
-    <a class="a1" href="#cotiza">COTIZA AHORA</a><a class="a2" href="https://wa.me/19565550100">💬 WhatsApp</a>
+    <h2>¿Listo para vender<br><em>al mejor precio?</em></h2>
+    <p>Valúa tu casa en 60 segundos o mándanos un WhatsApp.</p>
+    <a class="a1" href="#cotiza">VALÚA AHORA</a><a class="a2" href="https://wa.me/19565550100">💬 WhatsApp</a>
   </div>
 </div>
-<footer><b>Techos García</b><br>Tu Ciudad, TX · Lic. #00000 · Lun–Sáb 7am–7pm<br>Página de ejemplo hecha con ⚡ ALTO Pro — <a href="/ventas">así puede ser la tuya</a></footer>
-${embed ? "" : `<a class="backalto" href="/ventas#precio">← Volver a <span>ALTO PRO</span></a>`}
+<footer><b>Casa Bella Realty</b><br>Tu Ciudad, TX · Lic. #00000 · Lun–Sáb 9am–7pm<br>Página de ejemplo hecha con ⚡ Quick Comp — <a href="/ventas">así puede ser la tuya</a></footer>
+${embed ? "" : `<a class="backalto" href="/ventas#precio">← Volver a <span>QUICK COMP</span></a>`}
 <script>
 var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('on');io.unobserve(e.target)}})},{threshold:.15});
 document.querySelectorAll('.fade').forEach(function(el){io.observe(el)});
@@ -2769,7 +2769,7 @@ app.get("/site/:slug", async (req, res) => {
 h1{font-size:20px;margin:12px 0 8px}p{color:#5A6478;font-weight:600;font-size:14.5px;line-height:1.6}
 a{display:inline-block;margin-top:18px;background:#101B30;color:#fff;text-decoration:none;font-weight:800;padding:14px 26px;border-radius:12px}
 </style></head><body><div class="card">
-<span style="font-size:40px">🛠️</span><h1>${pBiz}</h1>
+<span style="font-size:40px">🏡</span><h1>${pBiz}</h1>
 <p>Este sitio no está disponible por el momento.<br>This site is temporarily unavailable.</p>
 ${pPhone ? `<a href="tel:+1${pPhone}">📞 Llámanos / Call us</a>` : ""}
 </div></body></html>`);
@@ -2804,16 +2804,16 @@ li b{margin-left:auto;font-size:12px;font-weight:800}
 </style></head><body><div class="card">
 ${cLogo ? `<img class="logo" src="${cLogo}" alt="${cBiz}">` : `<div class="biz">${cBiz}</div>`}
 <h1>🏗️ Tu página web se está armando</h1>
-<p class="sub">Nuestro equipo está poniendo los últimos detalles a tu página, tu cotizador por satélite y tu sistema de mensajes.</p>
+<p class="sub">Nuestro equipo está poniendo los últimos detalles a tu página, tu valuador de casas y tu sistema de mensajes.</p>
 <div class="bar"><div class="fill"></div></div>
 <p class="eta">Lista en aproximadamente 10 días</p>
 <ul>
 <li class="done">🎨 Diseño y tu marca <b>✓ Listo</b></li>
-<li class="done">🛰️ Cotizador por satélite <b>✓ Listo</b></li>
+<li class="done">🏡 Valuador de casas <b>✓ Listo</b></li>
 <li class="wip">📞 Registro de tu número <b>En proceso</b></li>
 <li class="wip">🚀 Publicación de tu página <b>En proceso</b></li>
 </ul>
-<p class="ft">⚡ Hecho con ALTO Pro</p>
+<p class="ft">⚡ Hecho con Quick Comp</p>
 </div></body></html>`);
   }
   res.send(renderSite(siteDataOf(c)));
@@ -2827,7 +2827,7 @@ app.get("/plantilla/:n", (req, res) => {
   const SIG = { 1: "#B30F24", 2: "#E8540C", 3: "#1B6FB8" };
   res.send(renderSite({
     slug: "alto-demo",
-    biz: "Techos García",
+    biz: "Casa Bella Realty",
     phone: "9565550100",
     logo: null,
     template: n,
@@ -2835,7 +2835,7 @@ app.get("/plantilla/:n", (req, res) => {
     city: "Tu Ciudad, TX",
     years: 15,
     license: "00000",
-    about: "Empezamos hace 15 años con una troca y muchas ganas. Hoy somos un equipo que ha hecho cientos de techos en la región — y seguimos tratando cada casa como si fuera la nuestra.",
+    about: "Empezamos hace 15 años ayudando a familias a vender y comprar su casa en la región. Hoy seguimos con la misma idea: precio honesto, ventas reales y trato de familia — cada cliente como si fuera el único.",
   }, embed ? {} : { ribbon: `PLANTILLA ${n} — imagina TU logo y TU nombre aquí.`, backAlto: true }));
 });
 
@@ -2847,7 +2847,7 @@ app.get("/plantillas", (req, res) => {
     ["3", "El Limpio", "Suave y de confianza — el vecino honesto.", "#1B6FB8"],
   ];
   res.send(`<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ALTO Pro · Elige tu plantilla</title><link rel="icon" href="/icon-192.png"><style>
+<title>Quick Comp · Elige tu plantilla</title><link rel="icon" href="/icon-192.png"><style>
 *{box-sizing:border-box;font-family:Inter,Arial,sans-serif;margin:0}
 body{background:#101B30;color:#fff;padding:34px 20px 60px}
 h1{text-align:center;font-size:clamp(24px,4.5vw,36px);font-weight:800}
@@ -2868,7 +2868,7 @@ h1 em{color:#F8B408;font-style:normal}
 .open{display:inline-block;margin-top:12px;background:#fff;color:#101B30;text-decoration:none;font-weight:800;font-size:13px;padding:10px 20px;border-radius:99px}
 </style></head><body>
 <h1>¿Cuál se siente <em>más tú</em>?</h1>
-<p class="sub">Tres estilos, el mismo motor: tu logo, tus colores y el cotizador por satélite adentro. Prueba tu color de marca — las tres se pintan al instante.</p>
+<p class="sub">Tres estilos, el mismo motor: tu logo, tus colores y el valuador de casas adentro. Prueba tu color de marca — las tres se pintan al instante.</p>
 <div class="colorbar">
   <label>🎨 Tu color:</label>
   <input type="color" id="col" value="#B30F24">
