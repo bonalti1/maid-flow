@@ -1411,7 +1411,7 @@ td .pill{margin:2px 3px 2px 0}
     <tr><th>Visitas</th><th>Widget visto</th><th>Cotizó</th><th>Quiz inició</th><th>Agendó</th></tr>
     <tr><td>${tot("visit")}</td><td>${tot("w_view")}</td><td>${tot("w_result")}</td><td>${tot("quiz_work")}</td><td>${tot("quiz_done")}</td></tr>
   </table></div>
-  <p class="legend">Visitas = página de ventas · Widget visto = abrieron el cotizador · Cotizó = vieron precio · Quiz inició = 1ª pregunta · Agendó = dejaron datos.</p>
+  <p class="legend">Visitas = página de ventas · Widget visto = abrieron el valuador · Valuó = vieron el valor · Quiz inició = 1ª pregunta · Agendó = dejaron datos.</p>
 </div>
 </div>
 
@@ -1420,7 +1420,7 @@ td .pill{margin:2px 3px 2px 0}
   ${[
     ["PÚBLICO · VENTAS", [
       ["🌐 Página de ventas", "https://alto-pro.com"],
-      ["🛰️ Demo del cotizador (mándalo a prospectos)", `${base}/w/alto-demo`],
+      ["🏡 Demo del valuador (mándalo a prospectos)", `${base}/w/alto-demo`],
       ["🏠 Página de ejemplo", `${base}/ejemplo`],
       ["🎨 Las 3 plantillas", `${base}/plantillas`],
     ]],
@@ -1528,8 +1528,8 @@ function filterClients(){
 }
 function setStatus(id, status, name){
   var q = status === 'paused'
-    ? '¿Pausar a ' + name + '? Su cotizador y su página dejan de recibir leads. Su app y sus datos NO se tocan.'
-    : '¿Reactivar a ' + name + '? Su cotizador vuelve a recibir leads al instante.';
+    ? '¿Pausar a ' + name + '? Su valuador y su página dejan de recibir leads. Su app y sus datos NO se tocan.'
+    : '¿Reactivar a ' + name + '? Su valuador vuelve a recibir leads al instante.';
   if (!confirm(q)) return;
   fetch('/api/admin/status?key=${KEY}&id=' + id + '&status=' + status)
     .then(r => r.json()).then(j => { if (!j.ok) alert('Error: ' + j.error); location.reload(); });
@@ -1552,7 +1552,7 @@ app.post("/api/admin/ceo", async (req, res) => {
   if (!adminOk(req)) return res.status(403).json({ error: "no auth" });
   const en = req.body?.lang === "en";
   const m = req.body?.metrics || {};
-  const system = `You are a sharp, no-nonsense fractional CEO / growth advisor for ALTO Pro, a Spanish-first SaaS sold to Hispanic roofing contractors at about $297-349/month (website + roof-quote widget + app + AI secretary + leads). Given the numbers, write a concise, PRIORITIZED action plan in ${en ? "English" : "Spanish"}, max 160 words, plain text (no markdown headers). Be direct and specific: if close rate is low, say to fix/coach/replace closers BEFORE scaling ads; if unit economics are strong (LTV:CAC >= 3, payback < 3mo), say to scale ad spend and by roughly how much; flag churn and failed payments as fires to put out first. End with the single most important next action. No fluff.`;
+  const system = `You are a sharp, no-nonsense fractional CEO / growth advisor for Quick Comp, a Spanish-first SaaS sold to Hispanic real-estate agents at about $297-349/month (website + home-value widget + app + AI secretary + leads). Given the numbers, write a concise, PRIORITIZED action plan in ${en ? "English" : "Spanish"}, max 160 words, plain text (no markdown headers). Be direct and specific: if close rate is low, say to fix/coach/replace closers BEFORE scaling ads; if unit economics are strong (LTV:CAC >= 3, payback < 3mo), say to scale ad spend and by roughly how much; flag churn and failed payments as fires to put out first. End with the single most important next action. No fluff.`;
   const user = `Numbers: ${JSON.stringify(m)}`;
   try {
     const text = await aiChat({ system, messages: [{ role: "user", content: user }], maxTokens: 380 });
@@ -1583,7 +1583,7 @@ app.get("/admin/economics", async (req, res) => {
     clients: clients.length, paying: payCount("ok"), pending: payCount("pending"), failed: payCount("failed"), canceled: payCount("canceled"),
   };
   res.send(`<!doctype html><html lang="${en ? "en" : "es"}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ALTO Pro · ${tr("Centro de mando", "Command center")}</title><link rel="icon" href="/icon-192.png"><style>
+<title>Quick Comp · ${tr("Centro de mando", "Command center")}</title><link rel="icon" href="/icon-192.png"><style>
 *{box-sizing:border-box;margin:0;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
 body{background:#F5F6F8;color:#0B1220;letter-spacing:-0.011em}
 ::selection{background:rgba(248,180,8,.35)}
@@ -1784,7 +1784,7 @@ app.get("/admin/c/:slug", async (req, res) => {
   const payColor = pay === "ok" ? "#1E7B3C" : pay === "failed" ? "#C5221F" : pay === "pending" ? "#9A6E00" : "#8A94A8";
   const payLabel = { ok: "✓ pagando", failed: "💳 pago falló", pending: "⏳ pendiente de pago", canceled: "canceló" }[pay] || "sin estado";
   res.send(`<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${esc(c.name)} · ALTO Pro Admin</title><link rel="icon" href="/icon-192.png"><style>
+<title>${esc(c.name)} · Quick Comp Admin</title><link rel="icon" href="/icon-192.png"><style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 *{box-sizing:border-box;margin:0;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display",Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
 body{background:#F5F6F8;color:#0B1220;letter-spacing:-0.011em}
@@ -1827,7 +1827,7 @@ td{padding:13px 10px;border-bottom:1px solid #F2F4F7;font-weight:600;color:#1B24
 <div class="panel"><h2>Acciones</h2><div class="acts">
   ${isPaused
     ? `<button class="b-gold" onclick="act('/api/admin/status?key=${KEY}&id=${c.id}&status=active','¿Reactivar?')">▶ Reactivar</button>`
-    : `<button class="b-red" onclick="act('/api/admin/status?key=${KEY}&id=${c.id}&status=paused','¿Pausar? Su sitio y cotizador dejan de recibir leads.')">⏸ Pausar</button>`}
+    : `<button class="b-red" onclick="act('/api/admin/status?key=${KEY}&id=${c.id}&status=paused','¿Pausar? Su sitio y valuador dejan de recibir leads.')">⏸ Pausar</button>`}
   <button class="b-dark" onclick="pub(${st.published ? "false" : "true"})">${st.published ? "Ocultar página" : "🚀 Publicar página"}</button>
   <a class="b-line" href="/onboarding?key=${KEY}&slug=${c.slug}">🎨 Onboarding</a>
   <a class="b-line" href="/api/admin/invite?key=${KEY}&id=${c.id}">🔑 Link de acceso</a>
@@ -2957,7 +2957,7 @@ app.get("/cs", async (req, res) => {
     if (dev >= 4) attention.push({ slug: c.slug, name: c.name, tag: "link compartido", icon: "📱", msg: `${dev} dispositivos — ofrécele cuentas para su equipo`, act: "site", c });
   }
   res.send(`<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ALTO Pro · Servicio</title><link rel="icon" href="/icon-192.png"><style>
+<title>Quick Comp · Servicio</title><link rel="icon" href="/icon-192.png"><style>
 *{box-sizing:border-box;margin:0;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
 body{background:#F5F6F8;color:#0B1220;letter-spacing:-0.011em}
 ::selection{background:rgba(248,180,8,.35)}
@@ -3092,7 +3092,7 @@ ${attention.length ? `<div class="panel">
   <details><summary>El cliente quiere subir fotos nuevas</summary><div class="gb"><ol><li>Pídele las fotos por <b>💬 WhatsApp</b>.</li><li><b>✏️ Editar</b> → paso <b>Logo y fotos</b> → súbelas.</li><li>Guarda y <b>Publica</b>. Marca <b>Hecho</b>.</li></ol></div></details>
   <details><summary>La página está "en construcción" / sin publicar</summary><div class="gb"><ol><li><b>✏️ Editar</b> y revisa que esté completa.</li><li>En el último paso toca <b>🚀 Publicar página al cliente</b>.</li></ol></div></details>
   <details><summary>El cliente quiere su propio dominio (ej. sucasa.com)</summary><div class="gb"><ol><li><b>✏️ Editar</b> → paso <b>Su dominio</b> → buscar/conectar.</li><li>Pásale el registro <b>CNAME</b> para que lo ponga en su dominio.</li></ol></div></details>
-  <details><summary>Dice que su página "no aparece" en Google</summary><div class="gb">Su página ya está en línea (sitio + cotizador). Salir en Google toma tiempo. Confírmale que su link funciona y que ya puede compartirlo por WhatsApp y redes.</div></details>
+  <details><summary>Dice que su página "no aparece" en Google</summary><div class="gb">Su página ya está en línea (sitio + valuador). Salir en Google toma tiempo. Confírmale que su link funciona y que ya puede compartirlo por WhatsApp y redes.</div></details>
   <details><summary>Pago falló / cuenta pausada</summary><div class="gb">Recuérdale por <b>💬 WhatsApp</b> actualizar su tarjeta. Cuando pague, la cuenta se reactiva sola. Si pagó por otro medio, avísale al admin.</div></details>
   <details><summary>Aparece "📱 link compartido"</summary><div class="gb">Su cuenta se está abriendo en muchos teléfonos — su equipo la está compartiendo. Ofrécele por <b>💬 WhatsApp</b> cuentas para su equipo (más venta para nosotros).</div></details>
 </div>
@@ -3753,7 +3753,7 @@ app.post("/api/onboarding/publish", async (req, res) => {
 app.get("/equipo", (req, res) => {
   const base = canonBase(req);
   res.send(`<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ALTO Pro · Equipo</title><link rel="icon" href="/icon-192.png"><style>
+<title>Quick Comp · Equipo</title><link rel="icon" href="/icon-192.png"><style>
 @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;1,9..144,600&family=Inter:wght@400;500;600;700;800&display=swap');
 *{box-sizing:border-box;font-family:Inter,Arial,sans-serif;margin:0;-webkit-tap-highlight-color:transparent}
 :root{--navy:#101B30;--navy2:#0B1226;--gold:#F8B408;--mut:#9DA8C4;--line:rgba(255,255,255,.1)}
@@ -3817,16 +3817,16 @@ ul.pts li b{color:var(--gold);flex-shrink:0}
 @media(max-width:899px){aside{position:fixed;z-index:60;left:0;top:0;bottom:0;transform:translateX(-100%);transition:.25s;width:250px}aside.open{transform:none}.mtop{display:flex}.scrim{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:55;display:none}.scrim.on{display:block}}
 </style></head><body>
 <div class="layout">
-<aside id="sb"><div class="sb-brand"><img src="/brand-logo.png" alt=""></div><div class="sb-label">ALTO PRO</div><nav id="nav"></nav><div class="sb-foot">Presentación del rol</div></aside>
+<aside id="sb"><div class="sb-brand"><img src="/brand-logo.png" alt=""></div><div class="sb-label">QUICK COMP</div><nav id="nav"></nav><div class="sb-foot">Presentación del rol</div></aside>
 <div class="scrim" id="scrim" onclick="sb(false)"></div>
 <main>
-<div class="mtop"><button onclick="sb(true)">☰ Menú</button><b style="font-weight:800">ALTO <span style="color:#F8B408">PRO</span></b><span style="width:64px"></span></div>
+<div class="mtop"><button onclick="sb(true)">☰ Menú</button><b style="font-weight:800">QUICK <span style="color:#F8B408">COMP</span></b><span style="width:64px"></span></div>
 <div class="stage" id="stage">
 
 <section class="slide" data-t="El rol">
   <img class="s-bg" src="/api/roofimg?lat=26.3828&lng=-98.8198&zoom=17" alt=""><div class="s-veil"></div>
   <div class="s-in">
-    <p class="kick">ALTO PRO · MARKETING Y TECNOLOGÍA PARA ROFEROS</p>
+    <p class="kick">QUICK COMP · MARKETING Y TECNOLOGÍA PARA AGENTES DE BIENES RAÍCES</p>
     <h1>Dos trabajos, <em>un solo rol.</em></h1>
     <div class="rule"></div>
     <p class="body">El rol combina dos cosas: <b style="color:#fff">cerrar ventas</b> y <b style="color:#fff">crear el contenido</b> que trae esos clientes. En esta presentación vas a ver, en vivo, los productos que venderías y grabarías.</p>
@@ -3837,13 +3837,13 @@ ul.pts li b{color:var(--gold);flex-shrink:0}
   <div class="s-veil"></div>
   <div class="s-in">
     <p class="kick">01 · A QUIÉN LE VENDES</p>
-    <h1>Contratistas hispanos <em>de techos.</em></h1>
+    <h1>Agentes hispanos <em>de bienes raíces.</em></h1>
     <div class="rule"></div>
     <ul class="pts">
-      <li><b>🇲🇽</b> Hablan español, trabajan con las manos, odian la tecnología complicada</li>
-      <li><b>📞</b> Consiguen trabajo por recomendación — pero pierden llamadas cuando están en un techo</li>
-      <li><b>💵</b> Un techo les deja $2,000–$4,000 de ganancia — tienen con qué pagar</li>
-      <li><b>🎯</b> Empezamos SOLO con roferos — enfocados</li>
+      <li><b>🇲🇽</b> Hablan español, trabajan por relación, odian la tecnología complicada</li>
+      <li><b>📞</b> Consiguen clientes por recomendación — pero pierden vendedores que no saben que su casa ya subió de valor</li>
+      <li><b>💵</b> Una comisión les deja miles de dólares — tienen con qué pagar</li>
+      <li><b>🎯</b> Empezamos SOLO con agentes hispanos — enfocados</li>
     </ul>
     <p class="body" style="margin-top:16px"><b style="color:var(--gold)">Háblales como un amigo que entiende su negocio — no como vendedor de tecnología.</b></p>
   </div>
@@ -3853,12 +3853,12 @@ ul.pts li b{color:var(--gold);flex-shrink:0}
   <div class="s-veil"></div>
   <div class="s-in">
     <p class="kick">02 · QUÉ VENDEMOS</p>
-    <h1>Una máquina que <em>trae trabajos.</em></h1>
+    <h1>Una máquina que <em>trae clientes.</em></h1>
     <div class="rule"></div>
     <div class="grid">
       <div class="card"><div class="ic">🌐</div><h3>Página web</h3><p>Profesional, con su marca. Lista en 10-14 días.</p></div>
-      <div class="card"><div class="ic">🛰️</div><h3>Cotizador satelital</h3><p>El cliente pone su dirección y ve su precio en 60 seg.</p></div>
-      <div class="card"><div class="ic">📲</div><h3>La app ALTO Pro</h3><p>Mide techos, hace facturas, recibe los leads.</p></div>
+      <div class="card"><div class="ic">🏡</div><h3>Valuador de casas</h3><p>El dueño pone su dirección y ve el valor de su casa en 60 seg.</p></div>
+      <div class="card"><div class="ic">📲</div><h3>La app Quick Comp</h3><p>Valúa casas, arma el CMA, recibe los leads.</p></div>
       <div class="card"><div class="ic">🤖</div><h3>Secretaria IA</h3><p>Contesta y agenda citas a cualquier hora.</p></div>
     </div>
     <div class="glass"><div><b>$297</b><span>para empezar</span></div><div><b>$297</b><span>al mes</span></div></div>
@@ -3878,17 +3878,17 @@ ul.pts li b{color:var(--gold);flex-shrink:0}
   </div>
 </section>
 
-<section class="slide" data-t="El cotizador (wow)">
+<section class="slide" data-t="El valuador (wow)">
   <div class="s-veil"></div>
   <div class="s-in" style="max-width:1000px">
-    <p class="kick">04 · EL COTIZADOR · EL WOW</p>
+    <p class="kick">04 · EL VALUADOR · EL WOW</p>
     <h1>Pon una <em>dirección.</em></h1>
     <div class="duo">
       <div>
-        <p class="body">El momento "wow" de toda la venta. Escribe una dirección real y mira cómo el satélite mide el techo y da un precio. ESTO es lo que grabas para los anuncios.</p>
+        <p class="body">El momento "wow" de toda la venta. Escribe una dirección real y mira cómo aparece el valor de la casa con ventas comparables reales. ESTO es lo que grabas para los anuncios.</p>
         <a class="link" href="/demo" target="_blank">Ver la presentación de venta →</a>
       </div>
-      <div class="frame"><iframe data-src="/w/alto-demo" title="Cotizador"></iframe></div>
+      <div class="frame"><iframe data-src="/w/alto-demo" title="Valuador"></iframe></div>
     </div>
   </div>
 </section>
@@ -3901,13 +3901,13 @@ ul.pts li b{color:var(--gold);flex-shrink:0}
     <div class="duo">
       <div>
         <ul class="pts" style="margin-top:0">
-          <li><b>🛰️</b> Mide techos: dirección, GPS, o con el dedo</li>
+          <li><b>🏡</b> Valúa casas: dirección o GPS, con ventas comparables reales</li>
           <li><b>📥</b> Los leads le llegan con botón de WhatsApp</li>
-          <li><b>🧾</b> Cotizaciones y facturas con su marca</li>
+          <li><b>🧾</b> Reportes CMA profesionales con su marca</li>
         </ul>
         <p class="body" style="font-size:14px;margin-top:14px">👉 La app de la derecha está EN VIVO — tócala.</p>
       </div>
-      <div class="iphone"><div class="inotch"></div><div class="mscr"><iframe data-src="/?demo=roof" title="App"></iframe></div></div>
+      <div class="iphone"><div class="inotch"></div><div class="mscr"><iframe data-src="/?demo=app" title="App"></iframe></div></div>
     </div>
   </div>
 </section>
@@ -3921,7 +3921,7 @@ ul.pts li b{color:var(--gold);flex-shrink:0}
     <ul class="pts">
       <li><b>1</b> El prospecto agenda una llamada (de los anuncios que TÚ grabas)</li>
       <li><b>2</b> Compartes pantalla y caminas la presentación: <b style="color:#fff">/demo</b></li>
-      <li><b>3</b> En vivo pones SU dirección y le mides SU techo — ahí cambia todo</li>
+      <li><b>3</b> En vivo pones SU dirección y le valúas SU casa — ahí cambia todo</li>
       <li><b>4</b> Le mandas el link de pago y cierras en la misma llamada</li>
     </ul>
     <p class="body" style="margin-top:14px">Tu portal privado tiene el guion, los links y las respuestas a objeciones:</p>
@@ -3935,12 +3935,12 @@ ul.pts li b{color:var(--gold);flex-shrink:0}
     <p class="kick">07 · TU SEGUNDO TRABAJO · CONTENIDO</p>
     <h1>El contenido que <em>trae clientes.</em></h1>
     <div class="rule"></div>
-    <p class="body">Corremos anuncios en WhatsApp e Instagram/Facebook, en español, para roferos. Tu contenido es el motor del negocio.</p>
+    <p class="body">Corremos anuncios en WhatsApp e Instagram/Facebook, en español, para agentes. Tu contenido es el motor del negocio.</p>
     <div class="grid">
       <div class="card"><div class="ic">🎬</div><h3>Anuncios cortos (9:16)</h3><p>15-40 seg para WhatsApp/Reels. Hook fuerte en los primeros 3 seg.</p></div>
       <div class="card"><div class="ic">🎥</div><h3>VSL (1-2 min)</h3><p>Video para la página explicando la oferta — tú a cámara, directo.</p></div>
-      <div class="card"><div class="ic">📱</div><h3>Grabación de pantalla</h3><p>Midiendo un techo en 60 seg — el wow en video.</p></div>
-      <div class="card"><div class="ic">📸</div><h3>Fotos del equipo</h3><p>Tú y el equipo con la camisa ALTO en un techo real.</p></div>
+      <div class="card"><div class="ic">📱</div><h3>Grabación de pantalla</h3><p>Valuando una casa en 60 seg — el wow en video.</p></div>
+      <div class="card"><div class="ic">📸</div><h3>Fotos del equipo</h3><p>Tú y el equipo con la camisa Quick Comp, profesionales.</p></div>
     </div>
   </div>
 </section>
@@ -3951,13 +3951,13 @@ ul.pts li b{color:var(--gold);flex-shrink:0}
     <p class="kick">08 · TUS PRIMEROS VIDEOS</p>
     <h1>Lista para <em>grabar ya.</em></h1>
     <ul class="pts">
-      <li><b>🎯</b> "¿Cuántos trabajos pierdes mientras estás arriba de un techo?" — hook de dolor, a cámara</li>
-      <li><b>🛰️</b> "Mira cómo cotizo un techo en 60 segundos sin subirme" — grabación de pantalla</li>
+      <li><b>🎯</b> "¿Cuántos vendedores pierdes porque no saben lo que vale su casa?" — hook de dolor, a cámara</li>
+      <li><b>🏡</b> "Mira cómo valúo una casa en 60 segundos con ventas reales" — grabación de pantalla</li>
       <li><b>💬</b> "Tus clientes te llegan directo al WhatsApp" — muestra el lead llegando</li>
       <li><b>🌐</b> "Tu página web vende sola, 24/7" — muestra la página de ejemplo</li>
       <li><b>🤖</b> "Una secretaria con IA que nunca duerme" — muestra el chat contestando</li>
     </ul>
-    <p class="body" style="margin-top:12px">Regla de oro: <b style="color:#fff">habla como rofero, no como tecnología.</b></p>
+    <p class="body" style="margin-top:12px">Regla de oro: <b style="color:#fff">habla como agente, no como tecnología.</b></p>
   </div>
 </section>
 
@@ -3970,7 +3970,7 @@ ul.pts li b{color:var(--gold);flex-shrink:0}
     <ul class="pts">
       <li><b>1</b> Explora la presentación de venta y el portal del closer</li>
       <li><b>2</b> Graba los primeros 3 anuncios de la lista esta semana</li>
-      <li><b>3</b> Agenda la foto del equipo con la camisa ALTO</li>
+      <li><b>3</b> Agenda la foto del equipo con la camisa Quick Comp</li>
     </ul>
     <div style="margin-top:20px">
       <a class="link" href="/demo" target="_blank">/demo · venta</a>
@@ -4077,8 +4077,8 @@ ${paid
   : `<p style="background:#FEF5DC;border:1.5px solid #F8B408;color:#7A5A00;border-radius:12px;padding:10px 14px;font-weight:700">⏳ El link de acceso se ACTIVA solo cuando Stripe confirme su pago (≈1 min después de pagar). Si pagó por otro medio, el admin la activa desde su tablero.</p>`}
 <p><b>1.</b> Copia su <b>link de acceso</b> y pégalo en el mensaje de bienvenida (tecla B en la presentación):</p>
 <div class="link"><span><b>🔑 Acceso a su app</b><br><small>${base}/invite/${invite}</small></span><button onclick="navigator.clipboard.writeText('${base}/invite/${invite}');this.textContent='✓'">Copiar</button></div>
-<p><b>2.</b> Su cotizador (va dentro de su página web):</p>
-<div class="link"><span><b>🛰️ Widget</b><br><small>${base}/w/${c.slug}</small></span><button onclick="navigator.clipboard.writeText('${base}/w/${c.slug}');this.textContent='✓'">Copiar</button></div>
+<p><b>2.</b> Su valuador (va dentro de su página web):</p>
+<div class="link"><span><b>🏡 Widget</b><br><small>${base}/w/${c.slug}</small></span><button onclick="navigator.clipboard.writeText('${base}/w/${c.slug}');this.textContent='✓'">Copiar</button></div>
 <p><b>3.</b> Personaliza su página web (plantilla, color, fotos):</p>
 <div class="link"><span><b>🎨 Onboarding de su página</b></span><a href="/onboarding?key=${K}&slug=${c.slug}" style="margin-left:auto;background:#F8B408;color:#101B30;border-radius:8px;padding:8px 14px;font-weight:800;text-decoration:none">Abrir →</a></div>
 <a href="/closer?key=${K}">← Volver al portal del closer</a></body></html>`);
@@ -4109,8 +4109,8 @@ app.get("/closer", async (req, res) => {
     ? `Check this out 👀 — type your address and see what your customers would see on YOUR website:\n${base}/w/alto-demo`
     : `Mira esto 👀 — escribe tu dirección y ve lo que tus clientes verían en TU página web:\n${base}/w/alto-demo`;
   const welcome = en
-    ? `Congratulations and welcome to ALTO Pro! 🎉 Tap this link from your phone and save it — it's your personal key to your app: [PASTE THEIR ACCESS LINK HERE]. You can measure roofs and quote starting today. See you at your onboarding call 💪`
-    : `¡Felicidades y bienvenido a ALTO Pro! 🎉 Toca este link desde tu teléfono y guárdalo — es tu llave personal a tu app: [PEGA AQUÍ SU LINK DE ACCESO]. Hoy mismo puedes medir techos y cotizar. Nos vemos en tu llamada de onboarding 💪`;
+    ? `Congratulations and welcome to Quick Comp! 🎉 Tap this link from your phone and save it — it's your personal key to your app: [PASTE THEIR ACCESS LINK HERE]. You can value homes and build CMAs starting today. See you at your onboarding call 💪`
+    : `¡Felicidades y bienvenido a Quick Comp! 🎉 Toca este link desde tu teléfono y guárdalo — es tu llave personal a tu app: [PEGA AQUÍ SU LINK DE ACCESO]. Hoy mismo puedes valuar casas y armar CMAs. Nos vemos en tu llamada de onboarding 💪`;
   const esc = (x) => String(x).replace(/</g, "&lt;");
   const L = en ? {
     title: "Closer portal", langBtn: "🇲🇽 Español", langQ: "",
@@ -4122,17 +4122,17 @@ app.get("/closer", async (req, res) => {
     play: ["Press <b>P</b> in the presentation → payment link copied → send it on WhatsApp.", "While they pay: <b>create their account above</b> and copy their access link.", "Press <b>B</b> → welcome message copied → paste their access link → send it.", "Book their <b>onboarding</b> before hanging up."],
     linksT: "Links & messages",
     payT: "💳 Payment link — $297 today + $297/mo", payMissing: "Not configured yet (STRIPE_PAYMENT_LINK in Render).",
-    welT: "👋 Welcome (paste their access link)", demoT: "🛰️ Quote tool demo", demoMsgT: "👀 Demo message",
+    welT: "👋 Welcome (paste their access link)", demoT: "🏡 Valuator demo", demoMsgT: "👀 Demo message",
     open: "Open", copy: "Copy",
     scriptT: "🎤 Talk track — what you say on each slide",
     script: [
-      ["01 · Welcome", "“Thanks for booking. In 10 minutes you'll see your own roof measured by satellite. If it's not for you, no problem. Sound good?”"],
-      ["02 · Who we are", "“Before I show you anything: the owner is a contractor. He builds houses in Texas. He built this tool for himself — and uses it today for his own company. We're not an agency reselling software.”"],
-      ["03 · The problem", "“Quick question: how many calls do you miss when you're up on a roof? … Most customers go with whoever answers first. You don't lack work — you lack a system that works when you can't.”"],
-      ["04 · Your website", "“This is what YOUR site would look like — phone and computer. Now the good part: type YOUR address in the quote tool. (wait for the wow — say nothing) That feeling? That's what your customers will feel.”"],
-      ["05 · Your app", "“This app is your office. The one on the right is LIVE — tap MEASURE ROOF. Every lead hits your phone with WhatsApp ready. Neighbor asks how much? You measure it standing right there.”"],
-      ["06 · AI secretary", "“Text it like you're a customer with a leak. (let them try) This same AI answers YOUR customers at 11pm and books the appointment. You just show up.”"],
-      ["07 · Investment", "“Separately this runs $1,500 plus monthlies. With us: 297 a month, 297 to start. One average roof leaves you $2,000–$4,000 — ONE extra job pays your whole year. (silence — let them talk first)”"],
+      ["01 · Welcome", "“Thanks for booking. In 10 minutes you'll see a home valued from real comparable sales. If it's not for you, no problem. Sound good?”"],
+      ["02 · Who we are", "“Before I show you anything: the owner runs construction and tech companies in Texas. He built this tool for his own deals — and uses it today for his own company. We're not an agency reselling software.”"],
+      ["03 · The problem", "“Quick question: how many sellers do you lose because they don't know their home already went up in value? … Most list with whoever shows them a number first. You don't lack contacts — you lack a system that brings sellers to you.”"],
+      ["04 · Your website", "“This is what YOUR site would look like — phone and computer. Now the good part: type YOUR address in the valuator. (wait for the wow — say nothing) That feeling? That's what your sellers will feel.”"],
+      ["05 · Your app", "“This app is your office. The one on the right is LIVE — tap VALUE A HOME. Every lead hits your phone with WhatsApp ready. Neighbor asks what theirs is worth? You value it standing right there and send a CMA.”"],
+      ["06 · AI secretary", "“Text it like you're a homeowner thinking of selling. (let them try) This same AI answers YOUR leads at 11pm and books the appointment. You just show up.”"],
+      ["07 · Investment", "“Separately this runs $1,500 plus monthlies. With us: 297 a month, 297 to start. One commission is thousands of dollars — ONE extra deal pays your whole year. (silence — let them talk first)”"],
       ["08 · Let's begin", "“This starts today: you pay, I send your app by WhatsApp before we hang up, and we book your onboarding. Want me to send the payment link?”"],
     ],
     keysT: "⌨️ Secret shortcuts in the presentation (/demo)",
@@ -4140,17 +4140,17 @@ app.get("/closer", async (req, res) => {
     keysWarn: "⚠️ If you share your FULL SCREEN, the Stripe tab is visible. Share only the /demo tab.",
     objT: "Objections & comebacks",
     obj: [
-      ["\"It's expensive\"", "“An average roof leaves you $2,000–$4,000 profit. ONE extra job a year and this paid for itself.”"],
-      ["\"I already have a website\"", "“Does it put customers' phone numbers in your pocket with their roof already quoted? Your current site is the business card; this one sells.”"],
+      ["\"It's expensive\"", "“One commission is thousands of dollars in your pocket. ONE extra deal a year and this paid for itself.”"],
+      ["\"I already have a website\"", "“Does it put sellers' phone numbers in your pocket with their home already valued? Your current site is the business card; this one sells.”"],
       ["\"Let me think about it\"", "“What do you want to think over — the price, or whether it works? (resolve it). I'll hold today's price for you.”"],
       ["\"I need to talk to my wife/partner\"", "“Perfect. Let's book 10 minutes tomorrow with both of you and I'll show them the same demo. What time works?”"],
       ["\"My clients come from referrals\"", "“And what do people do with a referral? They Google you before calling. This turns your referrals into appointments.”"],
-      ["\"I'm not good with technology\"", "“If you can send a WhatsApp, you can use ALTO. We do the onboarding with you, step by step.”"],
+      ["\"I'm not good with technology\"", "“If you can send a WhatsApp, you can use Quick Comp. We do the onboarding with you, step by step.”"],
       ["\"What if it doesn't work for me?\"", "“No long contracts: cancel anytime and your domain leaves with you — it's in the contract.”"],
-      ["\"It's slow season / no money right now\"", "“That's exactly why: your site gets built NOW so you're positioned when the season hits. Building it mid-season is too late.”"],
-      ["\"I already have a marketing agency\"", "“We don't compete with them — we give them somewhere to send people. Does their website quote roofs by itself?”"],
+      ["\"It's slow season / no money right now\"", "“That's exactly why: your site gets built NOW so you're positioned when listings pick up. Building it mid-season is too late.”"],
+      ["\"I already have a marketing agency\"", "“We don't compete with them — we give them somewhere to send people. Does their website value homes by itself?”"],
       ["\"Why so cheap?\"", "“It's software we already built — we don't bill agency hours. We win when you stay for months.”"],
-      ["\"Internet leads are garbage\"", "“Bought leads, yes. These typed THEIR address and THEIR phone to price THEIR roof. It doesn't get warmer than that.”"],
+      ["\"Internet leads are garbage\"", "“Bought leads, yes. These typed THEIR address and THEIR phone to value THEIR home. It doesn't get warmer than that.”"],
     ],
   } : {
     title: "Portal del closer", langBtn: "🇺🇸 English", langQ: "&lang=en",
@@ -4162,17 +4162,17 @@ app.get("/closer", async (req, res) => {
     play: ["Tecla <b>P</b> en la presentación → link de pago copiado → mándalo por WhatsApp.", "Mientras paga: <b>crea su cuenta aquí arriba</b> y copia su link de acceso.", "Tecla <b>B</b> → bienvenida copiada → pega su link de acceso → envíala.", "Agenda su <b>onboarding</b> antes de colgar."],
     linksT: "Links y mensajes",
     payT: "💳 Link de pago — $297 hoy + $297/mes", payMissing: "Aún no configurado (STRIPE_PAYMENT_LINK en Render).",
-    welT: "👋 Bienvenida (pega su link de acceso)", demoT: "🛰️ Demo del cotizador", demoMsgT: "👀 Mensaje de demo",
+    welT: "👋 Bienvenida (pega su link de acceso)", demoT: "🏡 Demo del valuador", demoMsgT: "👀 Mensaje de demo",
     open: "Abrir", copy: "Copiar",
     scriptT: "🎤 Guion — qué dices en cada slide",
     script: [
-      ["01 · Bienvenida", "“Gracias por agendar. En 10 minutos vas a ver tu propio techo medido por satélite. Si no es para ti, no pasa nada. ¿Te parece?”"],
-      ["02 · Quiénes somos", "“Antes de enseñarte nada: el dueño es contratista. Construye casas en Texas. Esta herramienta la hizo para él mismo — y hoy la usa para su propia compañía. No somos una agencia revendiendo software.”"],
-      ["03 · El problema", "“Te pregunto algo: ¿cuántas llamadas pierdes cuando estás arriba del techo? … La mayoría se queda con el primero que contesta. No te falta trabajo — te falta un sistema que trabaje cuando tú no puedes.”"],
-      ["04 · Tu página", "“Así se vería TU página — en celular y computadora. Ahora lo bueno: pon TU dirección en el cotizador. (espera el wow — no digas nada) ¿Eso que sentiste? Eso van a sentir tus clientes.”"],
-      ["05 · Tu app", "“Esta app es tu oficina. La de la derecha está VIVA — toca MEDIR TECHO. Cada lead te llega con WhatsApp listo. ¿El vecino te pregunta cuánto? Lo mides ahí parado.”"],
-      ["06 · Secretaria IA", "“Escríbele como si fueras un cliente con gotera. (déjalo probar) Esta misma IA le contesta a TUS clientes a las 11 de la noche y agenda la cita. Tú solo llegas.”"],
-      ["07 · Inversión", "“Por separado esto cuesta $1,500 más mensualidades. Con nosotros: 297 al mes y 297 para empezar. Un techo promedio te deja $2,000–$4,000 — UN trabajo extra paga tu año entero. (silencio — deja que hable él primero)”"],
+      ["01 · Bienvenida", "“Gracias por agendar. En 10 minutos vas a ver una casa valuada con ventas comparables reales. Si no es para ti, no pasa nada. ¿Te parece?”"],
+      ["02 · Quiénes somos", "“Antes de enseñarte nada: el dueño tiene compañías de construcción y tecnología en Texas. Esta herramienta la hizo para sus propios negocios — y hoy la usa para su propia compañía. No somos una agencia revendiendo software.”"],
+      ["03 · El problema", "“Te pregunto algo: ¿cuántos vendedores pierdes porque no saben que su casa ya subió de valor? … La mayoría lista con el primero que les enseña un número. No te faltan contactos — te falta un sistema que te traiga vendedores.”"],
+      ["04 · Tu página", "“Así se vería TU página — en celular y computadora. Ahora lo bueno: pon TU dirección en el valuador. (espera el wow — no digas nada) ¿Eso que sentiste? Eso van a sentir tus vendedores.”"],
+      ["05 · Tu app", "“Esta app es tu oficina. La de la derecha está VIVA — toca VALUAR CASA. Cada lead te llega con WhatsApp listo. ¿El vecino te pregunta cuánto vale la suya? La valúas ahí parado y le mandas un CMA.”"],
+      ["06 · Secretaria IA", "“Escríbele como si fueras un dueño pensando en vender. (déjalo probar) Esta misma IA le contesta a TUS leads a las 11 de la noche y agenda la cita. Tú solo llegas.”"],
+      ["07 · Inversión", "“Por separado esto cuesta $1,500 más mensualidades. Con nosotros: 297 al mes y 297 para empezar. Una comisión son miles de dólares — UN cierre extra paga tu año entero. (silencio — deja que hable él primero)”"],
       ["08 · Empecemos", "“Esto empieza hoy: pagas, te mando tu app por WhatsApp antes de colgar, y agendamos tu onboarding. ¿Te mando el link de pago?”"],
     ],
     keysT: "⌨️ Atajos secretos en la presentación (/demo)",
@@ -4180,21 +4180,21 @@ app.get("/closer", async (req, res) => {
     keysWarn: "⚠️ Si compartes la PANTALLA completa, la pestaña de Stripe se ve. Comparte solo la pestaña de /demo.",
     objT: "Objeciones y cómo regresar",
     obj: [
-      ["\"Está caro\"", "“Un techo promedio te deja $2,000–$4,000 de ganancia. Con UN trabajo extra al año, esto ya se pagó.”"],
-      ["\"Ya tengo página\"", "“¿Y te manda los teléfonos de los clientes al bolsillo, con su techo ya cotizado? Tu página de hoy es la tarjeta; esta es la que vende.”"],
+      ["\"Está caro\"", "“Una comisión son miles de dólares en tu bolsillo. Con UN cierre extra al año, esto ya se pagó.”"],
+      ["\"Ya tengo página\"", "“¿Y te manda los teléfonos de los vendedores al bolsillo, con su casa ya valuada? Tu página de hoy es la tarjeta; esta es la que vende.”"],
       ["\"Déjame pensarlo\"", "“¿Qué quieres pensar — el precio, o si funciona? (resuélvelo). Te aparto el precio de hoy.”"],
       ["\"Lo hablo con mi esposa/socio\"", "“Perfecto. Agendemos 10 minutos mañana con los dos y les enseño la misma demo. ¿A qué hora pueden?”"],
       ["\"Mis clientes llegan por recomendación\"", "“¿Y qué hace la gente cuando le recomiendan a alguien? Lo busca en Google antes de llamar. Esto convierte tus recomendaciones en citas.”"],
-      ["\"No soy bueno con la tecnología\"", "“Si sabes mandar un WhatsApp, sabes usar ALTO. El onboarding lo hacemos contigo, paso a paso.”"],
+      ["\"No soy bueno con la tecnología\"", "“Si sabes mandar un WhatsApp, sabes usar Quick Comp. El onboarding lo hacemos contigo, paso a paso.”"],
       ["\"¿Y si no me funciona?\"", "“Sin contratos largos: cancelas cuando quieras y tu dominio se va contigo — está en el contrato.”"],
-      ["\"Es temporada baja / no hay dinero\"", "“Justo por eso: tu página se construye AHORA para que cuando venga la temporada ya estés posicionado. Montarla en plena temporada es llegar tarde.”"],
-      ["\"Ya tengo agencia de marketing\"", "“No competimos con ella — le damos a dónde mandar a la gente. ¿Su página cotiza techos sola?”"],
+      ["\"Es temporada baja / no hay dinero\"", "“Justo por eso: tu página se construye AHORA para que cuando se mueva el mercado ya estés posicionado. Montarla en plena temporada es llegar tarde.”"],
+      ["\"Ya tengo agencia de marketing\"", "“No competimos con ella — le damos a dónde mandar a la gente. ¿Su página valúa casas sola?”"],
       ["\"¿Por qué tan barato?\"", "“Es software que ya construimos — no cobramos horas de agencia. Ganamos cuando te quedas meses.”"],
-      ["\"Los leads de internet son basura\"", "“Los comprados, sí. Estos pusieron SU dirección y SU teléfono para ver el precio de SU techo. Más caliente no existe.”"],
+      ["\"Los leads de internet son basura\"", "“Los comprados, sí. Estos pusieron SU dirección y SU teléfono para ver el valor de SU casa. Más caliente no existe.”"],
     ],
   };
   res.send(`<!doctype html><html lang="${en ? "en" : "es"}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ALTO Pro · ${L.title}</title><link rel="icon" href="/icon-192.png"><style>
+<title>Quick Comp · ${L.title}</title><link rel="icon" href="/icon-192.png"><style>
 *{box-sizing:border-box;margin:0;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display",Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
 html{background:#F5F6F8}
 body{max-width:680px;margin:0 auto;padding:34px 20px 72px;color:#0B1220;line-height:1.55;letter-spacing:-0.011em}
@@ -4300,7 +4300,7 @@ body{max-width:none;margin:0;padding:0}
 ${periodSeg("/closer", range, en)}
 <div class="toolbar">
   <a class="navbtn primary" href="/demo" target="_blank">🎤 ${en ? "Open presentation" : "Abrir presentación"}</a>
-  <a class="navbtn" href="/w/alto-demo" target="_blank">🛰️ ${en ? "Quote demo" : "Demo del cotizador"}</a>
+  <a class="navbtn" href="/w/alto-demo" target="_blank">🏡 ${en ? "Valuator demo" : "Demo del valuador"}</a>
   <a class="navbtn" href="/ejemplo" target="_blank">🏠 ${en ? "Example site" : "Página de ejemplo"}</a>
   <a class="navbtn" href="/plantillas" target="_blank">🎨 ${en ? "Templates" : "Las 3 plantillas"}</a>
 </div>
@@ -4371,10 +4371,10 @@ app.get("/cierre", (req, res) => {
   const base = canonBase(req);
   const stripeLink = process.env.STRIPE_PAYMENT_LINK || "";
   const wMsg = `Mira esto 👀 — escribe tu dirección y ve lo que tus clientes verían en TU página web:\n${base}/w/alto-demo`;
-  const welcome = `¡Felicidades y bienvenido a ALTO Pro! 🎉 Toca este link desde tu teléfono y guárdalo — es tu llave personal a tu app: [PEGA AQUÍ SU LINK DE ACCESO]. Hoy mismo puedes medir techos y cotizar. Nos vemos en tu llamada de onboarding 💪`;
+  const welcome = `¡Felicidades y bienvenido a Quick Comp! 🎉 Toca este link desde tu teléfono y guárdalo — es tu llave personal a tu app: [PEGA AQUÍ SU LINK DE ACCESO]. Hoy mismo puedes valuar casas y armar CMAs. Nos vemos en tu llamada de onboarding 💪`;
   const esc = (s) => String(s).replace(/</g, "&lt;");
   res.send(`<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ALTO Pro · Cierre (privado)</title><style>
+<title>Quick Comp · Cierre (privado)</title><style>
 body{font-family:Arial;max-width:640px;margin:30px auto;padding:0 18px;color:#101B30;line-height:1.55}
 h1{font-size:22px}h2{font-size:16px;margin-top:24px}
 .warn{background:#FDECEC;border:1.5px solid #D93025;color:#9B1C10;border-radius:12px;padding:10px 14px;font-weight:700;font-size:13px}
@@ -4383,7 +4383,7 @@ h1{font-size:22px}h2{font-size:16px;margin-top:24px}
 .link small{color:#67718A}
 ol li{margin-bottom:10px}small{color:#67718A}
 </style></head><body>
-<h1>🔒 Cierre · ALTO <span style="color:#D99E00">PRO</span></h1>
+<h1>🔒 Cierre · QUICK <span style="color:#D99E00">COMP</span></h1>
 <p class="warn">⚠️ Página privada del closer — NUNCA la compartas en pantalla. La presentación para el cliente es /demo.</p>
 <h2>El cierre, paso a paso (todo en la misma llamada)</h2>
 <ol>
@@ -4396,7 +4396,7 @@ ol li{margin-bottom:10px}small{color:#67718A}
 <div class="link"><span><b>💳 Link de pago — $297 hoy + $297/mes</b><br><small>${esc(stripeLink || "buy.stripe.com/… (ejemplo — aún sin configurar)")}</small></span><a href="${stripeLink || "#"}" ${stripeLink ? `target="_blank" rel="noreferrer"` : `onclick="alert('Aún no está configurado: crea el Payment Link en Stripe y agrégalo en Render como STRIPE_PAYMENT_LINK');return false"`} style="background:#101B30;color:#fff;border-radius:8px;padding:8px 14px;font-weight:800;text-decoration:none;flex-shrink:0">Abrir</a><button onclick="${stripeLink ? `cp(this,'${stripeLink}')` : `alert('Aún no está configurado: crea el Payment Link en Stripe y agrégalo en Render como STRIPE_PAYMENT_LINK')`}">Copiar</button></div>
 <p style="font-size:12px;color:#67718A;margin:-2px 0 10px"><b>Copiar</b> → se lo mandas por WhatsApp y paga desde su teléfono. <b>Abrir</b> → si te da la tarjeta por teléfono, la escribes tú aquí mismo.${stripeLink ? "" : ` <b style="color:#D93025">⚠️ Link de ejemplo — falta configurar STRIPE_PAYMENT_LINK en Render.</b>`}</p>
 <div class="link"><span><b>👋 Bienvenida (pega su link de acceso)</b><br><small>${esc(welcome.slice(0, 70))}…</small></span><button onclick='cp(this,${JSON.stringify(welcome)})'>Copiar</button></div>
-<div class="link"><span><b>🛰️ Demo del cotizador</b><br><small>${base}/w/alto-demo</small></span><button onclick="cp(this,'${base}/w/alto-demo')">Copiar</button></div>
+<div class="link"><span><b>🏡 Demo del valuador</b><br><small>${base}/w/alto-demo</small></span><button onclick="cp(this,'${base}/w/alto-demo')">Copiar</button></div>
 <div class="link"><span><b>👀 Mensaje de demo</b><br><small>${esc(wMsg.slice(0, 70))}…</small></span><button onclick='cp(this,${JSON.stringify(wMsg)})'>Copiar</button></div>
 <h2>⌨️ Atajos secretos en la presentación (/demo)</h2>
 <p><small>El cliente nunca los ve. Funcionan en cualquier slide:</small></p>
@@ -4410,17 +4410,17 @@ ol li{margin-bottom:10px}small{color:#67718A}
 <p><small>⚠️ Si compartes la PANTALLA completa, la pestaña de Stripe se ve. Comparte solo la pestaña de /demo y usa las teclas — el cliente no nota nada.</small></p>
 <h2>Objeciones y cómo regresar</h2>
 <p><small>
-<b>"Está caro"</b> → "Un techo promedio te deja $2,000–$4,000 de ganancia. Con UN trabajo extra al año, esto ya se pagó. La pregunta no es si cuesta — es cuántos trabajos se te están yendo hoy."<br><br>
-<b>"Ya tengo página"</b> → "Qué bueno — ¿y te manda los teléfonos de los clientes al bolsillo, con su techo ya cotizado? Eso es lo que hace la diferencia. Tu página de hoy es la tarjeta; esta es la que vende."<br><br>
+<b>"Está caro"</b> → "Una comisión son miles de dólares en tu bolsillo. Con UN cierre extra al año, esto ya se pagó. La pregunta no es si cuesta — es cuántos vendedores se te están yendo hoy."<br><br>
+<b>"Ya tengo página"</b> → "Qué bueno — ¿y te manda los teléfonos de los vendedores al bolsillo, con su casa ya valuada? Eso es lo que hace la diferencia. Tu página de hoy es la tarjeta; esta es la que vende."<br><br>
 <b>"Déjame pensarlo"</b> → "Claro. ¿Qué es lo que quieres pensar — el precio, o si te va a funcionar? (espera la respuesta y resuélvela). Te aparto el precio hoy y la demo queda abierta."<br><br>
 <b>"Lo tengo que hablar con mi esposa / mi socio"</b> → "Perfecto, así debe ser. ¿Qué te va a preguntar? … Mejor aún: agendemos 10 minutos mañana con los dos y le enseño la demo igual que a ti — que lo vea con sus propios ojos. ¿Mañana a qué hora pueden?"<br><br>
 <b>"Mis clientes llegan por recomendación, no por internet"</b> → "Exacto — ¿y qué hace la gente cuando le recomiendan a alguien? Lo busca en Google antes de llamar. Si no encuentra nada, la recomendación se enfría. Esto convierte tus recomendaciones en citas."<br><br>
-<b>"No soy bueno con la tecnología"</b> → "Por eso lo hicimos así: si sabes mandar un WhatsApp, sabes usar ALTO. Y el onboarding lo hacemos contigo, en español, paso a paso. No estás solo."<br><br>
+<b>"No soy bueno con la tecnología"</b> → "Por eso lo hicimos así: si sabes mandar un WhatsApp, sabes usar Quick Comp. Y el onboarding lo hacemos contigo, en español, paso a paso. No estás solo."<br><br>
 <b>"¿Y si no me funciona?"</b> → "Sin contratos largos: cancelas cuando quieras y tu dominio se va contigo — está en el contrato. El riesgo lo cargamos nosotros, no tú."<br><br>
-<b>"Ahorita no hay dinero / es temporada baja"</b> → "Justo por eso es el momento: tu página se construye AHORA, para que cuando venga la temporada de lluvias y granizo ya estés posicionado. El que la monta en plena temporada, llega tarde."<br><br>
-<b>"Ya trabajo con una agencia de marketing"</b> → "No competimos con tu agencia — le damos a dónde mandar a la gente. ¿Su página te cotiza techos sola y te manda el teléfono al bolsillo? Eso es lo nuestro; lo demás lo puede seguir haciendo ella."<br><br>
+<b>"Ahorita no hay dinero / es temporada baja"</b> → "Justo por eso es el momento: tu página se construye AHORA, para que cuando se mueva el mercado ya estés posicionado. El que la monta en plena temporada, llega tarde."<br><br>
+<b>"Ya trabajo con una agencia de marketing"</b> → "No competimos con tu agencia — le damos a dónde mandar a la gente. ¿Su página te valúa casas sola y te manda el teléfono al bolsillo? Eso es lo nuestro; lo demás lo puede seguir haciendo ella."<br><br>
 <b>"Suena demasiado bueno / ¿por qué tan barato?"</b> → "Porque es software que ya construimos — no te cobramos horas de agencia. Y ganamos cuando te quedas meses, así que nos conviene más que a nadie que te funcione."<br><br>
-<b>"Los leads de internet son basura"</b> → "Los leads comprados, sí. Estos no son comprados: es gente que puso SU dirección y SU teléfono para ver el precio de SU techo. Más caliente que eso no existe."
+<b>"Los leads de internet son basura"</b> → "Los leads comprados, sí. Estos no son comprados: es gente que puso SU dirección y SU teléfono para ver el valor de SU casa. Más caliente que eso no existe."
 </small></p>
 <script>function cp(b,t){navigator.clipboard.writeText(t);b.textContent='✓'}</script>
 </body></html>`);
@@ -4434,8 +4434,8 @@ app.get("/demo", (req, res) => {
     : `Mira esto 👀 — escribe tu dirección y ve lo que tus clientes verían en TU página web:\n${base}/w/alto-demo`;
   const stripeLink = process.env.STRIPE_PAYMENT_LINK || "";
   const welcome = en
-    ? `Congratulations and welcome to ALTO Pro! 🎉 Tap this link from your phone and save it — it's your personal key to your app: [PASTE THEIR ACCESS LINK HERE]. You can measure roofs and quote starting today. See you at your onboarding call 💪`
-    : `¡Felicidades y bienvenido a ALTO Pro! 🎉 Toca este link desde tu teléfono y guárdalo — es tu llave personal a tu app: [PEGA AQUÍ SU LINK DE ACCESO]. Hoy mismo puedes medir techos y cotizar. Nos vemos en tu llamada de onboarding 💪`;
+    ? `Congratulations and welcome to Quick Comp! 🎉 Tap this link from your phone and save it — it's your personal key to your app: [PASTE THEIR ACCESS LINK HERE]. You can value homes and build CMAs starting today. See you at your onboarding call 💪`
+    : `¡Felicidades y bienvenido a Quick Comp! 🎉 Toca este link desde tu teléfono y guárdalo — es tu llave personal a tu app: [PEGA AQUÍ SU LINK DE ACCESO]. Hoy mismo puedes valuar casas y armar CMAs. Nos vemos en tu llamada de onboarding 💪`;
   // marketing photos appear automatically once the files exist in public/landing/
   const hasAsset = (name) =>
     fs.existsSync(path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "dist", "landing", name))
@@ -4445,84 +4445,84 @@ app.get("/demo", (req, res) => {
 
   // Every visible string in both languages
   const L = en ? {
-    title: "ALTO Pro · Presentation", presentation: "PRESENTATION", forClients: "Client presentation",
+    title: "Quick Comp · Presentation", presentation: "PRESENTATION", forClients: "Client presentation",
     menu: "☰ Menu", prev: "‹ Previous", next: "Next ›", langBtn: "🇲🇽 Español", langHref: "?lang=es",
     t1: "Welcome", t2: "Who we are", t3: "The problem", t4: "Your website", t5: "Your app", t6: "Your AI secretary", t7: "Your investment", t8: "Let's begin",
-    k1: "ALTO PRO · MARKETING & TECHNOLOGY FOR ROOFERS", h1a: "More customers,", h1b: "without chasing them.",
-    b1: "Thanks for booking. In the next 10 minutes you'll see your own roof measured by satellite — and how your website can sell for you 24 hours a day.",
-    g1: "60 sec", g1s: "satellite quote", g2: "24/7", g2s: "your site selling", g3: "100%", g3s: "bilingual support", tag: "Your business, on top",
-    k2: "02 · WHO WE ARE", h2a: "Built by a contractor,", h2b: "for contractors.",
-    b2: "Rolando, our founder, owns residential construction and technology companies in Texas. Measuring the roofs of his own houses, he lived how hard it was to get the measurement right to order materials — so he built this tool for himself. It worked so well he opened it to the public, and today he uses this same system to get leads for his own company.",
-    p2a: "Contractor founder: he builds houses, not just software", p2b: "20+ people on the ALTO team working behind your account", p2c: "We use our own tools, every single day",
-    cap2: "Rolando · Founder of ALTO", ph2a: "Photo of Rolando and the team", ph2b: "in ALTO shirts",
-    k3: "03 · WHY IT MATTERS", h3a: "Work gets lost", h3b: "up on the roof.",
-    p3a: 'When you\'re working, you can\'t answer. And most customers go with <b style="color:#fff">whoever responds first</b>.',
-    p3b: 'Every estimate costs you: the visit, the gas, the time. <b style="color:#fff">And many of those visits never turn into work.</b>',
+    k1: "QUICK COMP · MARKETING & TECHNOLOGY FOR REALTORS", h1a: "More sellers,", h1b: "without chasing them.",
+    b1: "Thanks for booking. In the next 10 minutes you'll see a home valued from real comparable sales — and how your website can bring you sellers 24 hours a day.",
+    g1: "60 sec", g1s: "home valuation", g2: "24/7", g2s: "your site working", g3: "100%", g3s: "bilingual support", tag: "Your business, on top",
+    k2: "02 · WHO WE ARE", h2a: "Built by a Texas builder,", h2b: "for realtors.",
+    b2: "Rolando, our founder, owns residential construction and technology companies in Texas. Buying and valuing his own properties, he lived how hard it was to get an accurate number fast — so he built this tool for himself. It worked so well he opened it to the public, and today he uses this same system to get leads for his own company.",
+    p2a: "Builder-founder: he buys and sells real property, not just software", p2b: "20+ people on the Quick Comp team working behind your account", p2c: "We use our own tools, every single day",
+    cap2: "Rolando · Founder of Quick Comp", ph2a: "Photo of Rolando and the team", ph2b: "in Quick Comp shirts",
+    k3: "03 · WHY IT MATTERS", h3a: "Sellers slip away", h3b: "without a number.",
+    p3a: 'When you\'re showing a house, you can\'t answer. And most sellers list with <b style="color:#fff">whoever responds first</b>.',
+    p3b: 'Every CMA you build by hand costs you: the research, the comps, the time. <b style="color:#fff">And many of those never turn into a listing.</b>',
     p3c: 'A pretty website with no system behind it is <b style="color:#fff">an expensive business card</b>.',
     p3d: 'Big companies already answer with artificial intelligence — in seconds, around the clock. <b style="color:#fff">The question isn\'t whether this is coming. It\'s which side you\'ll be on.</b>',
     c3: "You work hard. What you're missing is a system that works when you can't.",
     k4: "04 · YOUR WEBSITE", h4a: "This is what", h4b: "your site would look like.",
-    b4: "It looks excellent on the phone and on the computer — with your logo, your colors and the quote tool inside. This one is a sample; yours is delivered in 10–14 days. Both are live: scroll, and type YOUR address into the quote tool.",
+    b4: "It looks excellent on the phone and on the computer — with your logo, your colors and the home-value tool inside. This one is a sample; yours is delivered in 10–14 days. Both are live: scroll, and type YOUR address into the valuator.",
     k5: "05 · YOUR APP", h5a: "Your office,", h5b: "in your pocket.",
-    p5a: "Quote wherever you are: address or GPS, and trace it with your finger if you want", p5b: "Every lead hits your phone with a WhatsApp button and the message pre-written", p5c: "An AI texts your customer instantly and books the appointment for you", p5d: "Formal quotes and invoices with your brand",
-    live5: '🔴 <b style="color:#fff">The app on the right is LIVE</b> — explore it: tap MEASURE ROOF, type a real address and measure it right here, with the client.',
+    p5a: "Value any home wherever you are: address or GPS, from real comparable sales", p5b: "Every lead hits your phone with a WhatsApp button and the message pre-written", p5c: "An AI texts your lead instantly and books the appointment for you", p5d: "Professional CMA reports with your brand",
+    live5: '🔴 <b style="color:#fff">The app on the right is LIVE</b> — explore it: tap VALUE A HOME, type a real address and value it right here, with the client.',
     k6: "06 · ARTIFICIAL INTELLIGENCE", h6a: "Your own secretary,", h6b: "who never sleeps.",
     b6: "We all know artificial intelligence is here — what better way than starting now? Your own secretary answers the messages from customers landing on your website, at any hour of the day.",
     p6a: "Replies instantly — even at 11 at night", p6b: "Books the appointment for you. You just show up.", p6c: "You can read every conversation whenever you want", p6d: "Ready in 10–14 days — carrier registration of your number takes a few days",
-    chHead: "🔴 LIVE DEMO — text it like you're the customer", chGreet: "Hi! 👋 I'm the assistant at Techos García. How can I help you with your roof?",
-    chPh: "Type as the customer… (e.g., I have a leak)", chFoot: "This same AI will answer YOUR customers' texts", chRetry: "Give me one moment 🙏 (try again)",
+    chHead: "🔴 LIVE DEMO — text it like you're the homeowner", chGreet: "Hi! 👋 I'm the assistant at Casa Bella Realty. How can I help you buy or sell a home?",
+    chPh: "Type as the homeowner… (e.g., I want to sell my house)", chFoot: "This same AI will answer YOUR leads' texts", chRetry: "Give me one moment 🙏 (try again)",
     k7: "07 · YOUR INVESTMENT", h7a: "All of this,", h7b: "one single price.",
     b7: "What this would cost separately (typical market prices):",
-    s7a: "🌐 Professional website with your brand", s7b: "🛰️ Satellite quote tool on your site", s7c: "🤖 AI secretary that texts and books", s7d: "📲 Estimates, invoices & leads app", s7e: "🇺🇸 Domain, hosting & bilingual support",
-    s7tot: "Separately", roi7: '💰 <b style="color:#fff">An average roof leaves you $2,000–$4,000 in profit.</b> One single extra job pays for your whole year.',
-    pk7: "WITH ALTO PRO · ALL INCLUDED", mo: "/mo", setup7: "+ $297 to start, one time only",
+    s7a: "🌐 Professional website with your brand", s7b: "🏡 Home-value tool on your site", s7c: "🤖 AI secretary that texts and books", s7d: "📲 Values, CMAs & leads app", s7e: "🇺🇸 Domain, hosting & bilingual support",
+    s7tot: "Separately", roi7: '💰 <b style="color:#fff">One commission is thousands of dollars.</b> One single extra deal pays for your whole year.',
+    pk7: "WITH QUICK COMP · ALL INCLUDED", mo: "/mo", setup7: "+ $297 to start, one time only",
     pr7a: "✓ No long contracts", pr7b: "✓ Cancel anytime", pr7c: "✓ Your domain is YOURS — by contract",
     k8: "08 · LET'S BEGIN", h8a: "Let's start", h8b: "today.",
     b8: "Getting started is this easy — everything begins on this very call:",
     d8a: "STEP 1", t8a: "Secure your spot", x8a: "We send a secure payment link to your WhatsApp. You pay by card, protected by Stripe 🔒.",
-    d8b: "STEP 2 · TODAY", t8b: "Your app, today", x8b: "Your access arrives by WhatsApp before we hang up. You're measuring roofs today.",
+    d8b: "STEP 2 · TODAY", t8b: "Your app, today", x8b: "Your access arrives by WhatsApp before we hang up. You're valuing homes today.",
     d8c: "STEP 3", t8c: "Your onboarding", x8c: "We book your call right now: your logo, your colors, your prices and your photos.",
-    d8d: "DAY 10–14", t8d: "Everything live", x8d: "Your website, your quote tool and your AI secretary — 24/7. Carriers take a few days to approve your number; we use that time to make everything perfect.",
+    d8d: "DAY 10–14", t8d: "Everything live", x8d: "Your website, your home-value tool and your AI secretary — 24/7. Carriers take a few days to approve your number; we use that time to make everything perfect.",
     c8: "🤝 Ready? I'll send you the link right now.",
   } : {
-    title: "ALTO Pro · Presentación", presentation: "PRESENTACIÓN", forClients: "Presentación para clientes",
+    title: "Quick Comp · Presentación", presentation: "PRESENTACIÓN", forClients: "Presentación para clientes",
     menu: "☰ Menú", prev: "‹ Anterior", next: "Siguiente ›", langBtn: "🇺🇸 English", langHref: "?lang=en",
     t1: "Bienvenida", t2: "Quiénes somos", t3: "El problema", t4: "Tu página", t5: "Tu app", t6: "Tu secretaria IA", t7: "Tu inversión", t8: "Empecemos",
-    k1: "ALTO PRO · MARKETING Y TECNOLOGÍA PARA ROFEROS", h1a: "Más clientes,", h1b: "sin perseguirlos.",
-    b1: "Gracias por agendar. En los próximos 10 minutos vas a ver tu propio techo medido por satélite — y cómo tu página puede vender por ti las 24 horas.",
-    g1: "60 seg", g1s: "cotización satelital", g2: "24/7", g2s: "tu página vendiendo", g3: "100%", g3s: "en español", tag: "Tu negocio, en alto",
-    k2: "02 · QUIÉNES SOMOS", h2a: "Construido por un contratista,", h2b: "para contratistas.",
-    b2: "Rolando, nuestro fundador, tiene compañías de construcción residencial y de tecnología en Texas. Midiendo los techos de sus propias casas vivió lo difícil que era sacar la medida correcta para pedir el material — así que construyó esta herramienta para él mismo. Funcionó tan bien que la abrió al público, y hoy usa este mismo sistema para conseguir leads para su propia compañía.",
-    p2a: "Fundador contratista: construye casas, no solo software", p2b: "Más de 20 personas del equipo ALTO trabajando detrás de tu cuenta", p2c: "Usamos nuestras propias herramientas, todos los días",
-    cap2: "Rolando · Fundador de ALTO", ph2a: "Foto de Rolando y el equipo", ph2b: "con la camisa ALTO",
-    k3: "03 · POR QUÉ IMPORTA", h3a: "Los trabajos se pierden", h3b: "arriba del techo.",
-    p3a: 'Cuando estás trabajando, no puedes contestar. Y la mayoría de los clientes se queda con <b style="color:#fff">el primero que les responde</b>.',
-    p3b: 'Cada estimado cuesta: la visita, la gasolina, el tiempo. <b style="color:#fff">Y muchas de esas visitas nunca se vuelven trabajo.</b>',
+    k1: "QUICK COMP · MARKETING Y TECNOLOGÍA PARA AGENTES", h1a: "Más vendedores,", h1b: "sin perseguirlos.",
+    b1: "Gracias por agendar. En los próximos 10 minutos vas a ver una casa valuada con ventas comparables reales — y cómo tu página puede traerte vendedores las 24 horas.",
+    g1: "60 seg", g1s: "valuación de casa", g2: "24/7", g2s: "tu página trabajando", g3: "100%", g3s: "en español", tag: "Tu negocio, en alto",
+    k2: "02 · QUIÉNES SOMOS", h2a: "Construido por un constructor de Texas,", h2b: "para agentes.",
+    b2: "Rolando, nuestro fundador, tiene compañías de construcción residencial y de tecnología en Texas. Comprando y valuando sus propias propiedades vivió lo difícil que era sacar un número correcto rápido — así que construyó esta herramienta para él mismo. Funcionó tan bien que la abrió al público, y hoy usa este mismo sistema para conseguir leads para su propia compañía.",
+    p2a: "Fundador constructor: compra y vende propiedades, no solo software", p2b: "Más de 20 personas del equipo Quick Comp trabajando detrás de tu cuenta", p2c: "Usamos nuestras propias herramientas, todos los días",
+    cap2: "Rolando · Fundador de Quick Comp", ph2a: "Foto de Rolando y el equipo", ph2b: "con la camisa Quick Comp",
+    k3: "03 · POR QUÉ IMPORTA", h3a: "Los vendedores se pierden", h3b: "sin un número.",
+    p3a: 'Cuando estás enseñando una casa, no puedes contestar. Y la mayoría de los vendedores lista con <b style="color:#fff">el primero que les responde</b>.',
+    p3b: 'Cada CMA que haces a mano cuesta: la investigación, las comparables, el tiempo. <b style="color:#fff">Y muchas nunca se vuelven un listing.</b>',
     p3c: 'Una página bonita sin un sistema detrás es <b style="color:#fff">una tarjeta de presentación cara</b>.',
     p3d: 'Las compañías grandes ya responden con inteligencia artificial — en segundos, a toda hora. <b style="color:#fff">La pregunta no es si esto llega. Es de qué lado vas a estar.</b>',
     c3: "Trabajas duro. Lo que te falta es un sistema que trabaje cuando tú no puedes.",
     k4: "04 · TU PÁGINA WEB", h4a: "Así se vería", h4b: "tu página.",
-    b4: "Se mira excelente en el celular y en la computadora — con tu logo, tus colores y el cotizador adentro. Esta es de ejemplo; la tuya se entrega en 10–14 días. Las dos están vivas: haz scroll, y pon TU dirección en el cotizador.",
+    b4: "Se mira excelente en el celular y en la computadora — con tu logo, tus colores y el valuador adentro. Esta es de ejemplo; la tuya se entrega en 10–14 días. Las dos están vivas: haz scroll, y pon TU dirección en el valuador.",
     k5: "05 · TU APP", h5a: "Tu oficina,", h5b: "en tu bolsillo.",
-    p5a: "Cotiza donde estés: dirección o GPS, y si quieres lo trazas con el dedo", p5b: "Cada lead llega a tu teléfono con botón de WhatsApp y el mensaje ya escrito", p5c: "Una IA le textea a tu cliente al momento y agenda la cita por ti", p5d: "Cotizaciones y facturas formales con tu marca",
-    live5: '🔴 <b style="color:#fff">La app de la derecha está EN VIVO</b> — explórala: toca MEDIR TECHO, pon una dirección real y mídelo aquí mismo, con el cliente.',
+    p5a: "Valúa cualquier casa donde estés: dirección o GPS, con ventas comparables reales", p5b: "Cada lead llega a tu teléfono con botón de WhatsApp y el mensaje ya escrito", p5c: "Una IA le textea a tu lead al momento y agenda la cita por ti", p5d: "Reportes CMA profesionales con tu marca",
+    live5: '🔴 <b style="color:#fff">La app de la derecha está EN VIVO</b> — explórala: toca VALUAR CASA, pon una dirección real y valúala aquí mismo, con el cliente.',
     k6: "06 · INTELIGENCIA ARTIFICIAL", h6a: "Tu propia secretaria,", h6b: "que nunca duerme.",
     b6: "Todos sabemos que la inteligencia artificial ya viene — ¿qué mejor que empezar desde ahora? Tu propia secretaria contesta los mensajes de los clientes que llegan de tu página, a cualquier hora del día.",
     p6a: "Contesta al momento — aunque sean las 11 de la noche", p6b: "Agenda la cita por ti. Tú solo llegas a hacerla.", p6c: "Puedes ver cada conversación cuando quieras", p6d: "Lista en 10–14 días — el registro de tu número con las telefónicas tarda unos días",
-    chHead: "🔴 DEMO EN VIVO — escríbele como si fueras el cliente", chGreet: "¡Hola! 👋 Soy la asistente de Techos García. ¿En qué le puedo ayudar con su techo?",
-    chPh: "Escribe como cliente… (ej. tengo una gotera)", chFoot: "Esta misma IA contestará los textos de TUS clientes", chRetry: "Dame un momentito y te contesto 🙏 (intenta de nuevo)",
+    chHead: "🔴 DEMO EN VIVO — escríbele como si fueras el dueño", chGreet: "¡Hola! 👋 Soy la asistente de Casa Bella Realty. ¿Le puedo ayudar a comprar o vender una casa?",
+    chPh: "Escribe como dueño… (ej. quiero vender mi casa)", chFoot: "Esta misma IA contestará los textos de TUS leads", chRetry: "Dame un momentito y te contesto 🙏 (intenta de nuevo)",
     k7: "07 · TU INVERSIÓN", h7a: "Todo esto,", h7b: "un solo precio.",
     b7: "Lo que esto costaría por separado (precios típicos del mercado):",
-    s7a: "🌐 Página web profesional con tu marca", s7b: "🛰️ Cotizador por satélite en tu página", s7c: "🤖 Secretaria IA que textea y agenda", s7d: "📲 App de estimados, facturas y leads", s7e: "🇺🇸 Dominio, hosting y soporte en español",
-    s7tot: "Por separado", roi7: '💰 <b style="color:#fff">Un techo promedio te deja $2,000–$4,000 de ganancia.</b> Un solo trabajo extra paga tu año entero.',
-    pk7: "CON ALTO PRO · TODO INCLUIDO", mo: "/mes", setup7: "+ $297 para empezar, una sola vez",
+    s7a: "🌐 Página web profesional con tu marca", s7b: "🏡 Valuador de casas en tu página", s7c: "🤖 Secretaria IA que textea y agenda", s7d: "📲 App de valores, CMAs y leads", s7e: "🇺🇸 Dominio, hosting y soporte en español",
+    s7tot: "Por separado", roi7: '💰 <b style="color:#fff">Una comisión son miles de dólares.</b> Un solo cierre extra paga tu año entero.',
+    pk7: "CON QUICK COMP · TODO INCLUIDO", mo: "/mes", setup7: "+ $297 para empezar, una sola vez",
     pr7a: "✓ Sin contratos largos", pr7b: "✓ Cancelas cuando quieras", pr7c: "✓ Tu dominio es TUYO — por contrato",
     k8: "08 · EMPECEMOS", h8a: "Empecemos", h8b: "hoy mismo.",
     b8: "Así de fácil es arrancar — todo empieza en esta misma llamada:",
     d8a: "PASO 1", t8a: "Asegura tu lugar", x8a: "Te mandamos un link de pago seguro a tu WhatsApp. Pagas con tarjeta, protegido por Stripe 🔒.",
-    d8b: "PASO 2 · HOY", t8b: "Tu app, hoy mismo", x8b: "Tu acceso te llega por WhatsApp antes de colgar. Hoy mismo ya estás midiendo techos.",
-    d8c: "PASO 3", t8c: "Tu onboarding", x8c: "Agendamos tu llamada ahorita: tu logo, tus colores, tus precios y tus fotos.",
-    d8d: "DÍA 10–14", t8d: "Todo funcionando", x8d: "Tu página, tu cotizador y tu secretaria IA — 24/7. Las telefónicas tardan unos días en aprobar tu número; usamos ese tiempo para dejar todo perfecto.",
+    d8b: "PASO 2 · HOY", t8b: "Tu app, hoy mismo", x8b: "Tu acceso te llega por WhatsApp antes de colgar. Hoy mismo ya estás valuando casas.",
+    d8c: "PASO 3", t8c: "Tu onboarding", x8c: "Agendamos tu llamada ahorita: tu logo, tus colores, tu especialidad y tus fotos.",
+    d8d: "DÍA 10–14", t8d: "Todo funcionando", x8d: "Tu página, tu valuador y tu secretaria IA — 24/7. Las telefónicas tardan unos días en aprobar tu número; usamos ese tiempo para dejar todo perfecto.",
     c8: "🤝 ¿Listo? Te mando el link ahora mismo.",
   };
 
@@ -4747,7 +4747,7 @@ ul.pts.big li{font-size:clamp(16px,2.2vw,22px);padding:19px 0;line-height:1.6;ga
         </ul>
         <p class="body" style="margin-top:22px;font-size:14px">${L.live5}</p>
       </div>
-      <div class="iphone big"><div class="inotch"></div><div class="mscr"><iframe data-src="/?demo=roof" title="App"></iframe></div></div>
+      <div class="iphone big"><div class="inotch"></div><div class="mscr"><iframe data-src="/?demo=app" title="App"></iframe></div></div>
     </div>
   </div>
 </section>
@@ -4884,7 +4884,7 @@ document.addEventListener('keydown',function(e){
   if(k==='d')kCopy(K.dem);
   if(k==='o')kOpen();
 });
-var chatHist=[{role:'assistant',content:${JSON.stringify(en ? "Hi! 👋 I'm the assistant at Techos García. How can I help you with your roof?" : "¡Hola! 👋 Soy la asistente de Techos García. ¿En qué le puedo ayudar con su techo?")}}],chatBusy=false;
+var chatHist=[{role:'assistant',content:${JSON.stringify(en ? "Hi! 👋 I'm the assistant at Casa Bella Realty. How can I help you buy or sell a home?" : "¡Hola! 👋 Soy la asistente de Casa Bella Realty. ¿Le puedo ayudar a comprar o vender una casa?")}}],chatBusy=false;
 function addBub(cls,txt){var log=document.getElementById('chatlog'),d=document.createElement('div');d.className='bub '+cls;d.textContent=txt;log.appendChild(d);log.scrollTop=log.scrollHeight;return d}
 function sendChat(){
   if(chatBusy)return;
@@ -4947,8 +4947,8 @@ app.get("/i", (req, res) => {
   }
   const es = d.lang !== "en";
   const L = es
-    ? { inv: "FACTURA", est: "COTIZACIÓN", for: "Preparado para", item: "Concepto", subtotal: "Subtotal", deposit: "Depósito recibido", due: "SALDO PENDIENTE", paid: "PAGADO", how: "CÓMO PAGAR", zelle: "Zelle", cash: "Efectivo o cheque aceptado", print: "🖨️ Imprimir / Guardar PDF", made: "Hecho con ALTO Pro", meas: "Medición satelital del techo", date: "Fecha", area: "Área del techo", pitch: "Inclinación", sqs: "Cuadros (squares)", imgOf: "Imagen satelital", valid: "Esta cotización es válida por 30 días.", sig: "Autorizado por (firma del cliente)", sigDate: "Fecha" }
-    : { inv: "INVOICE", est: "QUOTE", for: "Prepared for", item: "Item", subtotal: "Subtotal", deposit: "Deposit received", due: "BALANCE DUE", paid: "PAID", how: "HOW TO PAY", zelle: "Zelle", cash: "Cash or check accepted", print: "🖨️ Print / Save PDF", made: "Made with ALTO Pro", meas: "Satellite roof measurement", date: "Date", area: "Roof area", pitch: "Pitch", sqs: "Squares", imgOf: "Satellite imagery", valid: "This quote is valid for 30 days.", sig: "Authorized by (client signature)", sigDate: "Date" };
+    ? { inv: "FACTURA", est: "COTIZACIÓN", for: "Preparado para", item: "Concepto", subtotal: "Subtotal", deposit: "Depósito recibido", due: "SALDO PENDIENTE", paid: "PAGADO", how: "CÓMO PAGAR", zelle: "Zelle", cash: "Efectivo o cheque aceptado", print: "🖨️ Imprimir / Guardar PDF", made: "Hecho con Quick Comp", meas: "Medición satelital del techo", date: "Fecha", area: "Área del techo", pitch: "Inclinación", sqs: "Cuadros (squares)", imgOf: "Imagen satelital", valid: "Esta cotización es válida por 30 días.", sig: "Autorizado por (firma del cliente)", sigDate: "Fecha" }
+    : { inv: "INVOICE", est: "QUOTE", for: "Prepared for", item: "Item", subtotal: "Subtotal", deposit: "Deposit received", due: "BALANCE DUE", paid: "PAID", how: "HOW TO PAY", zelle: "Zelle", cash: "Cash or check accepted", print: "🖨️ Print / Save PDF", made: "Made with Quick Comp", meas: "Satellite roof measurement", date: "Date", area: "Roof area", pitch: "Pitch", sqs: "Squares", imgOf: "Satellite imagery", valid: "This quote is valid for 30 days.", sig: "Authorized by (client signature)", sigDate: "Date" };
   const fmtM = (n) => "$" + Number(n || 0).toLocaleString("en-US", { maximumFractionDigits: 0 });
   const esc = (s) => String(s || "").replace(/[&<>"]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch]));
   const bal = (d.tot || 0) - (d.dep || 0);
@@ -5035,7 +5035,7 @@ app.post("/api/ai", async (req, res) => {
   try {
     const text = await aiChat({
       maxTokens: 1024,
-      system: `You are the AI assistant inside ALTO Pro, an app for Latino contractors. The contractor is a ${trade} contractor${bizName ? ` (business: ${bizName})` : ""}. Reply in ${lang === "es" ? "Spanish" : "English"}, max 90 words, plain text only (no markdown). Concrete math: cubic yards = (L ft × W ft × thickness in/12) / 27, add waste %, trucks hold 10 yd³. Roofing math: roof area = footprint sq ft × pitch factor (6/12 = 1.118), squares = area/100 rounded up, add 10% material waste. NEVER invent prices from the contractor's data; if asked about market rates, give a clearly-labeled rough range and say to verify locally. Contractor's current data: ${JSON.stringify(data)}`,
+      system: `You are the AI assistant inside Quick Comp, an app for Latino real-estate agents. The user is a real-estate agent${bizName ? ` (brokerage: ${bizName})` : ""}. Reply in ${lang === "es" ? "Spanish" : "English"}, max 90 words, plain text only (no markdown). Help with home valuation and listing prep: how a comparative market value is built from recent SOLD comparable sales (adjusting for living area/sqft, beds/baths, age, condition and how recent the sale is), how to read price-per-sqft, days on market, and how to position a listing price. Active/pending listings are context only, never the value. NEVER promise a guaranteed sale price and never give legal or financial advice; a full CMA refines the number, and tell them to verify locally. Agent's current data: ${JSON.stringify(data)}`,
       messages,
     });
     res.json({ text, source: "live" });
@@ -5105,10 +5105,10 @@ async function ensureAccount(slug, name, profile) {
   }
   return c;
 }
-await ensureAccount("alto-demo", "Techos García (Demo)", { biz: "Techos García (Demo)", lang: "es", trade: "roofing" });
-await ensureAccount("alto-ventas", "ALTO Pro Ventas", { biz: "ALTO Pro", lang: "es", trade: "roofing" });
+await ensureAccount("alto-demo", "Casa Bella Realty (Demo)", { biz: "Casa Bella Realty (Demo)", lang: "es", trade: "realtor" });
+await ensureAccount("alto-ventas", "Quick Comp Ventas", { biz: "Quick Comp", lang: "es", trade: "realtor" });
 
 app.listen(PORT, () => {
-  console.log(`ALTO Pro server on http://localhost:${PORT}`);
+  console.log(`Quick Comp server on http://localhost:${PORT}`);
   console.log(`  google: ${GOOGLE_KEY ? "LIVE" : "demo"} · parcels: ${REGRID_KEY ? "LIVE" : "demo"} · property: ${RENTCAST_KEY ? "LIVE" : "demo"} · ai: ${aiLive ? `LIVE (${anthropic ? "anthropic" : "openai"})` : "demo"}`);
 });
