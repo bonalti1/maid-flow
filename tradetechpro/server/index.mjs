@@ -488,15 +488,15 @@ function loginPage(title, action, wrong) {
   return `<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Maid Flow · ${title}</title><link rel="icon" href="/icon-192.png"><style>
 *{box-sizing:border-box;font-family:Inter,Arial,sans-serif;margin:0}
-body{background:#084563;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+body{background:#0E5E91;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
 .card{background:#fff;border-radius:22px;padding:36px 30px;width:100%;max-width:380px;text-align:center;box-shadow:0 30px 80px rgba(0,0,0,.45)}
 .mflogo{font-weight:900;font-size:30px;letter-spacing:-0.01em;color:#0C2A43;margin-bottom:14px}
-.mflogo span{color:#0C5A8A}
+.mflogo span{color:#1B8FD1}
 h1{font-size:18px;color:#0C2A43;margin-bottom:4px}
 p{color:#5A7488;font-size:13px;font-weight:600;margin-bottom:18px}
 input{width:100%;padding:14px;border-radius:12px;border:1.5px solid #DBEAF4;font-size:16px;font-weight:600;outline:none;text-align:center}
-input:focus{border-color:#0C5A8A}
-button{width:100%;margin-top:10px;padding:14px;border:none;border-radius:12px;background:#0C5A8A;color:#fff;font-size:16px;font-weight:800;cursor:pointer}
+input:focus{border-color:#1B8FD1}
+button{width:100%;margin-top:10px;padding:14px;border:none;border-radius:12px;background:#1B8FD1;color:#fff;font-size:16px;font-weight:800;cursor:pointer}
 .err{color:#D93025;font-size:13px;font-weight:700;margin-top:10px}
 </style></head><body><form class="card" method="get" action="${action}">
 <div class="mflogo">Maid<span>Flow</span></div>
@@ -518,9 +518,9 @@ app.post("/api/admin/contractors", async (req, res) => {
   const inviteUrl = `${req.protocol}://${req.get("host")}/invite/${invite}`;
   if (req.query.html) {
     return res.send(`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Cuenta creada</title>
-<style>body{font-family:Inter,Arial,sans-serif;max-width:560px;margin:40px auto;padding:0 16px;color:#0C5A8A}h2{margin-bottom:6px}
-.link{background:#F7EFD8;border:2px solid #1F9BD2;border-radius:12px;padding:14px;word-break:break-all;font-size:14px;margin:14px 0}
-a{color:#1F9BD2;font-weight:800}</style></head><body>
+<style>body{font-family:Inter,Arial,sans-serif;max-width:560px;margin:40px auto;padding:0 16px;color:#1B8FD1}h2{margin-bottom:6px}
+.link{background:#F7EFD8;border:2px solid #2AA8DE;border-radius:12px;padding:14px;word-break:break-all;font-size:14px;margin:14px 0}
+a{color:#2AA8DE;font-weight:800}</style></head><body>
 <h2>✓ Cuenta creada: ${c.name}</h2>
 <p>Manda este enlace de invitación por texto o WhatsApp al agente. Un tap y queda dentro de su app — es su llave personal, sin App Store, con sus datos guardados para siempre:</p>
 <div class="link">${inviteUrl}</div>
@@ -543,9 +543,9 @@ app.get("/api/admin/invite", async (req, res) => {
   const token = await db.createInvite(c.id);
   const url = `${req.protocol}://${req.get("host")}/invite/${token}`;
   res.send(`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Link de acceso</title>
-<style>body{font-family:Inter,Arial,sans-serif;max-width:560px;margin:40px auto;padding:0 16px;color:#0C5A8A}
-.link{background:#F7EFD8;border:2px solid #1F9BD2;border-radius:12px;padding:14px;word-break:break-all;font-size:14px;margin:14px 0}
-a{color:#1F9BD2;font-weight:800}</style></head><body>
+<style>body{font-family:Inter,Arial,sans-serif;max-width:560px;margin:40px auto;padding:0 16px;color:#1B8FD1}
+.link{background:#F7EFD8;border:2px solid #2AA8DE;border-radius:12px;padding:14px;word-break:break-all;font-size:14px;margin:14px 0}
+a{color:#2AA8DE;font-weight:800}</style></head><body>
 <h2>🔑 Link de acceso: ${c.name}</h2>
 <p>Mándalo por texto o WhatsApp. Un tap y entra a su app con todo guardado:</p>
 <div class="link">${url}</div>
@@ -658,12 +658,12 @@ app.get("/admin", async (req, res) => {
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 *{box-sizing:border-box;margin:0;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display",Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
-body{background:#F5F6F8;color:#084563;letter-spacing:-0.011em}
+body{background:#F5F6F8;color:#0E5E91;letter-spacing:-0.011em}
 ::selection{background:rgba(248,180,8,.35)}
 a{-webkit-tap-highlight-color:transparent}
 header{position:sticky;top:0;z-index:30;background:rgba(16,27,48,.9);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);color:#fff;padding:15px 24px;display:flex;align-items:center;gap:13px;border-bottom:1px solid rgba(255,255,255,.07)}
 header img{height:32px;background:#fff;border-radius:10px;padding:4px 7px}
-header b{font-size:16px;font-weight:700;letter-spacing:-0.02em}header b em{color:#3FB6E8;font-style:normal}
+header b{font-size:16px;font-weight:700;letter-spacing:-0.02em}header b em{color:#5BC8F0;font-style:normal}
 header .tag{margin-left:auto;font-size:12.5px;color:#9DA8C4;font-weight:600}
 header .tag a{color:#cdd5e5;text-decoration:none}
 .wrap{max-width:1100px;margin:0 auto;padding:26px 22px 64px}
@@ -673,7 +673,7 @@ header .tag a{color:#cdd5e5;text-decoration:none}
 .card .v{font-size:33px;font-weight:700;letter-spacing:-0.035em;line-height:1.04}
 .card .l{font-size:11px;font-weight:700;color:#9097A3;letter-spacing:.55px;text-transform:uppercase;margin-top:6px}
 .card.gold{background:linear-gradient(155deg,#16243f 0%,#0d1729 100%);color:#fff;border:none;box-shadow:0 1px 2px rgba(0,0,0,.25),0 20px 48px rgba(16,27,48,.30)}
-.card.gold .v{color:#3FB6E8}
+.card.gold .v{color:#5BC8F0}
 .card.gold .l{color:#9DA8C4}
 .panel{background:#fff;border:1px solid rgba(16,27,48,.05);border-radius:24px;padding:24px;margin-top:18px;box-shadow:0 1px 2px rgba(16,27,48,.04),0 12px 32px rgba(16,27,48,.05)}
 .panel h2{font-size:15.5px;font-weight:700;letter-spacing:-0.015em;margin-bottom:16px}
@@ -682,10 +682,10 @@ header .tag a{color:#cdd5e5;text-decoration:none}
 .chart .bar{width:100%;max-width:46px;background:linear-gradient(180deg,#FFC83D,#F0A500);border-radius:10px 10px 4px 4px;min-height:3px;box-shadow:0 5px 12px rgba(240,165,0,.28);transition:filter .15s}
 .chart .bar:hover{filter:brightness(1.06)}
 .chart .lbl{font-size:10.5px;color:#9097A3;font-weight:700}
-.chart .num{font-size:11px;font-weight:800;color:#084563}
+.chart .num{font-size:11px;font-weight:800;color:#0E5E91}
 table{width:100%;border-collapse:collapse;font-size:13.5px}
 th{text-align:left;color:#9097A3;font-size:10.5px;letter-spacing:.7px;text-transform:uppercase;font-weight:700;padding:10px;border-bottom:1px solid #EEF0F4}
-td{padding:14px 10px;border-bottom:1px solid #F2F4F7;font-weight:600;color:#0E5180;vertical-align:middle}
+td{padding:14px 10px;border-bottom:1px solid #F2F4F7;font-weight:600;color:#1577B8;vertical-align:middle}
 tr[data-name]{transition:background .12s}
 tr[data-name]:hover{background:#F8F9FB}
 td a{color:#B07A00;font-weight:700;text-decoration:none}
@@ -698,39 +698,39 @@ td .pill{margin:2px 3px 2px 0}
 .pill.gold{background:#FEF3D6;color:#946400}
 .newform{display:flex;gap:10px;flex-wrap:wrap}
 .newform input{flex:1;min-width:160px;font-family:inherit;padding:13px 15px;border-radius:13px;border:1px solid #E4E7EC;background:#fff;font-size:14.5px;font-weight:500;outline:none;transition:border-color .15s,box-shadow .15s}
-.newform input:focus{border-color:#3FB6E8;box-shadow:0 0 0 4px rgba(248,180,8,.18)}
-.newform button{background:#3FB6E8;color:#0C5A8A;border:none;border-radius:13px;padding:13px 24px;font-weight:700;cursor:pointer;font-size:14.5px;transition:transform .12s,filter .15s;box-shadow:0 6px 16px rgba(248,180,8,.3)}
+.newform input:focus{border-color:#5BC8F0;box-shadow:0 0 0 4px rgba(248,180,8,.18)}
+.newform button{background:#5BC8F0;color:#1B8FD1;border:none;border-radius:13px;padding:13px 24px;font-weight:700;cursor:pointer;font-size:14.5px;transition:transform .12s,filter .15s;box-shadow:0 6px 16px rgba(248,180,8,.3)}
 .newform button:hover{filter:brightness(1.03)}.newform button:active{transform:scale(.97)}
 .legend{color:#9097A3;font-size:12px;margin-top:12px;line-height:1.6}
 .closures{border:1px solid rgba(248,180,8,.28);box-shadow:0 1px 2px rgba(16,27,48,.04),0 12px 32px rgba(248,180,8,.08)}
 .periodbar{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin:2px 0 18px}
 .segs{display:inline-flex;background:#EEF0F4;border-radius:12px;padding:3px;gap:2px}
 .seg{padding:8px 15px;border-radius:9px;font-size:13px;font-weight:700;color:#5A6475;text-decoration:none;white-space:nowrap}
-.seg.on{background:#fff;color:#0C5A8A;box-shadow:0 1px 3px rgba(16,27,48,.12)}
+.seg.on{background:#fff;color:#1B8FD1;box-shadow:0 1px 3px rgba(16,27,48,.12)}
 .segcustom{display:inline-flex;gap:7px;align-items:center}
-.segcustom input{font-family:inherit;padding:8px 10px;border-radius:10px;border:1px solid #E4E7EC;font-size:13px;font-weight:600;color:#0E5180;outline:none}
-.segcustom input:focus{border-color:#3FB6E8;box-shadow:0 0 0 3px rgba(248,180,8,.18)}
-.segcustom button{background:#0C5A8A;color:#fff;border:none;border-radius:10px;padding:9px 16px;font-weight:700;font-size:13px;cursor:pointer}
-.segcustom button.on{background:#3FB6E8;color:#0C5A8A}
+.segcustom input{font-family:inherit;padding:8px 10px;border-radius:10px;border:1px solid #E4E7EC;font-size:13px;font-weight:600;color:#1577B8;outline:none}
+.segcustom input:focus{border-color:#5BC8F0;box-shadow:0 0 0 3px rgba(248,180,8,.18)}
+.segcustom button{background:#1B8FD1;color:#fff;border:none;border-radius:10px;padding:9px 16px;font-weight:700;font-size:13px;cursor:pointer}
+.segcustom button.on{background:#5BC8F0;color:#1B8FD1}
 .plabel{font-size:12.5px;font-weight:700;color:#9097A3}
 .subcards{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:12px}
 .sub{background:#F7F8FA;border:1px solid rgba(16,27,48,.05);border-radius:16px;padding:16px 18px}
 .sub .v{font-size:26px;font-weight:700;letter-spacing:-.03em;line-height:1.05}
 .sub .l{font-size:10.5px;font-weight:700;color:#9097A3;letter-spacing:.5px;text-transform:uppercase;margin-top:5px}
 .sub.gold{background:linear-gradient(155deg,#16243f 0%,#0d1729 100%);border:none}
-.sub.gold .v{color:#3FB6E8}.sub.gold .l{color:#9DA8C4}
+.sub.gold .v{color:#5BC8F0}.sub.gold .l{color:#9DA8C4}
 .grid2{display:grid;gap:18px}
 @media(min-width:900px){.grid2{grid-template-columns:1.1fr 1fr}}
 .scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
 .lrow{display:flex;align-items:center;gap:12px;padding:9px 0;border-bottom:1px solid #F3F5F9;font-size:13.5px;font-weight:600}
-.lprev{width:134px;height:86px;border-radius:10px;overflow:hidden;border:1px solid #E4E7EC;flex-shrink:0;background:#084563;box-shadow:0 4px 12px rgba(16,27,48,.08)}
+.lprev{width:134px;height:86px;border-radius:10px;overflow:hidden;border:1px solid #E4E7EC;flex-shrink:0;background:#0E5E91;box-shadow:0 4px 12px rgba(16,27,48,.08)}
 .lprev iframe{width:1100px;height:705px;border:0;transform:scale(.122);transform-origin:0 0;pointer-events:none;background:#fff;display:block}
 .lprev.ph{display:flex;align-items:center;justify-content:center;font-size:24px;background:#F4F6FA;color:#9AA0AC}
 .lurl{color:#9AA0AC;font-size:12px;word-break:break-all}
 .lbtns{display:flex;gap:6px;flex-shrink:0}
 @media(max-width:620px){.lprev{display:none}}
 </style></head><body>
-<header><b style="color:#fff;font-weight:900">Maid<span style="color:#3FB6E8">Flow</span></b><b>· Admin</b><span class="tag"><a href="/admin/economics" style="color:#3FB6E8">🧮 Calculadora</a> · <a href="/cs" style="color:#9DA8C4">🎧 Servicio</a> · <a href="/admin?logout" style="color:#9DA8C4">salir</a></span></header>
+<header><b style="color:#fff;font-weight:900">Maid<span style="color:#5BC8F0">Flow</span></b><b>· Admin</b><span class="tag"><a href="/admin/economics" style="color:#5BC8F0">🧮 Calculadora</a> · <a href="/cs" style="color:#9DA8C4">🎧 Servicio</a> · <a href="/admin?logout" style="color:#9DA8C4">salir</a></span></header>
 <div class="wrap">
 
 <div class="cards">
@@ -812,8 +812,8 @@ td .pill{margin:2px 3px 2px 0}
       ${thumb}
       <span style="flex:1">${name}<br><span class="lurl">${url}</span></span>
       <span class="lbtns">
-        <button onclick="cpy(this,'${url}')" style="background:#3FB6E8;color:#0C5A8A;border:none;border-radius:8px;padding:7px 12px;font-weight:800;cursor:pointer;font-size:12px">Copiar</button>
-        <a href="${url}" target="_blank" style="background:#0C5A8A;color:#fff;border-radius:8px;padding:7px 12px;font-weight:800;text-decoration:none;font-size:12px">Abrir</a>
+        <button onclick="cpy(this,'${url}')" style="background:#5BC8F0;color:#1B8FD1;border:none;border-radius:8px;padding:7px 12px;font-weight:800;cursor:pointer;font-size:12px">Copiar</button>
+        <a href="${url}" target="_blank" style="background:#1B8FD1;color:#fff;border-radius:8px;padding:7px 12px;font-weight:800;text-decoration:none;font-size:12px">Abrir</a>
       </span>
     </div>`; }).join("")}
   `).join("")}
@@ -832,7 +832,7 @@ td .pill{margin:2px 3px 2px 0}
 
 <div class="panel">
   <h2>👥 Limpiadoras</h2>
-  <input id="csearch" placeholder="🔍 Buscar limpiadora por nombre…" onkeyup="filterClients()" style="width:100%;padding:14px 16px;border:1px solid #E4E7EC;border-radius:14px;font-size:14.5px;font-weight:500;font-family:inherit;outline:none;margin-bottom:14px;transition:border-color .15s,box-shadow .15s" onfocus="this.style.borderColor='#3FB6E8';this.style.boxShadow='0 0 0 4px rgba(248,180,8,.18)'" onblur="this.style.borderColor='#E4E7EC';this.style.boxShadow='none'">
+  <input id="csearch" placeholder="🔍 Buscar limpiadora por nombre…" onkeyup="filterClients()" style="width:100%;padding:14px 16px;border:1px solid #E4E7EC;border-radius:14px;font-size:14.5px;font-weight:500;font-family:inherit;outline:none;margin-bottom:14px;transition:border-color .15s,box-shadow .15s" onfocus="this.style.borderColor='#5BC8F0';this.style.boxShadow='0 0 0 4px rgba(248,180,8,.18)'" onblur="this.style.borderColor='#E4E7EC';this.style.boxShadow='none'">
   <div class="scroll"><table>
   <tr><th>Limpiadora / Negocio</th><th>Estado</th><th>Leads 7d</th><th>Total</th><th>Último lead</th><th>Widget</th><th>Acceso</th><th>IA / GHL</th><th>Creado</th></tr>
   ${list.map((c) => {
@@ -848,7 +848,7 @@ td .pill{margin:2px 3px 2px 0}
     const dev = devCounts[String(c.id)] || 0;
     const devTag = (!isB && dev >= 4) ? ` <span class="pill warn" title="${dev} dispositivos/aperturas — posible link compartido. Ofrécele cuentas para su equipo.">📱 ${dev}</span>` : "";
     return `<tr data-name="${esc(c.name).toLowerCase()} ${c.slug}">
-      <td><a href="/admin/c/${c.slug}" style="color:#0C5A8A;font-weight:800">${esc(c.name)}</a>${isB ? ' <span class="pill gold">interno</span>' : ""}</td>
+      <td><a href="/admin/c/${c.slug}" style="color:#1B8FD1;font-weight:800">${esc(c.name)}</a>${isB ? ' <span class="pill gold">interno</span>' : ""}</td>
       <td>${isPaused
         ? `<a href="#" onclick="setStatus('${c.id}','active','${esc(c.name).replace(/'/g, "")}');return false"><span class="pill warn">⏸ pausado</span></a>`
         : `<a href="#" onclick="setStatus('${c.id}','paused','${esc(c.name).replace(/'/g, "")}');return false"><span class="pill ok">activo</span></a>`}${payTag}${devTag}</td>
@@ -942,11 +942,11 @@ app.get("/admin/economics", async (req, res) => {
   res.send(`<!doctype html><html lang="${en ? "en" : "es"}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Maid Flow · ${tr("Centro de mando", "Command center")}</title><link rel="icon" href="/icon-192.png"><style>
 *{box-sizing:border-box;margin:0;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
-body{background:#F5F6F8;color:#084563;letter-spacing:-0.011em}
+body{background:#F5F6F8;color:#0E5E91;letter-spacing:-0.011em}
 ::selection{background:rgba(248,180,8,.35)}
 .appheader{position:sticky;top:0;z-index:30;background:rgba(16,27,48,.9);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);color:#fff;padding:15px 24px;display:flex;align-items:center;gap:13px;border-bottom:1px solid rgba(255,255,255,.07)}
 .appheader img{height:30px;background:#fff;border-radius:9px;padding:4px 6px}
-.appheader b{font-size:16px;font-weight:700;letter-spacing:-0.02em}.appheader b em{color:#3FB6E8;font-style:normal}
+.appheader b{font-size:16px;font-weight:700;letter-spacing:-0.02em}.appheader b em{color:#5BC8F0;font-style:normal}
 .appheader .right{margin-left:auto;display:flex;gap:8px;align-items:center}
 .appheader .right a{color:#cdd5e5;text-decoration:none;font-weight:600;font-size:13px;border-radius:99px;padding:7px 14px}
 .appheader .right a.dark{background:rgba(255,255,255,.1);color:#fff}
@@ -960,7 +960,7 @@ h1{font-size:25px;font-weight:700;letter-spacing:-0.03em}
 .card .l{font-size:10.5px;font-weight:700;color:#9097A3;letter-spacing:.4px;text-transform:uppercase;margin-top:5px}
 .card .s{font-size:11px;font-weight:600;color:#8A94A8;margin-top:4px;line-height:1.4}
 .card.gold{background:linear-gradient(155deg,#16243f 0%,#0d1729 100%);border:none}
-.card.gold .v{color:#3FB6E8}.card.gold .l{color:#9DA8C4}.card.gold .s{color:#9DA8C4}
+.card.gold .v{color:#5BC8F0}.card.gold .l{color:#9DA8C4}.card.gold .s{color:#9DA8C4}
 .card.good .v{color:#10803C}.card.bad .v{color:#C5221F}.card.warnc .v{color:#946400}
 .grid{display:grid;gap:16px;margin-top:6px}
 @media(min-width:900px){.grid{grid-template-columns:360px 1fr;align-items:start}}
@@ -969,10 +969,10 @@ h1{font-size:25px;font-weight:700;letter-spacing:-0.03em}
 .fld{margin-bottom:13px}
 .fld label{display:block;font-weight:600;font-size:12.5px;color:#475067;margin-bottom:5px}
 .fld .row{display:flex;align-items:center;gap:9px}
-.fld input[type=range]{flex:1;accent-color:#3FB6E8}
-.fld .val{min-width:78px;display:flex;align-items:center;background:#F4F6FA;border:1px solid #E4E7EC;border-radius:9px;padding:6px 9px;font-weight:800;font-size:13.5px;color:#0C5A8A}
+.fld input[type=range]{flex:1;accent-color:#5BC8F0}
+.fld .val{min-width:78px;display:flex;align-items:center;background:#F4F6FA;border:1px solid #E4E7EC;border-radius:9px;padding:6px 9px;font-weight:800;font-size:13.5px;color:#1B8FD1}
 .fld .val .pre{color:#9097A3;font-weight:700;margin-right:2px}
-.fld .val input{width:100%;border:none;background:none;outline:none;font-weight:800;font-size:13.5px;color:#0C5A8A;text-align:right;font-family:inherit}
+.fld .val input{width:100%;border:none;background:none;outline:none;font-weight:800;font-size:13.5px;color:#1B8FD1;text-align:right;font-family:inherit}
 .fld .hint{color:#9097A3;font-size:11px;font-weight:500;margin-top:3px}
 .fx{display:flex;gap:7px;align-items:center;margin-bottom:7px}
 .fx input.n{flex:1;font-family:inherit;padding:8px 10px;border:1px solid #E4E7EC;border-radius:9px;font-size:13px;font-weight:600;outline:none}
@@ -983,9 +983,9 @@ h1{font-size:25px;font-weight:700;letter-spacing:-0.03em}
 .adv{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px solid #F2F4F7;font-size:13px;font-weight:600;line-height:1.5}
 .adv:last-child{border-bottom:none}.adv .ic{flex-shrink:0;font-size:16px}
 .adv.bad{color:#9B1C10}.adv.warn{color:#7a5600}.adv.good{color:#1E7B3C}
-.aibtn{background:#0C5A8A;color:#fff;border:none;border-radius:12px;padding:13px 20px;font-weight:800;cursor:pointer;font-size:14px;margin-top:4px}
+.aibtn{background:#1B8FD1;color:#fff;border:none;border-radius:12px;padding:13px 20px;font-weight:800;cursor:pointer;font-size:14px;margin-top:4px}
 .aibtn:disabled{opacity:.6}
-.aibox{white-space:pre-wrap;background:#084563;color:#E7ECF6;border-radius:14px;padding:16px 18px;margin-top:12px;font-size:13px;line-height:1.65;font-weight:500;display:none}
+.aibox{white-space:pre-wrap;background:#0E5E91;color:#E7ECF6;border-radius:14px;padding:16px 18px;margin-top:12px;font-size:13px;line-height:1.65;font-weight:500;display:none}
 .aibox.show{display:block}
 .vnote{background:#FFF7E0;border:1px solid #F3D27A;border-radius:14px;padding:13px 16px;font-size:13px;font-weight:500;color:#5E6675;line-height:1.6;margin-bottom:16px}
 .vnote b{color:#7a5600}
@@ -1144,7 +1144,7 @@ app.get("/admin/c/:slug", async (req, res) => {
 <title>${esc(c.name)} · Maid Flow Admin</title><link rel="icon" href="/icon-192.png"><style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 *{box-sizing:border-box;margin:0;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display",Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
-body{background:#F5F6F8;color:#084563;letter-spacing:-0.011em}
+body{background:#F5F6F8;color:#0E5E91;letter-spacing:-0.011em}
 ::selection{background:rgba(248,180,8,.35)}
 header{position:sticky;top:0;z-index:30;background:rgba(16,27,48,.9);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);color:#fff;padding:15px 24px;display:flex;align-items:center;gap:13px;border-bottom:1px solid rgba(255,255,255,.07)}
 header img{height:30px;background:#fff;border-radius:9px;padding:4px 6px}
@@ -1163,16 +1163,16 @@ h1{font-size:28px;font-weight:700;letter-spacing:-0.03em}.slug{color:#9097A3;fon
 .acts a,.acts button{display:inline-flex;align-items:center;text-decoration:none;border:none;border-radius:13px;padding:12px 18px;font-weight:700;font-size:13.5px;cursor:pointer;font-family:inherit;transition:transform .12s,filter .15s}
 .acts a:hover,.acts button:hover{filter:brightness(1.02);transform:translateY(-1px)}
 .acts a:active,.acts button:active{transform:scale(.97)}
-.b-dark{background:#0C5A8A;color:#fff;box-shadow:0 6px 16px rgba(16,27,48,.2)}
-.b-gold{background:#3FB6E8;color:#0C5A8A;box-shadow:0 6px 16px rgba(248,180,8,.3)}
-.b-line{background:#fff;border:1px solid #E4E7EC;color:#0C5A8A;box-shadow:0 1px 2px rgba(16,27,48,.04)}
+.b-dark{background:#1B8FD1;color:#fff;box-shadow:0 6px 16px rgba(16,27,48,.2)}
+.b-gold{background:#5BC8F0;color:#1B8FD1;box-shadow:0 6px 16px rgba(248,180,8,.3)}
+.b-line{background:#fff;border:1px solid #E4E7EC;color:#1B8FD1;box-shadow:0 1px 2px rgba(16,27,48,.04)}
 .b-red{background:#FDECEC;color:#C5221F}
 table{width:100%;border-collapse:collapse;font-size:13.5px}
 th{text-align:left;color:#9097A3;font-size:10.5px;letter-spacing:.7px;text-transform:uppercase;font-weight:700;padding:10px;border-bottom:1px solid #EEF0F4}
-td{padding:13px 10px;border-bottom:1px solid #F2F4F7;font-weight:600;color:#0E5180}
+td{padding:13px 10px;border-bottom:1px solid #F2F4F7;font-weight:600;color:#1577B8}
 .sw{width:18px;height:18px;border-radius:6px;display:inline-block;vertical-align:middle;border:1px solid rgba(0,0,0,.1)}
 </style></head><body>
-<header><b style="color:#fff;font-weight:900">Maid<span style="color:#3FB6E8">Flow</span></b><a href="/admin">← Tablero</a></header>
+<header><b style="color:#fff;font-weight:900">Maid<span style="color:#5BC8F0">Flow</span></b><a href="/admin">← Tablero</a></header>
 <div class="wrap">
 <h1>${esc(c.name)}</h1><div class="slug">/${c.slug}</div>
 <div class="badges">
@@ -1239,13 +1239,13 @@ app.get("/invite/:token", async (req, res) => {
     return res.send(`<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Maid Flow</title><style>
 *{box-sizing:border-box;font-family:Inter,Arial,sans-serif;margin:0}
-body{background:#0C5A8A;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+body{background:#1B8FD1;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
 .card{background:#fff;border-radius:22px;padding:36px 28px;max-width:400px;text-align:center;box-shadow:0 30px 80px rgba(0,0,0,.45)}
-.wordmark{font-size:26px;font-weight:900;color:#0C5A8A;margin-bottom:12px}h1{font-size:19px;color:#0C5A8A;margin-bottom:8px}
+.wordmark{font-size:26px;font-weight:900;color:#1B8FD1;margin-bottom:12px}h1{font-size:19px;color:#1B8FD1;margin-bottom:8px}
 p{color:#5A6478;font-size:14px;font-weight:600;line-height:1.6}
-a{display:inline-block;margin-top:18px;background:#1F9BD2;color:#fff;text-decoration:none;font-weight:800;padding:13px 24px;border-radius:12px}
+a{display:inline-block;margin-top:18px;background:#2AA8DE;color:#fff;text-decoration:none;font-weight:800;padding:13px 24px;border-radius:12px}
 </style></head><body><div class="card">
-<div class="wordmark">Maid<span style="color:#3FB6E8">Flow</span></div>
+<div class="wordmark">Maid<span style="color:#5BC8F0">Flow</span></div>
 <h1>⏳ Tu cuenta se está activando</h1>
 <p>Se activa sola en cuanto se confirme tu pago — normalmente toma <b>1 minuto</b>.<br><br>Guarda este link (es tu llave 🔑) y vuelve a tocarlo en un momento.</p>
 <a href="">Intentar de nuevo</a>
@@ -1472,10 +1472,10 @@ app.get("/w/:slug", async (req, res) => {
     const pPhone = String(pProf.phone || c.phone || "").replace(/\D/g, "");
     return res.send(`<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${pBiz}</title><style>
-*{box-sizing:border-box;font-family:Inter,Arial,sans-serif;margin:0}body{background:#F4F6FA;color:#0C5A8A;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px}
+*{box-sizing:border-box;font-family:Inter,Arial,sans-serif;margin:0}body{background:#F4F6FA;color:#1B8FD1;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px}
 .card{background:#fff;border:1px solid #E6EBF3;border-radius:22px;padding:36px 28px;max-width:420px;text-align:center;box-shadow:0 20px 60px rgba(16,27,48,.1)}
 h1{font-size:20px;margin:12px 0 8px}p{color:#5A6478;font-weight:600;font-size:14.5px;line-height:1.6}
-a{display:inline-block;margin-top:18px;background:#0C5A8A;color:#fff;text-decoration:none;font-weight:800;padding:14px 26px;border-radius:12px}
+a{display:inline-block;margin-top:18px;background:#1B8FD1;color:#fff;text-decoration:none;font-weight:800;padding:14px 26px;border-radius:12px}
 </style></head><body><div class="card">
 <span style="font-size:40px">🧹</span>
 <h1>${pBiz}</h1>
@@ -1529,7 +1529,7 @@ ${pPhone ? `<a href="tel:+1${pPhone}">📞 Llámanos / Call us</a>` : ""}
 <meta name="twitter:card" content="summary_large_image">
 <style>
 *{box-sizing:border-box;font-family:Inter,Arial,sans-serif;-webkit-tap-highlight-color:transparent}
-body{margin:0;background:#F4F6FA;color:#0C5A8A}
+body{margin:0;background:#F4F6FA;color:#1B8FD1}
 .wrap{max-width:430px;margin:0 auto;padding:18px 16px 28px}
 .brand{display:flex;align-items:center;gap:10px;margin-bottom:14px}
 .brand img{max-height:44px;max-width:140px;border-radius:8px}
@@ -1538,12 +1538,12 @@ body{margin:0;background:#F4F6FA;color:#0C5A8A}
 h1{font-size:24px;margin:0 0 4px;line-height:1.15}
 .sub{color:#67718A;font-size:13px;font-weight:600;margin:0 0 16px}
 input{width:100%;padding:14px;border:1.5px solid #E6E8EC;border-radius:12px;font-size:16px;font-weight:600;outline:none;margin-bottom:10px}
-input:focus{border-color:#3FB6E8}
-select{width:100%;padding:14px;border:1.5px solid #E6E8EC;border-radius:12px;font-size:16px;font-weight:600;outline:none;margin-bottom:10px;background:#fff;color:#0C5A8A;-webkit-appearance:none}
-select:focus{border-color:#3FB6E8}
+input:focus{border-color:#5BC8F0}
+select{width:100%;padding:14px;border:1.5px solid #E6E8EC;border-radius:12px;font-size:16px;font-weight:600;outline:none;margin-bottom:10px;background:#fff;color:#1B8FD1;-webkit-appearance:none}
+select:focus{border-color:#5BC8F0}
 .range .reco{color:#fff;font-size:38px;font-weight:800;margin-top:2px}
 .range .rg{color:#C9D2E4;font-size:14px;font-weight:700;margin-top:4px}
-.btn{width:100%;padding:15px;border:none;border-radius:12px;background:#3FB6E8;color:#fff;font-size:16px;font-weight:800;cursor:pointer}
+.btn{width:100%;padding:15px;border:none;border-radius:12px;background:#5BC8F0;color:#fff;font-size:16px;font-weight:800;cursor:pointer}
 .btn:active{transform:scale(.98)}
 .btn[disabled]{opacity:.5}
 .sug{border:1.5px solid #E6E8EC;border-top:none;border-radius:0 0 12px 12px;margin:-12px 0 10px;background:#fff;overflow:hidden}
@@ -1551,17 +1551,17 @@ select:focus{border-color:#3FB6E8}
 .sug button:active{background:#E9F6FD}
 .ghost{background:none;border:none;color:#67718A;font-weight:700;font-size:13px;cursor:pointer;padding:10px 0}
 .load{text-align:center;padding:30px 0}
-.spin{width:46px;height:46px;border:5px solid #E9F6FD;border-top-color:#3FB6E8;border-radius:50%;margin:0 auto 14px;animation:sp 1s linear infinite}
+.spin{width:46px;height:46px;border:5px solid #E9F6FD;border-top-color:#5BC8F0;border-radius:50%;margin:0 auto 14px;animation:sp 1s linear infinite}
 @keyframes sp{to{transform:rotate(360deg)}}
 .lmsg{font-weight:700;color:#67718A;font-size:14px}
 .photo{width:100%;border-radius:14px;display:block;margin-bottom:12px}
-.range{background:#0C5A8A;border-radius:14px;padding:16px;text-align:center;margin-bottom:12px}
-.range .lbl{color:#3FB6E8;font-size:11px;font-weight:800;letter-spacing:2px}
+.range{background:#1B8FD1;border-radius:14px;padding:16px;text-align:center;margin-bottom:12px}
+.range .lbl{color:#5BC8F0;font-size:11px;font-weight:800;letter-spacing:2px}
 .range .val{color:#fff;font-size:30px;font-weight:800;margin-top:4px}
 .note{color:#67718A;font-size:12px;font-weight:600;line-height:1.5}
 .ok{background:#EAF8EF;border:1.5px solid #34A853;color:#1E7B3C;border-radius:12px;padding:12px;font-weight:700;font-size:14px;margin:12px 0}
-.manual{background:#E9F6FD;border:1.5px solid #3FB6E8;color:#7A5A00;border-radius:12px;padding:12px;font-weight:700;font-size:13px;line-height:1.5;margin:12px 0}
-.call{display:block;text-align:center;text-decoration:none;margin-top:12px;padding:15px;border-radius:12px;background:#0C5A8A;color:#fff;font-weight:800;font-size:16px}
+.manual{background:#E9F6FD;border:1.5px solid #5BC8F0;color:#7A5A00;border-radius:12px;padding:12px;font-weight:700;font-size:13px;line-height:1.5;margin:12px 0}
+.call{display:block;text-align:center;text-decoration:none;margin-top:12px;padding:15px;border-radius:12px;background:#1B8FD1;color:#fff;font-weight:800;font-size:16px}
 .ft{text-align:center;color:#9AA3B5;font-size:11px;font-weight:600;margin-top:18px}
 .err{color:#D93025;font-size:13px;font-weight:700;margin:-4px 0 8px}
 </style></head><body><div class="wrap">
@@ -1666,12 +1666,12 @@ function landingPage(req) {
     cta1: "SEE THE LIVE DEMO ↓", cta2: "See pricing",
     chips: ["🇺🇸 Bilingual", "🧹 Built for cleaners", "📲 No App Store"],
     tryT: "TRY IT <em>RIGHT NOW</em>",
-    trySub: `This is what homeowners will see on YOUR website — with your logo and <b style="color:#0C5A8A">your brand</b>. They type a real address and watch it price the cleaning from the home's size. The price shows as a <b style="color:#0C5A8A">range</b>, and to see it they leave their name and phone — that's your cleaning lead.`,
+    trySub: `This is what homeowners will see on YOUR website — with your logo and <b style="color:#1B8FD1">your brand</b>. They type a real address and watch it price the cleaning from the home's size. The price shows as a <b style="color:#1B8FD1">range</b>, and to see it they leave their name and phone — that's your cleaning lead.`,
     fullQ: "What about the full website?", fullSub: "See a sample cleaner website, actually working — imagine your logo, your colors and your name.",
     fullBtn: "TAP TO SEE YOUR WEBSITE →",
     howT: "HOW DOES IT <em>WORK</em>?",
     s1t: "The homeowner lands on your site", s1x: "From an ad, from Google, or because someone shared your link. Your website works even while you're on a job.",
-    s2t: "They leave their phone to see the price", s2x: `<b style="color:#1F9BD2">No name and phone, no price.</b> The engine sizes the home and calculates a cleaning price range — instantly, branded as you.`,
+    s2t: "They leave their phone to see the price", s2x: `<b style="color:#2AA8DE">No name and phone, no price.</b> The engine sizes the home and calculates a cleaning price range — instantly, branded as you.`,
     s3t: "The cleaning lead hits your phone", s3x: "Name, address, phone and the price they saw — instantly, in your app. One button and you're already writing them on WhatsApp with the message pre-written.",
     leadsT: "CUSTOMERS LAND<br><em>ON YOUR PHONE</em>",
     leads: ["<b>📥</b> Every cleaning lead buzzes in your pocket instantly", "<b>💰</b> Prices from your own rates — consistent, not a guess", "<b>💬</b> WhatsApp message pre-written — one tap and you reply", "<b>⚡</b> Instant cleaning quotes in 60 seconds", "<b>🧾</b> Professional branded quotes with your logo"],
@@ -1701,12 +1701,12 @@ function landingPage(req) {
     cta1: "VER DEMO EN VIVO ↓", cta2: "Ver precio",
     chips: ["🇺🇸 En español", "🧹 Hecho para limpiadoras", "📲 Sin App Store"],
     tryT: "PRUÉBALO <em>AHORA MISMO</em>",
-    trySub: `Esto es lo que verán los dueños en TU página web — con tu logo y <b style="color:#0C5A8A">tu marca</b>. Escriben una dirección de verdad y miran cómo cotiza la limpieza según el tamaño de la casa. El precio sale en <b style="color:#0C5A8A">rango</b>, y para verlo dejan su nombre y teléfono — ese es tu cliente.`,
+    trySub: `Esto es lo que verán los dueños en TU página web — con tu logo y <b style="color:#1B8FD1">tu marca</b>. Escriben una dirección de verdad y miran cómo cotiza la limpieza según el tamaño de la casa. El precio sale en <b style="color:#1B8FD1">rango</b>, y para verlo dejan su nombre y teléfono — ese es tu cliente.`,
     fullQ: "¿Y la página completa?", fullSub: "Mira una página de ejemplo de una limpiadora, funcionando de verdad — imagina tu logo, tus colores y tu nombre.",
     fullBtn: "PRESIONA PARA VER TU PÁGINA →",
     howT: "¿CÓMO <em>FUNCIONA</em>?",
     s1t: "El dueño entra a tu página", s1x: "De un anuncio, de Google, o porque alguien le pasó tu link. Tu página trabaja aunque tú estés en un trabajo.",
-    s2t: "Deja su teléfono para ver el precio", s2x: `<b style="color:#1F9BD2">Sin nombre y teléfono, no hay precio.</b> El motor mide la casa y calcula un rango de precio de limpieza — al instante, con tu marca.`,
+    s2t: "Deja su teléfono para ver el precio", s2x: `<b style="color:#2AA8DE">Sin nombre y teléfono, no hay precio.</b> El motor mide la casa y calcula un rango de precio de limpieza — al instante, con tu marca.`,
     s3t: "El cliente te llega a tu teléfono", s3x: "Nombre, dirección, teléfono y el precio que vio — al instante, en tu app. Un botón y ya le estás escribiendo por WhatsApp con el mensaje listo.",
     leadsT: "LOS CLIENTES LLEGAN<br><em>A TU TELÉFONO</em>",
     leads: ["<b>📥</b> Cada cliente suena en tu bolsillo al instante", "<b>💰</b> Precios con tus propias tarifas — consistentes, no al azar", "<b>💬</b> Mensaje de WhatsApp ya escrito — un tap y contestas", "<b>⚡</b> Cotizaciones de limpieza al instante en 60 segundos", "<b>🧾</b> Cotizaciones profesionales con tu logo"],
@@ -1741,47 +1741,47 @@ ${pixelHead}
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&family=Inter:wght@400;600;700;800&display=swap');
 *{box-sizing:border-box;font-family:Inter,Arial,sans-serif;margin:0;-webkit-tap-highlight-color:transparent}
-body{background:#fff;color:#0C5A8A}
+body{background:#fff;color:#1B8FD1}
 .bc{font-family:'Barlow Condensed',sans-serif}
 .wrap{max-width:1020px;margin:0 auto;padding:0 22px}
 nav{display:flex;align-items:center;justify-content:center;padding:30px 0 4px}
 nav .lg img{height:66px;display:block}
-.langpill{position:fixed;top:14px;right:16px;z-index:50;background:#0C5A8A;color:#fff;border-radius:99px;padding:9px 17px;font-weight:800;font-size:13px;text-decoration:none;box-shadow:0 10px 26px rgba(16,27,48,.3)}
+.langpill{position:fixed;top:14px;right:16px;z-index:50;background:#1B8FD1;color:#fff;border-radius:99px;padding:9px 17px;font-weight:800;font-size:13px;text-decoration:none;box-shadow:0 10px 26px rgba(16,27,48,.3)}
 .hero{padding:48px 0 56px;text-align:center}
 .hero h1{font-family:'Barlow Condensed',sans-serif;font-size:clamp(44px,8vw,80px);line-height:1.0;font-weight:800;letter-spacing:.5px}
-.hero h1 em{color:#3FB6E8;font-style:normal}
+.hero h1 em{color:#5BC8F0;font-style:normal}
 .hero p{color:#5A6478;font-size:clamp(15px,2.5vw,19px);font-weight:600;margin:18px auto 0;max-width:620px;line-height:1.55}
-.cta{display:inline-block;margin-top:30px;background:#3FB6E8;color:#0C5A8A;font-weight:800;font-size:17px;padding:17px 36px;border-radius:14px;text-decoration:none;box-shadow:0 14px 34px rgba(248,180,8,.35)}
-.cta2{display:inline-block;margin-top:30px;margin-left:12px;color:#0C5A8A;font-weight:700;font-size:15px;padding:17px 24px;text-decoration:none;border:1.5px solid #DDE3EE;border-radius:14px}
+.cta{display:inline-block;margin-top:30px;background:#5BC8F0;color:#1B8FD1;font-weight:800;font-size:17px;padding:17px 36px;border-radius:14px;text-decoration:none;box-shadow:0 14px 34px rgba(248,180,8,.35)}
+.cta2{display:inline-block;margin-top:30px;margin-left:12px;color:#1B8FD1;font-weight:700;font-size:15px;padding:17px 24px;text-decoration:none;border:1.5px solid #DDE3EE;border-radius:14px}
 .chips{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:26px}
 .chip{background:#F4F7FB;border:1px solid #E6EBF3;border-radius:99px;padding:8px 16px;font-size:13px;font-weight:700;color:#44506A}
 section{padding:64px 0}
 .band{background:#F7F9FC}
-.dark{background:#0C5A8A;color:#fff}
+.dark{background:#1B8FD1;color:#fff}
 .sec-t{font-family:'Barlow Condensed',sans-serif;font-size:clamp(32px,5vw,48px);font-weight:800;text-align:center;line-height:1.05}
-.sec-t em{color:#3FB6E8;font-style:normal}
+.sec-t em{color:#5BC8F0;font-style:normal}
 .sec-sub{color:#5A6478;text-align:center;font-weight:600;margin:12px auto 34px;max-width:600px;font-size:15px;line-height:1.6}
 .dark .sec-sub{color:#9DA8C4}
 .demo-frame{background:#fff;border:1px solid #E6EBF3;border-radius:26px;padding:10px;max-width:460px;margin:0 auto;box-shadow:0 26px 70px rgba(16,27,48,.13)}
 .demo-frame iframe{width:100%;height:540px;border:0;border-radius:18px;display:block}
 .steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:18px}
 .step{background:#fff;border:1px solid #E8ECF3;border-radius:22px;padding:28px;box-shadow:0 10px 30px rgba(16,27,48,.05)}
-.step .n{font-family:'Barlow Condensed',sans-serif;color:#3FB6E8;font-size:44px;font-weight:800}
+.step .n{font-family:'Barlow Condensed',sans-serif;color:#5BC8F0;font-size:44px;font-weight:800}
 .step h3{font-size:18px;margin:8px 0 8px}
 .step p{color:#5A6478;font-size:14px;font-weight:600;line-height:1.6}
 .phone-sec{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:48px}
-.phone{width:280px;background:#084563;border:10px solid #0E5180;border-radius:42px;padding:18px 14px 26px;box-shadow:0 36px 90px rgba(0,0,0,.45)}
-.notch{width:110px;height:22px;background:#0E5180;border-radius:0 0 14px 14px;margin:-18px auto 14px}
-.papp{background:#F4F6FA;border-radius:18px;padding:12px;color:#0C5A8A}
+.phone{width:280px;background:#0E5E91;border:10px solid #1577B8;border-radius:42px;padding:18px 14px 26px;box-shadow:0 36px 90px rgba(0,0,0,.45)}
+.notch{width:110px;height:22px;background:#1577B8;border-radius:0 0 14px 14px;margin:-18px auto 14px}
+.papp{background:#F4F6FA;border-radius:18px;padding:12px;color:#1B8FD1}
 .phead{font-weight:800;font-size:15px;display:flex;align-items:center;gap:8px;margin-bottom:10px}
-.pbadge{background:#3FB6E8;color:#fff;border-radius:99px;font-size:11px;font-weight:800;padding:3px 10px;margin-left:auto}
-.plead{background:#fff;border:2px solid #3FB6E8;border-radius:14px;padding:12px;font-size:13px;line-height:1.5}
-.pnew{background:#3FB6E8;color:#fff;border-radius:99px;font-size:10px;font-weight:800;padding:2px 8px}
-.gold{color:#1F9BD2;font-weight:800}
+.pbadge{background:#5BC8F0;color:#fff;border-radius:99px;font-size:11px;font-weight:800;padding:3px 10px;margin-left:auto}
+.plead{background:#fff;border:2px solid #5BC8F0;border-radius:14px;padding:12px;font-size:13px;line-height:1.5}
+.pnew{background:#5BC8F0;color:#fff;border-radius:99px;font-size:10px;font-weight:800;padding:2px 8px}
+.gold{color:#2AA8DE;font-weight:800}
 .pwa{background:#25D366;color:#fff;border-radius:10px;text-align:center;font-weight:800;font-size:13px;padding:9px;margin-top:10px}
 .ben{max-width:430px}
 .ben li{list-style:none;padding:11px 0;font-weight:600;font-size:16px;color:#E7ECF6;border-bottom:1px solid rgba(255,255,255,.09)}
-.ben li b{color:#3FB6E8}
+.ben li b{color:#5BC8F0}
 .shots{display:flex;gap:28px;justify-content:center;flex-wrap:wrap;margin-bottom:10px}
 .shot img{width:240px;border-radius:26px;border:1px solid #E6EBF3;display:block;box-shadow:0 22px 56px rgba(16,27,48,.14)}
 .shot p{text-align:center;color:#5A6478;font-size:13px;font-weight:700;margin-top:13px;line-height:1.45}
@@ -1794,25 +1794,25 @@ section{padding:64px 0}
 .price-card li::before{content:"✓ ";color:#34A853;font-weight:800}
 .quiz{max-width:480px;margin:0 auto;position:relative}
 .qbar{height:6px;background:#EDF0F5;border-radius:99px;margin-bottom:26px;overflow:hidden}
-.qfill{height:100%;width:20%;background:#3FB6E8;border-radius:99px;transition:width .3s ease}
+.qfill{height:100%;width:20%;background:#5BC8F0;border-radius:99px;transition:width .3s ease}
 .qstep{display:none}
 .qstep.on{display:block}
 .qq{font-weight:800;font-size:19px;text-align:center;margin-bottom:18px}
 .opts{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.opt{background:#fff;border:1.5px solid #DDE3EE;border-radius:14px;padding:18px 12px;font-weight:700;font-size:15px;color:#0C5A8A;cursor:pointer;box-shadow:0 6px 18px rgba(16,27,48,.05)}
-.opt:hover{border-color:#3FB6E8;background:#FFFBEF}
+.opt{background:#fff;border:1.5px solid #DDE3EE;border-radius:14px;padding:18px 12px;font-weight:700;font-size:15px;color:#1B8FD1;cursor:pointer;box-shadow:0 6px 18px rgba(16,27,48,.05)}
+.opt:hover{border-color:#5BC8F0;background:#FFFBEF}
 .qback{display:block;margin:18px auto 0;background:none;border:none;color:#8A94A8;font-weight:700;font-size:13px;cursor:pointer;box-shadow:none;width:auto;padding:6px 12px}
 form{max-width:440px;margin:0 auto}
-input{width:100%;padding:15px;border-radius:12px;border:1.5px solid #DDE3EE;background:#fff;color:#0C5A8A;font-size:16px;font-weight:600;margin-bottom:10px;outline:none}
-input:focus{border-color:#3FB6E8}
-button{width:100%;padding:17px;border:none;border-radius:12px;background:#3FB6E8;color:#0C5A8A;font-size:17px;font-weight:800;cursor:pointer;box-shadow:0 12px 30px rgba(248,180,8,.3)}
+input{width:100%;padding:15px;border-radius:12px;border:1.5px solid #DDE3EE;background:#fff;color:#1B8FD1;font-size:16px;font-weight:600;margin-bottom:10px;outline:none}
+input:focus{border-color:#5BC8F0}
+button{width:100%;padding:17px;border:none;border-radius:12px;background:#5BC8F0;color:#1B8FD1;font-size:17px;font-weight:800;cursor:pointer;box-shadow:0 12px 30px rgba(248,180,8,.3)}
 .ok-msg{display:none;background:#EAF8EF;border:1.5px solid #34A853;color:#1E7B3C;border-radius:12px;padding:14px;font-weight:700;text-align:center;margin-top:10px}
 footer{padding:40px 0 54px;text-align:center;font-size:13px;color:#8A94A8;font-weight:600}
 footer a{color:#8A94A8}
 </style></head><body>
 <a class="langpill" href="${langHref}">${L.langBtn}</a>
 <div class="wrap">
-<nav><span class="lg" style="font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:40px;letter-spacing:.5px;color:#0C5A8A">Maid<span style="color:#3FB6E8">Flow</span></span></nav>
+<nav><span class="lg" style="font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:40px;letter-spacing:.5px;color:#1B8FD1">Maid<span style="color:#5BC8F0">Flow</span></span></nav>
 <div class="hero">
   <h1>${L.h1}</h1>
   <p>${L.sub}</p>
@@ -1967,7 +1967,7 @@ app.get("/ejemplo", (req, res) => {
 body{background:#fff;color:var(--ink)}
 .serif{font-family:'Fraunces',Georgia,serif}
 .wrap{max-width:1060px;margin:0 auto;padding:0 24px}
-.ribbon{background:#3FB6E8;color:#0C5A8A;text-align:center;font-weight:800;font-size:12.5px;padding:9px 14px;letter-spacing:.2px}
+.ribbon{background:#5BC8F0;color:#1B8FD1;text-align:center;font-weight:800;font-size:12.5px;padding:9px 14px;letter-spacing:.2px}
 header{position:sticky;top:0;z-index:40;background:rgba(255,255,255,.82);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
 .hrow{display:flex;align-items:center;justify-content:space-between;padding:15px 0}
 .logo-ph{border:1.5px dashed #C9CDD6;border-radius:10px;padding:9px 18px;font-weight:700;font-size:12px;color:#9AA0AC;letter-spacing:2.5px}
@@ -2040,8 +2040,8 @@ section{padding:84px 0}
 footer{padding:44px 22px 120px;text-align:center;color:#9AA0AC;font-size:13px;font-weight:500;line-height:2}
 footer b{color:var(--ink);font-family:'Fraunces',Georgia,serif;font-size:16px}
 footer a{color:#9AA0AC}
-.backalto{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);z-index:50;background:#0C5A8A;color:#fff;text-decoration:none;font-weight:800;font-size:14px;padding:13px 22px;border-radius:99px;box-shadow:0 14px 36px rgba(16,27,48,.5);display:flex;align-items:center;gap:8px;white-space:nowrap}
-.backalto span{color:#3FB6E8}
+.backalto{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);z-index:50;background:#1B8FD1;color:#fff;text-decoration:none;font-weight:800;font-size:14px;padding:13px 22px;border-radius:99px;box-shadow:0 14px 36px rgba(16,27,48,.5);display:flex;align-items:center;gap:8px;white-space:nowrap}
+.backalto span{color:#5BC8F0}
 .fade{opacity:0;transform:translateY(26px);transition:opacity .7s ease,transform .7s ease}
 .fade.on{opacity:1;transform:none}
 @media (prefers-reduced-motion: reduce){.fade{opacity:1;transform:none;transition:none}}
@@ -2155,7 +2155,7 @@ function siteDataOf(c) {
     logo: /^data:image\/(png|jpeg);base64,/.test(String(p.logo || "")) ? p.logo : null,
     license: p.license || "",
     template: site.template || "1",
-    color: site.color || "#0C5A8A",
+    color: site.color || "#1B8FD1",
     hero: site.hero || "",
     city: site.city || "",
     years: site.years || null,
@@ -2175,10 +2175,10 @@ app.get("/site/:slug", async (req, res) => {
     const pPhone = String(pProf.phone || c.phone || "").replace(/\D/g, "");
     return res.send(`<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${pBiz}</title><style>
-*{box-sizing:border-box;font-family:Inter,Arial,sans-serif;margin:0}body{background:#F4F6FA;color:#0C5A8A;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px}
+*{box-sizing:border-box;font-family:Inter,Arial,sans-serif;margin:0}body{background:#F4F6FA;color:#1B8FD1;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px}
 .card{background:#fff;border:1px solid #E6EBF3;border-radius:22px;padding:36px 28px;max-width:420px;text-align:center;box-shadow:0 20px 60px rgba(16,27,48,.1)}
 h1{font-size:20px;margin:12px 0 8px}p{color:#5A6478;font-weight:600;font-size:14.5px;line-height:1.6}
-a{display:inline-block;margin-top:18px;background:#0C5A8A;color:#fff;text-decoration:none;font-weight:800;padding:14px 26px;border-radius:12px}
+a{display:inline-block;margin-top:18px;background:#1B8FD1;color:#fff;text-decoration:none;font-weight:800;padding:14px 26px;border-radius:12px}
 </style></head><body><div class="card">
 <span style="font-size:40px">🏡</span><h1>${pBiz}</h1>
 <p>Este sitio no está disponible por el momento.<br>This site is temporarily unavailable.</p>
@@ -2193,13 +2193,13 @@ ${pPhone ? `<a href="tel:+1${pPhone}">📞 Llámanos / Call us</a>` : ""}
     const cProf = c.data?.profile || {};
     const cBiz = String(cProf.biz || c.name).replace(/[&<>"]/g, "");
     const cLogo = /^data:image\/(png|jpeg);base64,/.test(String(cProf.logo || "")) ? cProf.logo : null;
-    const cColor = /^#[0-9a-fA-F]{6}$/.test(String(c.data?.site?.color || "")) ? c.data.site.color : "#0C5A8A";
+    const cColor = /^#[0-9a-fA-F]{6}$/.test(String(c.data?.site?.color || "")) ? c.data.site.color : "#1B8FD1";
     return res.send(`<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${cBiz} — en construcción</title><style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
 *{box-sizing:border-box;font-family:Inter,Arial,sans-serif;margin:0}
 body{background:#0F1726;color:#fff;display:flex;align-items:center;justify-content:center;min-height:100vh;padding:22px}
-.card{background:#fff;color:#0C5A8A;border-radius:26px;padding:40px 30px;max-width:440px;width:100%;text-align:center;box-shadow:0 30px 80px rgba(0,0,0,.4)}
+.card{background:#fff;color:#1B8FD1;border-radius:26px;padding:40px 30px;max-width:440px;width:100%;text-align:center;box-shadow:0 30px 80px rgba(0,0,0,.4)}
 .logo{max-height:60px;max-width:200px;margin-bottom:8px}
 .biz{font-weight:800;font-size:22px;color:${cColor}}
 h1{font-size:20px;margin:18px 0 6px}
@@ -2210,7 +2210,7 @@ h1{font-size:20px;margin:18px 0 6px}
 ul{list-style:none;padding:0;margin:24px 0 0;text-align:left}
 li{padding:10px 0;border-bottom:1px solid #F0F2F6;font-weight:600;font-size:14px;display:flex;gap:10px;align-items:center}
 li b{margin-left:auto;font-size:12px;font-weight:800}
-.done b{color:#34A853}.wip b{color:#1F9BD2}
+.done b{color:#34A853}.wip b{color:#2AA8DE}
 .ft{color:#9AA3B2;font-size:11.5px;font-weight:600;margin-top:22px}
 </style></head><body><div class="card">
 ${cLogo ? `<img class="logo" src="${cLogo}" alt="${cBiz}">` : `<div class="biz">${cBiz}</div>`}
@@ -2260,23 +2260,23 @@ app.get("/plantillas", (req, res) => {
   res.send(`<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Maid Flow · Elige tu plantilla</title><link rel="icon" href="/icon-192.png"><style>
 *{box-sizing:border-box;font-family:Inter,Arial,sans-serif;margin:0}
-body{background:#0C5A8A;color:#fff;padding:34px 20px 60px}
+body{background:#1B8FD1;color:#fff;padding:34px 20px 60px}
 h1{text-align:center;font-size:clamp(24px,4.5vw,36px);font-weight:800}
-h1 em{color:#3FB6E8;font-style:normal}
+h1 em{color:#5BC8F0;font-style:normal}
 .sub{text-align:center;color:#9DA8C4;font-weight:600;font-size:14px;margin:10px auto 6px;max-width:520px;line-height:1.6}
 .colorbar{display:flex;gap:10px;justify-content:center;align-items:center;margin:18px 0 30px;flex-wrap:wrap}
 .colorbar label{font-weight:700;font-size:13px;color:#C9D2E5}
 .colorbar input[type=color]{width:46px;height:38px;border:none;border-radius:10px;background:none;cursor:pointer}
-.colorbar button{background:#3FB6E8;color:#0C5A8A;border:none;border-radius:10px;padding:10px 18px;font-weight:800;cursor:pointer}
+.colorbar button{background:#5BC8F0;color:#1B8FD1;border:none;border-radius:10px;padding:10px 18px;font-weight:800;cursor:pointer}
 .grid{display:flex;gap:34px;justify-content:center;flex-wrap:wrap}
 .card{text-align:center}
-.phone{background:#084563;border:9px solid #0E5180;border-radius:40px;padding:10px;box-shadow:0 26px 70px rgba(0,0,0,.5)}
+.phone{background:#0E5E91;border:9px solid #1577B8;border-radius:40px;padding:10px;box-shadow:0 26px 70px rgba(0,0,0,.5)}
 .scr{width:252px;height:512px;overflow:hidden;border-radius:26px}
 .scr iframe{width:390px;height:792px;border:0;transform:scale(.6462);transform-origin:0 0;background:#fff}
 .nm{font-weight:800;font-size:17px;margin-top:16px}
-.nm span{color:#3FB6E8}
+.nm span{color:#5BC8F0}
 .ds{color:#9DA8C4;font-weight:600;font-size:13px;margin-top:4px}
-.open{display:inline-block;margin-top:12px;background:#fff;color:#0C5A8A;text-decoration:none;font-weight:800;font-size:13px;padding:10px 20px;border-radius:99px}
+.open{display:inline-block;margin-top:12px;background:#fff;color:#1B8FD1;text-decoration:none;font-weight:800;font-size:13px;padding:10px 20px;border-radius:99px}
 </style></head><body>
 <h1>¿Cuál se siente <em>más tú</em>?</h1>
 <p class="sub">Tres estilos, el mismo motor: tu logo, tus colores y el valuador de casas adentro. Prueba tu color de marca — las tres se pintan al instante.</p>
@@ -2284,7 +2284,7 @@ h1 em{color:#3FB6E8;font-style:normal}
   <label>🎨 Tu color:</label>
   <input type="color" id="col" value="#B30F24">
   <button onclick="paint()">Pintar las 3</button>
-  <button onclick="reset()" style="background:#0E5180;color:#fff">Colores originales</button>
+  <button onclick="reset()" style="background:#1577B8;color:#fff">Colores originales</button>
 </div>
 <div class="grid">
 ${T.map(([n, nm, ds]) => `
@@ -2370,24 +2370,24 @@ app.get("/cs", async (req, res) => {
   res.send(`<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Maid Flow · Servicio</title><link rel="icon" href="/icon-192.png"><style>
 *{box-sizing:border-box;margin:0;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
-body{background:#F5F6F8;color:#084563;letter-spacing:-0.011em}
+body{background:#F5F6F8;color:#0E5E91;letter-spacing:-0.011em}
 ::selection{background:rgba(248,180,8,.35)}
 .appheader{position:sticky;top:0;z-index:30;background:rgba(16,27,48,.9);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);color:#fff;padding:15px 24px;display:flex;align-items:center;gap:13px;border-bottom:1px solid rgba(255,255,255,.07)}
 .appheader img{height:30px;background:#fff;border-radius:9px;padding:4px 6px}
-.appheader b{font-size:16px;font-weight:700;letter-spacing:-0.02em}.appheader b em{color:#3FB6E8;font-style:normal}
+.appheader b{font-size:16px;font-weight:700;letter-spacing:-0.02em}.appheader b em{color:#5BC8F0;font-style:normal}
 .appheader .right{margin-left:auto;display:flex;gap:8px}.appheader .right a{color:#cdd5e5;text-decoration:none;font-weight:600;font-size:13px;border-radius:99px;padding:7px 14px}
 .wrap{max-width:1120px;margin:0 auto;padding:24px 22px 64px}
 .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin-bottom:18px}
 .card{background:#fff;border:1px solid rgba(16,27,48,.05);border-radius:18px;padding:18px 20px;box-shadow:0 1px 2px rgba(16,27,48,.04),0 8px 22px rgba(16,27,48,.045)}
 .card .v{font-size:28px;font-weight:700;letter-spacing:-0.035em}.card .l{font-size:11px;font-weight:700;color:#9097A3;letter-spacing:.5px;text-transform:uppercase;margin-top:6px}
-.card.gold{background:linear-gradient(155deg,#16243f,#0d1729);border:none}.card.gold .v{color:#3FB6E8}.card.gold .l{color:#9DA8C4}
+.card.gold{background:linear-gradient(155deg,#16243f,#0d1729);border:none}.card.gold .v{color:#5BC8F0}.card.gold .l{color:#9DA8C4}
 .panel{background:#fff;border:1px solid rgba(16,27,48,.05);border-radius:20px;padding:22px 24px;margin-bottom:18px;box-shadow:0 1px 2px rgba(16,27,48,.04),0 10px 26px rgba(16,27,48,.05)}
 .panel h2{font-size:15px;font-weight:700;margin-bottom:14px}
 .tform{display:grid;gap:8px;grid-template-columns:1fr;margin-bottom:16px}
 @media(min-width:760px){.tform{grid-template-columns:200px 1fr auto}}
 .tform select,.tform input{font-family:inherit;padding:11px 13px;border-radius:11px;border:1px solid #E4E7EC;font-size:14px;font-weight:500;outline:none;background:#fff}
-.tform select:focus,.tform input:focus{border-color:#3FB6E8;box-shadow:0 0 0 3px rgba(248,180,8,.18)}
-.tform button{background:#3FB6E8;color:#0C5A8A;border:none;border-radius:11px;padding:11px 20px;font-weight:800;cursor:pointer;white-space:nowrap}
+.tform select:focus,.tform input:focus{border-color:#5BC8F0;box-shadow:0 0 0 3px rgba(248,180,8,.18)}
+.tform button{background:#5BC8F0;color:#1B8FD1;border:none;border-radius:11px;padding:11px 20px;font-weight:800;cursor:pointer;white-space:nowrap}
 .task{display:flex;gap:12px;align-items:flex-start;padding:13px 0;border-bottom:1px solid #F2F4F7;flex-wrap:wrap}
 .task.done{opacity:.55}
 .task .tmain{flex:1;min-width:200px}
@@ -2398,14 +2398,14 @@ body{background:#F5F6F8;color:#084563;letter-spacing:-0.011em}
 .task .tact{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
 .tstat{border-radius:99px;padding:3px 10px;font-size:11px;font-weight:800;white-space:nowrap}
 .tstat.open{background:#FEF3D6;color:#946400}.tstat.doing{background:#E5EFFE;color:#21438A}.tstat.done{background:#E7F7ED;color:#10803C}
-.tbtn{border:1px solid #E4E7EC;background:#fff;border-radius:9px;padding:6px 11px;font-weight:700;font-size:12px;cursor:pointer;text-decoration:none;color:#0C5A8A}
-.tbtn.go{background:#0C5A8A;color:#fff;border:none}.tbtn.del{color:#C5221F;border-color:#F3B4B0}
+.tbtn{border:1px solid #E4E7EC;background:#fff;border-radius:9px;padding:6px 11px;font-weight:700;font-size:12px;cursor:pointer;text-decoration:none;color:#1B8FD1}
+.tbtn.go{background:#1B8FD1;color:#fff;border:none}.tbtn.del{color:#C5221F;border-color:#F3B4B0}
 .search{width:100%;font-family:inherit;padding:11px 14px;border-radius:11px;border:1px solid #E4E7EC;font-size:14px;font-weight:500;outline:none;margin-bottom:12px}
 table{width:100%;border-collapse:collapse;font-size:13px}
 th{text-align:left;color:#9097A3;font-size:10.5px;letter-spacing:.6px;text-transform:uppercase;font-weight:700;padding:9px 8px;border-bottom:1px solid #EEF0F4}
 td{padding:11px 8px;border-bottom:1px solid #F2F4F7;font-weight:600;vertical-align:middle}
 td a{color:#B07A00;font-weight:700;text-decoration:none}
-.edit{background:#3FB6E8;color:#0C5A8A !important;border-radius:9px;padding:6px 12px;font-weight:800;font-size:12.5px}
+.edit{background:#5BC8F0;color:#1B8FD1 !important;border-radius:9px;padding:6px 12px;font-weight:800;font-size:12.5px}
 .empty{color:#9097A3;font-weight:600;padding:14px 0}
 .card.cardred .v{color:#C5221F}
 .att{display:flex;gap:11px;align-items:center;padding:12px 0;border-bottom:1px solid #F2F4F7;flex-wrap:wrap}
@@ -2416,13 +2416,13 @@ td a{color:#B07A00;font-weight:700;text-decoration:none}
 .att .atag{border-radius:99px;padding:3px 10px;font-size:11px;font-weight:800;background:#FDECEC;color:#C5221F;white-space:nowrap}
 .qchips{display:flex;gap:7px;flex-wrap:wrap;margin:0 0 12px}
 .qchip{border:1px dashed #C9CDD6;background:#FBFBFD;border-radius:99px;padding:7px 13px;font-size:12.5px;font-weight:700;color:#475067;cursor:pointer}
-.qchip:hover{border-color:#3FB6E8;background:#FFFBEF}
+.qchip:hover{border-color:#5BC8F0;background:#FFFBEF}
 .wa{background:#25D366;color:#fff !important;border-radius:8px;padding:5px 11px;font-weight:800;font-size:12px;text-decoration:none;white-space:nowrap}
 .slug2{color:#9097A3;font-size:11.5px}
 .guide details{border:1px solid #EEF0F4;border-radius:12px;margin:8px 0;background:#FBFBFD}
 .guide summary{cursor:pointer;padding:12px 14px;font-weight:700;font-size:13.5px;list-style:none}
 .guide summary::-webkit-details-marker{display:none}
-.guide summary::before{content:"▸ ";color:#1F9BD2}
+.guide summary::before{content:"▸ ";color:#2AA8DE}
 .guide details[open] summary::before{content:"▾ "}
 .guide .gb{padding:0 14px 13px;color:#475067;font-size:12.5px;font-weight:500;line-height:1.7}
 .guide .gb ol{margin:6px 0 0 18px}.guide .gb li{margin:3px 0}
@@ -2535,14 +2535,14 @@ app.get("/onboarding", async (req, res) => {
     const list = (await db.listContractors()).filter((c) => !["alto-demo", "alto-ventas"].includes(c.slug));
     return res.send(`<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Maid Flow · Onboarding</title><link rel="icon" href="/icon-192.png"><style>
-*{box-sizing:border-box;font-family:Inter,Arial,sans-serif;margin:0}body{background:#F4F6FA;color:#0C5A8A}
-header{background:#0C5A8A;color:#fff;padding:14px 22px;display:flex;align-items:center;gap:12px}
-header img{height:32px;background:#fff;border-radius:8px;padding:4px 6px}header b em{color:#3FB6E8;font-style:normal}
+*{box-sizing:border-box;font-family:Inter,Arial,sans-serif;margin:0}body{background:#F4F6FA;color:#1B8FD1}
+header{background:#1B8FD1;color:#fff;padding:14px 22px;display:flex;align-items:center;gap:12px}
+header img{height:32px;background:#fff;border-radius:8px;padding:4px 6px}header b em{color:#5BC8F0;font-style:normal}
 .wrap{max-width:640px;margin:0 auto;padding:24px}
 h1{font-size:20px;margin-bottom:6px}.sub{color:#67718A;font-size:14px;font-weight:600;margin-bottom:18px}
 .row{display:flex;align-items:center;justify-content:space-between;background:#fff;border:1px solid #E8ECF3;border-radius:14px;padding:14px 16px;margin-bottom:10px}
 .row b{font-size:15px}.row small{color:#9AA0AC;display:block;font-weight:600}
-.row a{background:#3FB6E8;color:#0C5A8A;text-decoration:none;font-weight:800;border-radius:10px;padding:9px 16px;font-size:13px}
+.row a{background:#5BC8F0;color:#1B8FD1;text-decoration:none;font-weight:800;border-radius:10px;padding:9px 16px;font-size:13px}
 .empty{color:#8A94A8;font-weight:600;text-align:center;padding:30px}
 </style></head><body>
 <header><b>Maid<em>Flow</em> · Onboarding</b></header>
@@ -2564,19 +2564,19 @@ ${list.length ? list.map((c) => `<div class="row"><span><b>${esc(c.name)}</b><sm
 <title>Onboarding · ${esc(c.name)}</title><link rel="icon" href="/icon-192.png"><style>
 @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;1,9..144,600&family=Inter:wght@400;500;600;700;800&display=swap');
 *{box-sizing:border-box;font-family:Inter,Arial,sans-serif;margin:0;-webkit-tap-highlight-color:transparent}
-:root{--navy:#0C5A8A;--navy2:#084563;--gold:#3FB6E8;--mut:#9DA8C4;--line:rgba(255,255,255,.1)}
+:root{--navy:#1B8FD1;--navy2:#0E5E91;--gold:#5BC8F0;--mut:#9DA8C4;--line:rgba(255,255,255,.1)}
 body{background:var(--navy2);color:#fff;overflow:hidden}
 .layout{display:flex;height:100vh;height:100dvh}
 aside{width:268px;background:#fff;border-right:1px solid #E9EAEE;display:flex;flex-direction:column;flex-shrink:0}
 .sb-brand{display:flex;align-items:center;gap:10px;padding:22px 20px 14px}
 .sb-brand img{height:30px;background:#fff;border-radius:8px}
-.sb-brand b{color:#0C5A8A;font-weight:800;font-size:15px}.sb-brand b em{color:#1F9BD2;font-style:normal}
+.sb-brand b{color:#1B8FD1;font-weight:800;font-size:15px}.sb-brand b em{color:#2AA8DE;font-style:normal}
 .sb-label{font-size:10px;letter-spacing:2px;color:#9AA0AC;font-weight:800;padding:8px 20px 6px;text-transform:uppercase}
 nav{flex:1;overflow-y:auto;padding-bottom:10px;display:flex;flex-direction:column}
 .nav-it{flex:1;display:flex;align-items:center;gap:13px;width:100%;background:none;border:none;color:#6A7384;font-weight:700;font-size:15px;padding:0 20px;cursor:pointer;text-align:left;border-left:4px solid transparent;min-height:46px}
 .nav-it .no{font-family:'Fraunces',Georgia,serif;font-size:13px;color:#B6BCC8;width:20px;flex-shrink:0}
-.nav-it.on{color:#0C5A8A;background:rgba(248,180,8,.13);border-left-color:var(--gold)}
-.nav-it.on .no{color:#1F9BD2}
+.nav-it.on{color:#1B8FD1;background:rgba(248,180,8,.13);border-left-color:var(--gold)}
+.nav-it.on .no{color:#2AA8DE}
 .nav-it.done .no{color:#1E7B3C}
 .sb-foot{padding:13px 20px;font-size:11px;color:#9AA0AC;font-weight:700;border-top:1px solid #E9EAEE}
 main{flex:1;position:relative;display:flex;flex-direction:column;min-width:0}
@@ -2592,22 +2592,22 @@ h1 em{font-style:italic;color:var(--gold)}
 h1 small{display:block;font-family:Inter;font-size:14px;color:var(--mut);font-weight:600;margin-top:10px;letter-spacing:0}
 .rule{width:50px;height:4px;background:var(--gold);border-radius:2px;margin:20px 0}
 .body{color:var(--mut);font-weight:500;font-size:clamp(15px,1.7vw,18px);line-height:1.7;max-width:580px}
-.fcard{background:#fff;color:#084563;border-radius:24px;padding:24px 26px;max-width:640px;width:100%;box-shadow:0 30px 80px rgba(0,0,0,.45);margin-top:24px}
+.fcard{background:#fff;color:#0E5E91;border-radius:24px;padding:24px 26px;max-width:640px;width:100%;box-shadow:0 30px 80px rgba(0,0,0,.45);margin-top:24px}
 label{display:block;font-weight:600;font-size:13px;margin:16px 0 6px;color:#475067}
 label:first-child{margin-top:0}
-input,textarea,select{width:100%;padding:13px 15px;border-radius:13px;border:1px solid #E4E7EC;font-size:15px;font-weight:500;outline:none;font-family:inherit;color:#084563;background:#fff;transition:border-color .15s,box-shadow .15s}
+input,textarea,select{width:100%;padding:13px 15px;border-radius:13px;border:1px solid #E4E7EC;font-size:15px;font-weight:500;outline:none;font-family:inherit;color:#0E5E91;background:#fff;transition:border-color .15s,box-shadow .15s}
 input:focus,textarea:focus{border-color:var(--gold);box-shadow:0 0 0 4px rgba(248,180,8,.18)}
 textarea{min-height:96px;resize:vertical;line-height:1.5}
 input[type=file]{padding:10px;background:#F7F8FA;font-weight:600}
 .hint{color:#67718A;font-size:12px;font-weight:500;margin-top:6px;line-height:1.5}
-.btn-dark{background:#0C5A8A;color:#fff;border:none;border-radius:11px;padding:12px 18px;font-weight:800;cursor:pointer}
+.btn-dark{background:#1B8FD1;color:#fff;border:none;border-radius:11px;padding:12px 18px;font-weight:800;cursor:pointer}
 .colorrow{display:flex;gap:12px;align-items:center;margin-top:6px}
 .colorrow input[type=color]{width:54px;height:46px;padding:2px;border-radius:12px;cursor:pointer;border:1px solid #E4E7EC}
 .tgrid{display:flex;gap:20px;flex-wrap:wrap;margin-top:6px}
 .tpl{cursor:pointer;border-radius:30px;padding:9px;border:2px solid transparent;transition:border-color .15s,background .15s,transform .12s}
 .tpl:hover{transform:translateY(-2px)}
 .tpl.on{border-color:var(--gold);background:rgba(248,180,8,.1)}
-.tphone{background:#084563;border:8px solid #0E5180;border-radius:34px;padding:7px;box-shadow:0 22px 60px rgba(0,0,0,.5)}
+.tphone{background:#0E5E91;border:8px solid #1577B8;border-radius:34px;padding:7px;box-shadow:0 22px 60px rgba(0,0,0,.5)}
 .tscr{width:208px;height:420px;overflow:hidden;border-radius:24px}
 .tscr iframe{width:390px;height:788px;border:0;transform:scale(.5333);transform-origin:0 0;background:#fff;pointer-events:none}
 .tpl .tn{text-align:center;font-weight:800;margin-top:12px;color:#fff;font-size:15px}
@@ -2627,9 +2627,9 @@ input[type=file]{padding:10px;background:#F7F8FA;font-weight:600}
 .progress{flex:1;height:6px;background:rgba(255,255,255,.12);border-radius:99px;overflow:hidden}
 .progress>i{display:block;height:100%;width:14%;background:var(--gold);border-radius:99px;transition:width .3s}
 .nb-btn{background:rgba(255,255,255,.08);color:#fff;border:1px solid var(--line);border-radius:11px;padding:11px 20px;font-weight:800;cursor:pointer;font-size:14px}
-.nb-btn.next{background:var(--gold);color:#0C5A8A;border:none;box-shadow:0 8px 20px rgba(248,180,8,.3)}
+.nb-btn.next{background:var(--gold);color:#1B8FD1;border:none;box-shadow:0 8px 20px rgba(248,180,8,.3)}
 .nb-btn:disabled{opacity:.35;cursor:default}
-.save{width:100%;padding:16px;border:none;border-radius:14px;background:var(--gold);color:#0C5A8A;font-size:16px;font-weight:800;cursor:pointer;box-shadow:0 10px 26px rgba(248,180,8,.35);transition:transform .12s,filter .15s;margin-top:6px}
+.save{width:100%;padding:16px;border:none;border-radius:14px;background:var(--gold);color:#1B8FD1;font-size:16px;font-weight:800;cursor:pointer;box-shadow:0 10px 26px rgba(248,180,8,.35);transition:transform .12s,filter .15s;margin-top:6px}
 .save:hover{filter:brightness(1.03)}.save:active{transform:scale(.98)}.save:disabled{opacity:.6}
 .ok{display:none;background:#E7F7ED;border:1px solid #B6E3C6;color:#10803C;border-radius:14px;padding:14px;font-weight:600;text-align:center;margin-top:12px}
 .ok a{color:#10803C;font-weight:800}
@@ -2637,7 +2637,7 @@ input[type=file]{padding:10px;background:#F7F8FA;font-weight:600}
 .rev{list-style:none;padding:0;margin:0}
 .rev li{display:flex;justify-content:space-between;gap:12px;padding:11px 0;border-bottom:1px solid #EDF0F5;font-size:14px}
 .rev li:last-child{border-bottom:none}
-.rev li b{color:#475067;font-weight:600}.rev li span{font-weight:700;color:#084563;text-align:right}
+.rev li b{color:#475067;font-weight:600}.rev li span{font-weight:700;color:#0E5E91;text-align:right}
 .wflow{display:flex;gap:14px;flex-wrap:wrap;margin-top:28px;max-width:760px}
 .wflow .wf{flex:1;min-width:150px;background:rgba(255,255,255,.05);border:1px solid var(--line);border-radius:18px;padding:18px 20px}
 .wflow .wf .n{font-family:'Fraunces',Georgia,serif;color:var(--gold);font-size:13px;font-weight:700;letter-spacing:2px}
@@ -2646,8 +2646,8 @@ input[type=file]{padding:10px;background:#F7F8FA;font-weight:600}
 .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
 .chip{display:inline-flex;align-items:center;gap:6px;border:1.5px solid #E4E7EC;border-radius:99px;padding:9px 15px;font-size:13.5px;font-weight:700;color:#475067;cursor:pointer;user-select:none;transition:border-color .12s,background .12s,color .12s}
 .chip input{display:none}
-.chip:has(input:checked){border-color:var(--gold);background:#FFFBEF;color:#0C5A8A}
-.chip:has(input:checked)::before{content:"✓";color:#1F9BD2;font-weight:900}
+.chip:has(input:checked){border-color:var(--gold);background:#FFFBEF;color:#1B8FD1}
+.chip:has(input:checked)::before{content:"✓";color:#2AA8DE;font-weight:900}
 .microw{display:flex;gap:8px;align-items:flex-start}
 .micbtn{background:#fff;border:1.5px solid #E4E7EC;border-radius:12px;width:48px;height:48px;font-size:19px;cursor:pointer;flex-shrink:0;transition:border-color .15s,background .15s}
 .micbtn:hover{border-color:#C9CDD6}
@@ -2687,7 +2687,7 @@ textarea.big{min-height:150px;font-size:16px}
   <div class="sb-foot">🌐 ${esc(siteDisplay(req, c.slug))}</div>
 </aside>
 <main>
-  <div class="mtop"><b style="color:#fff;font-weight:800;font-size:15px">Maid<span style="color:#3FB6E8">Flow</span></b><div><div class="mstep" id="mstep">Paso 1 de 7</div><div class="mtitle" id="mtitle">Bienvenida</div></div></div>
+  <div class="mtop"><b style="color:#fff;font-weight:800;font-size:15px">Maid<span style="color:#5BC8F0">Flow</span></b><div><div class="mstep" id="mstep">Paso 1 de 7</div><div class="mtitle" id="mtitle">Bienvenida</div></div></div>
   <div class="stage">
 
     <section class="slide on">
@@ -2802,7 +2802,7 @@ textarea.big{min-height:150px;font-size:16px}
         <h1>Su propio <em>dominio.</em> <small>Opcional — su página ya vive en ${esc(siteDisplay(req, c.slug))}</small></h1>
         <div class="fcard">
           <label>Buscar un dominio disponible</label>
-          <div style="display:flex;gap:8px"><input id="dsearch" placeholder="Nombre del negocio o dominio" style="flex:1" onkeydown="if(event.key==='Enter'){event.preventDefault();checkDomain();}"><button type="button" onclick="checkDomain()" id="dsbtn" class="btn-dark" style="white-space:nowrap;background:var(--gold);color:#0C5A8A">Buscar</button></div>
+          <div style="display:flex;gap:8px"><input id="dsearch" placeholder="Nombre del negocio o dominio" style="flex:1" onkeydown="if(event.key==='Enter'){event.preventDefault();checkDomain();}"><button type="button" onclick="checkDomain()" id="dsbtn" class="btn-dark" style="white-space:nowrap;background:var(--gold);color:#1B8FD1">Buscar</button></div>
           <div id="dresults" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px"></div>
           <p class="hint" id="dsearchhint" style="margin-top:4px"></p>
           <hr style="border:none;border-top:1px solid #EDF0F5;margin:14px 0">
@@ -2819,7 +2819,7 @@ textarea.big{min-height:150px;font-size:16px}
         <h1>Todo listo para <em>enviarlo.</em></h1>
         <div class="fcard">
           <div style="text-align:center"><div style="font-size:42px;line-height:1">📨</div></div>
-          <p style="text-align:center;color:#475067;font-weight:600;font-size:14px;margin:8px 0 18px;line-height:1.6">Revisa que todo esté bien. Al enviar, nuestro equipo de diseño arma tu página a mano y te la entregamos lista en <b style="color:#084563">10–14 días</b>.</p>
+          <p style="text-align:center;color:#475067;font-weight:600;font-size:14px;margin:8px 0 18px;line-height:1.6">Revisa que todo esté bien. Al enviar, nuestro equipo de diseño arma tu página a mano y te la entregamos lista en <b style="color:#0E5E91">10–14 días</b>.</p>
           <ul class="rev">
             <li><b>Negocio</b><span id="rvbiz">—</span></li>
             <li><b>Estilo elegido</b><span id="rvtpl">—</span></li>
@@ -2830,7 +2830,7 @@ textarea.big{min-height:150px;font-size:16px}
           <div class="ok" id="ok"></div>
           <div id="staff" style="display:${st.template || st.about ? "block" : "none"};margin-top:14px;text-align:center">
             <a href="/site/${esc(c.slug)}?preview=1" target="_blank" class="linkrow" style="margin-right:14px">👁 Ver borrador (interno)</a>
-            <button onclick="publish()" id="pub" class="btn-dark" style="background:${st.published ? "#1E7B3C" : "#0C5A8A"}">${st.published ? "✓ Publicada — clic para ocultar" : "🚀 Publicar página al cliente"}</button>
+            <button onclick="publish()" id="pub" class="btn-dark" style="background:${st.published ? "#1E7B3C" : "#1B8FD1"}">${st.published ? "✓ Publicada — clic para ocultar" : "🚀 Publicar página al cliente"}</button>
           </div>
         </div>
       </div>
@@ -3023,7 +3023,7 @@ function publish(){
       pub.disabled=false;
       if(j&&j.ok){PUBLISHED=j.published;
         pub.textContent=PUBLISHED?'✓ Publicada — clic para ocultar':'🚀 Publicar página al cliente';
-        pub.style.background=PUBLISHED?'#1E7B3C':'#0C5A8A';
+        pub.style.background=PUBLISHED?'#1E7B3C':'#1B8FD1';
       }
     }).catch(function(){pub.disabled=false;});
 }
@@ -3167,7 +3167,7 @@ app.get("/equipo", (req, res) => {
 <title>Maid Flow · Equipo</title><link rel="icon" href="/icon-192.png"><style>
 @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;1,9..144,600&family=Inter:wght@400;500;600;700;800&display=swap');
 *{box-sizing:border-box;font-family:Inter,Arial,sans-serif;margin:0;-webkit-tap-highlight-color:transparent}
-:root{--navy:#0C5A8A;--navy2:#084563;--gold:#3FB6E8;--mut:#9DA8C4;--line:rgba(255,255,255,.1)}
+:root{--navy:#1B8FD1;--navy2:#0E5E91;--gold:#5BC8F0;--mut:#9DA8C4;--line:rgba(255,255,255,.1)}
 body{background:var(--navy2);color:#fff;overflow:hidden}
 .layout{display:flex;height:100vh;height:100dvh}
 aside{width:260px;background:#fff;border-right:1px solid #E9EAEE;display:flex;flex-direction:column;flex-shrink:0}
@@ -3176,8 +3176,8 @@ aside{width:260px;background:#fff;border-right:1px solid #E9EAEE;display:flex;fl
 nav{flex:1;overflow-y:auto;display:flex;flex-direction:column}
 .nav-it{flex:1;display:flex;align-items:center;gap:12px;background:none;border:none;color:#6A7384;font-weight:700;font-size:14.5px;padding:0 20px;cursor:pointer;text-align:left;border-left:4px solid transparent;min-height:42px}
 .nav-it .no{font-family:'Fraunces',Georgia,serif;font-size:12px;color:#B6BCC8;width:20px}
-.nav-it.on{color:#0C5A8A;background:rgba(248,180,8,.13);border-left-color:var(--gold)}
-.nav-it.on .no{color:#1F9BD2}
+.nav-it.on{color:#1B8FD1;background:rgba(248,180,8,.13);border-left-color:var(--gold)}
+.nav-it.on .no{color:#2AA8DE}
 .sb-foot{padding:13px 18px;font-size:11px;color:#9AA0AC;font-weight:700;border-top:1px solid #E9EAEE}
 main{flex:1;position:relative;display:flex;flex-direction:column;min-width:0}
 .stage{flex:1;position:relative;overflow:hidden}
@@ -3212,8 +3212,8 @@ ul.pts li b{color:var(--gold);flex-shrink:0}
 .webframe .url{flex:1;background:#fff;border-radius:7px;font-size:11px;color:#5E6470;font-weight:600;padding:4px 10px;margin-left:8px}
 .dscr{width:100%;height:400px;overflow:hidden}
 .dscr iframe{width:1180px;height:846px;border:0;transform:scale(.474);transform-origin:0 0;display:block;background:#fff}
-.iphone{position:relative;background:#084563;border:9px solid #0E5180;border-radius:44px;padding:10px;box-shadow:0 30px 80px rgba(0,0,0,.55)}
-.inotch{position:absolute;top:10px;left:50%;transform:translateX(-50%);width:100px;height:20px;background:#0E5180;border-radius:0 0 12px 12px;z-index:2}
+.iphone{position:relative;background:#0E5E91;border:9px solid #1577B8;border-radius:44px;padding:10px;box-shadow:0 30px 80px rgba(0,0,0,.55)}
+.inotch{position:absolute;top:10px;left:50%;transform:translateX(-50%);width:100px;height:20px;background:#1577B8;border-radius:0 0 12px 12px;z-index:2}
 .mscr{width:300px;height:600px;overflow:hidden;border-radius:30px}
 .mscr iframe{width:390px;height:780px;border:0;transform:scale(.769);transform-origin:0 0;background:#fff}
 .frame{background:#fff;border-radius:20px;padding:8px;width:min(380px,100%);box-shadow:0 30px 80px rgba(0,0,0,.5)}
@@ -3228,14 +3228,14 @@ ul.pts li b{color:var(--gold);flex-shrink:0}
 @media(max-width:899px){aside{position:fixed;z-index:60;left:0;top:0;bottom:0;transform:translateX(-100%);transition:.25s;width:250px}aside.open{transform:none}.mtop{display:flex}.scrim{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:55;display:none}.scrim.on{display:block}}
 </style></head><body>
 <div class="layout">
-<aside id="sb"><div class="sb-brand"><b style="color:#0C5A8A;font-weight:900;font-size:22px">Maid<span style="color:#3FB6E8">Flow</span></b></div><div class="sb-label">MAID FLOW</div><nav id="nav"></nav><div class="sb-foot">Presentación del rol</div></aside>
+<aside id="sb"><div class="sb-brand"><b style="color:#1B8FD1;font-weight:900;font-size:22px">Maid<span style="color:#5BC8F0">Flow</span></b></div><div class="sb-label">MAID FLOW</div><nav id="nav"></nav><div class="sb-foot">Presentación del rol</div></aside>
 <div class="scrim" id="scrim" onclick="sb(false)"></div>
 <main>
-<div class="mtop"><button onclick="sb(true)">☰ Menú</button><b style="font-weight:800">Maid<span style="color:#3FB6E8">Flow</span></b><span style="width:64px"></span></div>
+<div class="mtop"><button onclick="sb(true)">☰ Menú</button><b style="font-weight:800">Maid<span style="color:#5BC8F0">Flow</span></b><span style="width:64px"></span></div>
 <div class="stage" id="stage">
 
 <section class="slide" data-t="El rol">
-  <div class="s-bg" style="background:linear-gradient(160deg,#062B22,#0C5A8A)"></div><div class="s-veil"></div>
+  <div class="s-bg" style="background:linear-gradient(160deg,#062B22,#1B8FD1)"></div><div class="s-veil"></div>
   <div class="s-in">
     <p class="kick">MAID FLOW · MARKETING Y TECNOLOGÍA PARA NEGOCIOS DE LIMPIEZA</p>
     <h1>Dos trabajos, <em>un solo rol.</em></h1>
@@ -3373,7 +3373,7 @@ ul.pts li b{color:var(--gold);flex-shrink:0}
 </section>
 
 <section class="slide" data-t="Empecemos">
-  <div class="s-bg" style="background:linear-gradient(160deg,#062B22,#0C5A8A)"></div><div class="s-veil"></div>
+  <div class="s-bg" style="background:linear-gradient(160deg,#062B22,#1B8FD1)"></div><div class="s-veil"></div>
   <div class="s-in">
     <p class="kick">09 · EMPECEMOS</p>
     <h1>Manos a la <em>obra.</em></h1>
@@ -3477,20 +3477,20 @@ app.post("/api/closer/contractors", async (req, res) => {
   const base = canonBase(req);
   const K = encodeURIComponent(String(req.query.key || req.body?.key || ""));
   res.send(`<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Cliente creado</title>
-<style>body{font-family:Arial;max-width:560px;margin:40px auto;padding:0 16px;color:#0C5A8A}h2{margin-bottom:6px}
-.link{background:#E9F6FD;border:2px solid #3FB6E8;border-radius:12px;padding:13px;word-break:break-all;font-size:14px;margin:10px 0;display:flex;gap:10px;align-items:center}
-.link button{margin-left:auto;background:#3FB6E8;color:#0C5A8A;border:none;border-radius:8px;padding:8px 14px;font-weight:800;cursor:pointer;flex-shrink:0}
+<style>body{font-family:Arial;max-width:560px;margin:40px auto;padding:0 16px;color:#1B8FD1}h2{margin-bottom:6px}
+.link{background:#E9F6FD;border:2px solid #5BC8F0;border-radius:12px;padding:13px;word-break:break-all;font-size:14px;margin:10px 0;display:flex;gap:10px;align-items:center}
+.link button{margin-left:auto;background:#5BC8F0;color:#1B8FD1;border:none;border-radius:8px;padding:8px 14px;font-weight:800;cursor:pointer;flex-shrink:0}
 a{color:#B57E00;font-weight:800}small{color:#67718A}</style></head><body>
 <h2>✓ Cliente creado: ${String(c.name).replace(/</g, "&lt;")}</h2>
 ${paid
   ? `<p style="background:#EAF8EF;border:1.5px solid #34A853;color:#1E7B3C;border-radius:12px;padding:10px 14px;font-weight:700">✅ Pago confirmado — la cuenta está ACTIVA.</p>`
-  : `<p style="background:#E9F6FD;border:1.5px solid #3FB6E8;color:#7A5A00;border-radius:12px;padding:10px 14px;font-weight:700">⏳ El link de acceso se ACTIVA solo cuando Stripe confirme su pago (≈1 min después de pagar). Si pagó por otro medio, el admin la activa desde su tablero.</p>`}
+  : `<p style="background:#E9F6FD;border:1.5px solid #5BC8F0;color:#7A5A00;border-radius:12px;padding:10px 14px;font-weight:700">⏳ El link de acceso se ACTIVA solo cuando Stripe confirme su pago (≈1 min después de pagar). Si pagó por otro medio, el admin la activa desde su tablero.</p>`}
 <p><b>1.</b> Copia su <b>link de acceso</b> y pégalo en el mensaje de bienvenida (tecla B en la presentación):</p>
 <div class="link"><span><b>🔑 Acceso a su app</b><br><small>${base}/invite/${invite}</small></span><button onclick="navigator.clipboard.writeText('${base}/invite/${invite}');this.textContent='✓'">Copiar</button></div>
 <p><b>2.</b> Su valuador (va dentro de su página web):</p>
 <div class="link"><span><b>🏡 Widget</b><br><small>${base}/w/${c.slug}</small></span><button onclick="navigator.clipboard.writeText('${base}/w/${c.slug}');this.textContent='✓'">Copiar</button></div>
 <p><b>3.</b> Personaliza su página web (plantilla, color, fotos):</p>
-<div class="link"><span><b>🎨 Onboarding de su página</b></span><a href="/onboarding?key=${K}&slug=${c.slug}" style="margin-left:auto;background:#3FB6E8;color:#0C5A8A;border-radius:8px;padding:8px 14px;font-weight:800;text-decoration:none">Abrir →</a></div>
+<div class="link"><span><b>🎨 Onboarding de su página</b></span><a href="/onboarding?key=${K}&slug=${c.slug}" style="margin-left:auto;background:#5BC8F0;color:#1B8FD1;border-radius:8px;padding:8px 14px;font-weight:800;text-decoration:none">Abrir →</a></div>
 <a href="/closer?key=${K}">← Volver al portal del closer</a></body></html>`);
 });
 
@@ -3607,33 +3607,33 @@ app.get("/closer", async (req, res) => {
 <title>Maid Flow · ${L.title}</title><link rel="icon" href="/icon-192.png"><style>
 *{box-sizing:border-box;margin:0;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display",Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
 html{background:#F5F6F8}
-body{max-width:680px;margin:0 auto;padding:34px 20px 72px;color:#084563;line-height:1.55;letter-spacing:-0.011em}
+body{max-width:680px;margin:0 auto;padding:34px 20px 72px;color:#0E5E91;line-height:1.55;letter-spacing:-0.011em}
 ::selection{background:rgba(248,180,8,.35)}
 h1{font-size:26px;font-weight:700;letter-spacing:-0.025em;margin-bottom:18px}
-h1 span{color:#1F9BD2}
+h1 span{color:#2AA8DE}
 h2{font-size:12.5px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:#9097A3;margin:34px 0 12px}
 .lang{position:fixed;top:14px;right:16px;background:rgba(16,27,48,.9);backdrop-filter:saturate(180%) blur(14px);-webkit-backdrop-filter:saturate(180%) blur(14px);color:#fff;border-radius:99px;padding:9px 17px;font-weight:700;font-size:13px;text-decoration:none;box-shadow:0 6px 18px rgba(16,27,48,.25)}
 .warn{background:#FFF4F4;border:1px solid #F6D5D5;color:#B42318;border-radius:16px;padding:14px 16px;font-weight:600;font-size:13.5px;box-shadow:0 1px 2px rgba(180,35,24,.05)}
 .alta{display:flex;gap:10px;flex-wrap:wrap;background:#fff;border:1px solid rgba(16,27,48,.05);border-radius:20px;padding:18px;box-shadow:0 1px 2px rgba(16,27,48,.04),0 12px 30px rgba(16,27,48,.05)}
 .alta input{flex:1;min-width:150px;font-family:inherit;padding:13px 15px;border-radius:13px;border:1px solid #E4E7EC;font-size:14.5px;font-weight:500;outline:none;transition:border-color .15s,box-shadow .15s}
-.alta input:focus{border-color:#3FB6E8;box-shadow:0 0 0 4px rgba(248,180,8,.18)}
-.alta button{background:#3FB6E8;color:#0C5A8A;border:none;border-radius:13px;padding:13px 24px;font-weight:700;cursor:pointer;font-size:14.5px;box-shadow:0 6px 16px rgba(248,180,8,.3);transition:transform .12s,filter .15s}
+.alta input:focus{border-color:#5BC8F0;box-shadow:0 0 0 4px rgba(248,180,8,.18)}
+.alta button{background:#5BC8F0;color:#1B8FD1;border:none;border-radius:13px;padding:13px 24px;font-weight:700;cursor:pointer;font-size:14.5px;box-shadow:0 6px 16px rgba(248,180,8,.3);transition:transform .12s,filter .15s}
 .alta button:hover{filter:brightness(1.03)}.alta button:active{transform:scale(.97)}
-ol{padding-left:22px;margin-top:4px}ol li{margin-bottom:10px;font-weight:500;color:#0E5180}
-ul{padding-left:22px}ul li{margin-bottom:7px;font-weight:500;color:#0E5180}
+ol{padding-left:22px;margin-top:4px}ol li{margin-bottom:10px;font-weight:500;color:#1577B8}
+ul{padding-left:22px}ul li{margin-bottom:7px;font-weight:500;color:#1577B8}
 small{color:#9097A3}
-.sc{background:#fff;border:1px solid rgba(16,27,48,.05);border-left:3px solid #3FB6E8;border-radius:16px;padding:16px 18px;margin:10px 0;box-shadow:0 1px 2px rgba(16,27,48,.04),0 8px 22px rgba(16,27,48,.045)}
+.sc{background:#fff;border:1px solid rgba(16,27,48,.05);border-left:3px solid #5BC8F0;border-radius:16px;padding:16px 18px;margin:10px 0;box-shadow:0 1px 2px rgba(16,27,48,.04),0 8px 22px rgba(16,27,48,.045)}
 .sc b{display:block;font-size:11px;color:#B07A00;letter-spacing:.8px;text-transform:uppercase;margin-bottom:6px;font-weight:700}
-.sc p{font-size:15px;font-style:italic;color:#0E5180;line-height:1.6}
+.sc p{font-size:15px;font-style:italic;color:#1577B8;line-height:1.6}
 .link{background:#fff;border:1px solid rgba(16,27,48,.06);border-radius:16px;padding:13px 16px;word-break:break-all;font-size:14px;margin:9px 0;display:flex;gap:10px;align-items:center;box-shadow:0 1px 2px rgba(16,27,48,.04),0 8px 22px rgba(16,27,48,.04);transition:box-shadow .18s,transform .18s}
 .link:hover{transform:translateY(-1px);box-shadow:0 2px 4px rgba(16,27,48,.06),0 14px 32px rgba(16,27,48,.08)}
 .link>span{flex:1;min-width:0}
 .link b{font-weight:700}
 .link small{color:#9097A3}
-.link button{background:#3FB6E8;color:#0C5A8A;border:none;border-radius:11px;padding:9px 15px;font-weight:700;cursor:pointer;flex-shrink:0;font-size:13px;transition:filter .15s}
+.link button{background:#5BC8F0;color:#1B8FD1;border:none;border-radius:11px;padding:9px 15px;font-weight:700;cursor:pointer;flex-shrink:0;font-size:13px;transition:filter .15s}
 .link button:hover{filter:brightness(1.03)}
 .ob{background:#fff;border:1px solid rgba(16,27,48,.05);border-radius:16px;padding:14px 16px;margin:10px 0;box-shadow:0 1px 2px rgba(16,27,48,.04),0 8px 20px rgba(16,27,48,.04)}
-.ob b{font-size:14px;font-weight:700;color:#084563}
+.ob b{font-size:14px;font-weight:700;color:#0E5E91}
 .ob p{font-size:14px;color:#475067;font-style:italic;margin-top:5px;line-height:1.55}
 .lang{position:static}
 .topbar{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:14px}
@@ -3641,15 +3641,15 @@ small{color:#9097A3}
 .topactions{display:flex;gap:8px}
 .lang.dark{background:rgba(16,27,48,.92);color:#fff;border:none}
 .toolbar{display:flex;gap:10px;flex-wrap:wrap;margin:0 0 8px}
-.navbtn{display:inline-flex;align-items:center;gap:8px;background:#fff;border:1px solid rgba(16,27,48,.06);border-radius:14px;padding:13px 20px;font-weight:700;font-size:14.5px;color:#084563;text-decoration:none;box-shadow:0 1px 2px rgba(16,27,48,.04),0 8px 22px rgba(16,27,48,.05);transition:transform .15s,box-shadow .15s}
+.navbtn{display:inline-flex;align-items:center;gap:8px;background:#fff;border:1px solid rgba(16,27,48,.06);border-radius:14px;padding:13px 20px;font-weight:700;font-size:14.5px;color:#0E5E91;text-decoration:none;box-shadow:0 1px 2px rgba(16,27,48,.04),0 8px 22px rgba(16,27,48,.05);transition:transform .15s,box-shadow .15s}
 .navbtn:hover{transform:translateY(-1px);box-shadow:0 2px 4px rgba(16,27,48,.06),0 14px 30px rgba(16,27,48,.09)}
-.navbtn.primary{background:#3FB6E8;border:none;box-shadow:0 6px 18px rgba(248,180,8,.35)}
+.navbtn.primary{background:#5BC8F0;border:none;box-shadow:0 6px 18px rgba(248,180,8,.35)}
 .cols{display:grid;gap:24px}
 .col>h2:first-child{margin-top:6px}
 body{max-width:none;margin:0;padding:0}
 .appheader{position:sticky;top:0;z-index:30;background:rgba(16,27,48,.9);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);color:#fff;padding:15px 24px;display:flex;align-items:center;gap:13px;border-bottom:1px solid rgba(255,255,255,.07)}
 .appheader img{height:30px;background:#fff;border-radius:9px;padding:4px 6px}
-.appheader b{font-size:16px;font-weight:700;letter-spacing:-0.02em}.appheader b em{color:#3FB6E8;font-style:normal}
+.appheader b{font-size:16px;font-weight:700;letter-spacing:-0.02em}.appheader b em{color:#5BC8F0;font-style:normal}
 .appheader .right{margin-left:auto;display:flex;gap:8px;align-items:center}
 .appheader .right a{color:#cdd5e5;text-decoration:none;font-weight:600;font-size:13px;border-radius:99px;padding:7px 14px}
 .appheader .right a.dark{background:rgba(255,255,255,.1);color:#fff}
@@ -3660,33 +3660,33 @@ body{max-width:none;margin:0;padding:0}
 .card .l{font-size:11px;font-weight:700;color:#9097A3;letter-spacing:.55px;text-transform:uppercase;margin-top:6px}
 .card .sub{font-size:11px;font-weight:700;color:#8A94A8;margin-top:4px}
 .card.gold{background:linear-gradient(155deg,#16243f 0%,#0d1729 100%);color:#fff;border:none;box-shadow:0 1px 2px rgba(0,0,0,.25),0 20px 48px rgba(16,27,48,.3)}
-.card.gold .v{color:#3FB6E8}.card.gold .l{color:#9DA8C4}
+.card.gold .v{color:#5BC8F0}.card.gold .l{color:#9DA8C4}
 .panel{background:#fff;border:1px solid rgba(16,27,48,.05);border-radius:22px;padding:22px 24px;margin:18px 0;box-shadow:0 1px 2px rgba(16,27,48,.04),0 12px 30px rgba(16,27,48,.05)}
 .panel>h3{font-size:13px;color:#9097A3;letter-spacing:.6px;text-transform:uppercase;font-weight:700;margin-bottom:14px}
 .mform{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
 .mform input{flex:1;min-width:140px;font-family:inherit;padding:12px 14px;border-radius:12px;border:1px solid #E4E7EC;font-size:14px;font-weight:500;outline:none;transition:border-color .15s,box-shadow .15s}
-.mform input:focus{border-color:#3FB6E8;box-shadow:0 0 0 4px rgba(248,180,8,.18)}
-.mform button{background:#0C5A8A;color:#fff;border:none;border-radius:12px;padding:12px 20px;font-weight:700;cursor:pointer;font-size:14px}
+.mform input:focus{border-color:#5BC8F0;box-shadow:0 0 0 4px rgba(248,180,8,.18)}
+.mform button{background:#1B8FD1;color:#fff;border:none;border-radius:12px;padding:12px 20px;font-weight:700;cursor:pointer;font-size:14px}
 .mrow{display:flex;align-items:center;gap:9px;padding:11px 0;border-bottom:1px solid #F2F4F7;font-size:14px;font-weight:600;flex-wrap:wrap}
 .mrow:last-child{border-bottom:none}
 .mrow .nm{flex:1;min-width:120px}
 .mrow .nm small{color:#9097A3;font-weight:500}
 .mbtn{border:none;border-radius:9px;padding:7px 11px;font-weight:700;font-size:12px;cursor:pointer}
-.mbtn.show{background:#E7F7ED;color:#10803C}.mbtn.no{background:#FDECEC;color:#C5221F}.mbtn.win{background:#3FB6E8;color:#0C5A8A}
+.mbtn.show{background:#E7F7ED;color:#10803C}.mbtn.no{background:#FDECEC;color:#C5221F}.mbtn.win{background:#5BC8F0;color:#1B8FD1}
 .mtag{border-radius:99px;padding:4px 11px;font-size:11px;font-weight:700;white-space:nowrap}
 .mtag.showed{background:#E7F7ED;color:#10803C}.mtag.no_show{background:#FDECEC;color:#C5221F}.mtag.closed{background:#FEF3D6;color:#946400}.mtag.scheduled{background:#F0F2F6;color:#8A94A8}
-.mnote{flex-basis:100%;font-family:inherit;margin-top:4px;padding:9px 12px;border-radius:10px;border:1px solid #E4E7EC;font-size:13px;font-weight:500;color:#0E5180;outline:none;transition:border-color .2s,box-shadow .15s}
+.mnote{flex-basis:100%;font-family:inherit;margin-top:4px;padding:9px 12px;border-radius:10px;border:1px solid #E4E7EC;font-size:13px;font-weight:500;color:#1577B8;outline:none;transition:border-color .2s,box-shadow .15s}
 .mnote::placeholder{color:#B6BCC8;font-weight:500}
-.mnote:focus{border-color:#3FB6E8;box-shadow:0 0 0 3px rgba(248,180,8,.16)}
+.mnote:focus{border-color:#5BC8F0;box-shadow:0 0 0 3px rgba(248,180,8,.16)}
 .periodbar{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin:2px 0 16px}
 .segs{display:inline-flex;background:#EEF0F4;border-radius:12px;padding:3px;gap:2px}
 .seg{padding:8px 15px;border-radius:9px;font-size:13px;font-weight:700;color:#5A6475;text-decoration:none;white-space:nowrap}
-.seg.on{background:#fff;color:#0C5A8A;box-shadow:0 1px 3px rgba(16,27,48,.12)}
+.seg.on{background:#fff;color:#1B8FD1;box-shadow:0 1px 3px rgba(16,27,48,.12)}
 .segcustom{display:inline-flex;gap:7px;align-items:center}
-.segcustom input{font-family:inherit;padding:8px 10px;border-radius:10px;border:1px solid #E4E7EC;font-size:13px;font-weight:600;color:#0E5180;outline:none}
-.segcustom input:focus{border-color:#3FB6E8;box-shadow:0 0 0 3px rgba(248,180,8,.18)}
-.segcustom button{background:#0C5A8A;color:#fff;border:none;border-radius:10px;padding:9px 16px;font-weight:700;font-size:13px;cursor:pointer}
-.segcustom button.on{background:#3FB6E8;color:#0C5A8A}
+.segcustom input{font-family:inherit;padding:8px 10px;border-radius:10px;border:1px solid #E4E7EC;font-size:13px;font-weight:600;color:#1577B8;outline:none}
+.segcustom input:focus{border-color:#5BC8F0;box-shadow:0 0 0 3px rgba(248,180,8,.18)}
+.segcustom button{background:#1B8FD1;color:#fff;border:none;border-radius:10px;padding:9px 16px;font-weight:700;font-size:13px;cursor:pointer}
+.segcustom button.on{background:#5BC8F0;color:#1B8FD1}
 .plabel{font-size:12.5px;font-weight:700;color:#9097A3}
 @media(min-width:920px){.cols{grid-template-columns:1fr 1fr;align-items:start}}
 </style></head><body>
@@ -3747,7 +3747,7 @@ ${periodSeg("/closer", range, en)}
     <ol>${L.play.map((x) => `<li>${x}</li>`).join("")}</ol>
     <h2>${L.linksT}</h2>
     ${stripeLink
-      ? `<div class="link"><span><b>${L.payT}</b><br><small>${esc(stripeLink)}</small></span><a href="${stripeLink}" target="_blank" rel="noreferrer" style="background:#0C5A8A;color:#fff;border-radius:11px;padding:9px 15px;font-weight:700;text-decoration:none;flex-shrink:0;font-size:13px">${L.open}</a><button onclick="cp(this,'${stripeLink}')">${L.copy}</button></div>`
+      ? `<div class="link"><span><b>${L.payT}</b><br><small>${esc(stripeLink)}</small></span><a href="${stripeLink}" target="_blank" rel="noreferrer" style="background:#1B8FD1;color:#fff;border-radius:11px;padding:9px 15px;font-weight:700;text-decoration:none;flex-shrink:0;font-size:13px">${L.open}</a><button onclick="cp(this,'${stripeLink}')">${L.copy}</button></div>`
       : `<div class="link" style="border-style:dashed"><span><b>💳</b><br><small>${L.payMissing}</small></span></div>`}
     <div class="link"><span><b>${L.welT}</b><br><small>${esc(welcome.slice(0, 70))}…</small></span><button onclick='cp(this,${JSON.stringify(welcome)})'>${L.copy}</button></div>
     <div class="link"><span><b>${L.demoT}</b><br><small>${base}/w/alto-demo</small></span><button onclick="cp(this,'${base}/w/alto-demo')">${L.copy}</button></div>
@@ -3784,15 +3784,15 @@ app.get("/cierre", (req, res) => {
   const esc = (s) => String(s).replace(/</g, "&lt;");
   res.send(`<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Maid Flow · Cierre (privado)</title><style>
-body{font-family:Arial;max-width:640px;margin:30px auto;padding:0 18px;color:#0C5A8A;line-height:1.55}
+body{font-family:Arial;max-width:640px;margin:30px auto;padding:0 18px;color:#1B8FD1;line-height:1.55}
 h1{font-size:22px}h2{font-size:16px;margin-top:24px}
 .warn{background:#FDECEC;border:1.5px solid #D93025;color:#9B1C10;border-radius:12px;padding:10px 14px;font-weight:700;font-size:13px}
-.link{background:#E9F6FD;border:2px solid #3FB6E8;border-radius:12px;padding:12px;word-break:break-all;font-size:14px;margin:8px 0;display:flex;gap:10px;align-items:center}
-.link button{margin-left:auto;background:#3FB6E8;color:#0C5A8A;border:none;border-radius:8px;padding:8px 14px;font-weight:800;cursor:pointer;flex-shrink:0}
+.link{background:#E9F6FD;border:2px solid #5BC8F0;border-radius:12px;padding:12px;word-break:break-all;font-size:14px;margin:8px 0;display:flex;gap:10px;align-items:center}
+.link button{margin-left:auto;background:#5BC8F0;color:#1B8FD1;border:none;border-radius:8px;padding:8px 14px;font-weight:800;cursor:pointer;flex-shrink:0}
 .link small{color:#67718A}
 ol li{margin-bottom:10px}small{color:#67718A}
 </style></head><body>
-<h1>🔒 Cierre · Maid<span style="color:#1F9BD2">Flow</span></h1>
+<h1>🔒 Cierre · Maid<span style="color:#2AA8DE">Flow</span></h1>
 <p class="warn">⚠️ Página privada del closer — NUNCA la compartas en pantalla. La presentación para el cliente es /demo.</p>
 <h2>El cierre, paso a paso (todo en la misma llamada)</h2>
 <ol>
@@ -3802,7 +3802,7 @@ ol li{margin-bottom:10px}small{color:#67718A}
 <li>Agenda su <b>onboarding</b> antes de colgar.</li>
 </ol>
 <h2>Links y mensajes</h2>
-<div class="link"><span><b>💳 Link de pago — $97 hoy + $97/mes</b><br><small>${esc(stripeLink || "buy.stripe.com/… (ejemplo — aún sin configurar)")}</small></span><a href="${stripeLink || "#"}" ${stripeLink ? `target="_blank" rel="noreferrer"` : `onclick="alert('Aún no está configurado: crea el Payment Link en Stripe y agrégalo en Render como STRIPE_PAYMENT_LINK');return false"`} style="background:#0C5A8A;color:#fff;border-radius:8px;padding:8px 14px;font-weight:800;text-decoration:none;flex-shrink:0">Abrir</a><button onclick="${stripeLink ? `cp(this,'${stripeLink}')` : `alert('Aún no está configurado: crea el Payment Link en Stripe y agrégalo en Render como STRIPE_PAYMENT_LINK')`}">Copiar</button></div>
+<div class="link"><span><b>💳 Link de pago — $97 hoy + $97/mes</b><br><small>${esc(stripeLink || "buy.stripe.com/… (ejemplo — aún sin configurar)")}</small></span><a href="${stripeLink || "#"}" ${stripeLink ? `target="_blank" rel="noreferrer"` : `onclick="alert('Aún no está configurado: crea el Payment Link en Stripe y agrégalo en Render como STRIPE_PAYMENT_LINK');return false"`} style="background:#1B8FD1;color:#fff;border-radius:8px;padding:8px 14px;font-weight:800;text-decoration:none;flex-shrink:0">Abrir</a><button onclick="${stripeLink ? `cp(this,'${stripeLink}')` : `alert('Aún no está configurado: crea el Payment Link en Stripe y agrégalo en Render como STRIPE_PAYMENT_LINK')`}">Copiar</button></div>
 <p style="font-size:12px;color:#67718A;margin:-2px 0 10px"><b>Copiar</b> → se lo mandas por WhatsApp y paga desde su teléfono. <b>Abrir</b> → si te da la tarjeta por teléfono, la escribes tú aquí mismo.${stripeLink ? "" : ` <b style="color:#D93025">⚠️ Link de ejemplo — falta configurar STRIPE_PAYMENT_LINK en Render.</b>`}</p>
 <div class="link"><span><b>👋 Bienvenida (pega su link de acceso)</b><br><small>${esc(welcome.slice(0, 70))}…</small></span><button onclick='cp(this,${JSON.stringify(welcome)})'>Copiar</button></div>
 <div class="link"><span><b>🧼 Demo del cotizador</b><br><small>${base}/w/alto-demo</small></span><button onclick="cp(this,'${base}/w/alto-demo')">Copiar</button></div>
@@ -3941,7 +3941,7 @@ app.get("/demo", (req, res) => {
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;1,9..144,600&family=Inter:wght@400;500;600;700;800&display=swap');
 *{box-sizing:border-box;font-family:Inter,Arial,sans-serif;margin:0;-webkit-tap-highlight-color:transparent}
-:root{--navy:#0C5A8A;--navy2:#084563;--gold:#3FB6E8;--mut:#9DA8C4;--line:rgba(255,255,255,.1)}
+:root{--navy:#1B8FD1;--navy2:#0E5E91;--gold:#5BC8F0;--mut:#9DA8C4;--line:rgba(255,255,255,.1)}
 body{background:var(--navy2);color:#fff;overflow:hidden}
 .layout{display:flex;height:100vh;height:100dvh}
 aside{width:268px;background:#fff;border-right:1px solid #E9EAEE;display:flex;flex-direction:column;flex-shrink:0}
@@ -3951,8 +3951,8 @@ aside{width:268px;background:#fff;border-right:1px solid #E9EAEE;display:flex;fl
 nav{flex:1;overflow-y:auto;padding-bottom:10px;display:flex;flex-direction:column}
 .nav-it{flex:1;display:flex;align-items:center;gap:14px;width:100%;background:none;border:none;color:#6A7384;font-weight:700;font-size:16px;padding:0 20px;cursor:pointer;text-align:left;border-left:4px solid transparent;min-height:48px}
 .nav-it .no{font-family:'Fraunces',Georgia,serif;font-size:13px;color:#B6BCC8;width:22px}
-.nav-it.on{color:#0C5A8A;background:rgba(248,180,8,.13);border-left-color:var(--gold)}
-.nav-it.on .no{color:#1F9BD2}
+.nav-it.on{color:#1B8FD1;background:rgba(248,180,8,.13);border-left-color:var(--gold)}
+.nav-it.on .no{color:#2AA8DE}
 .sb-foot{padding:14px 18px;font-size:11px;color:#9AA0AC;font-weight:700;border-top:1px solid #E9EAEE}
 main{flex:1;position:relative;display:flex;flex-direction:column;min-width:0}
 .stage{flex:1;position:relative;overflow:hidden}
@@ -3981,8 +3981,8 @@ ul.pts.big li{font-size:clamp(16px,2.2vw,22px);padding:19px 0;line-height:1.6;ga
 .webframe .url{flex:1;background:#fff;border-radius:8px;font-size:11.5px;color:#5E6470;font-weight:600;padding:5px 12px;margin-left:8px}
 .dscr{width:100%;height:430px;overflow:hidden}
 .dscr iframe{width:1180px;height:846px;border:0;transform:scale(.508);transform-origin:0 0;display:block;background:#fff}
-.iphone{position:relative;background:#084563;border:10px solid #0E5180;border-radius:48px;padding:11px;box-shadow:0 30px 80px rgba(0,0,0,.55)}
-.inotch{position:absolute;top:11px;left:50%;transform:translateX(-50%);width:110px;height:22px;background:#0E5180;border-radius:0 0 13px 13px;z-index:2}
+.iphone{position:relative;background:#0E5E91;border:10px solid #1577B8;border-radius:48px;padding:11px;box-shadow:0 30px 80px rgba(0,0,0,.55)}
+.inotch{position:absolute;top:11px;left:50%;transform:translateX(-50%);width:110px;height:22px;background:#1577B8;border-radius:0 0 13px 13px;z-index:2}
 .mscr{width:234px;height:464px;overflow:hidden;border-radius:26px}
 .mscr iframe{width:390px;height:776px;border:0;transform:scale(.6);transform-origin:0 0;background:#fff}
 .iphone.big .mscr{width:330px;height:660px}
@@ -4003,8 +4003,8 @@ ul.pts.big li{font-size:clamp(16px,2.2vw,22px);padding:19px 0;line-height:1.6;ga
 .srow s{color:#8E99B5;font-weight:700;white-space:nowrap}
 .srow.tot{background:rgba(255,255,255,.05);border-bottom:none;font-weight:800}
 .srow.tot s{color:#C9D2E5}
-.pcard{background:#fff;color:#0C5A8A;border-radius:26px;padding:34px 32px;text-align:center;box-shadow:0 34px 90px rgba(248,180,8,.18),0 30px 70px rgba(0,0,0,.45);width:min(340px,100%)}
-.pcard .pk{color:#1F9BD2;font-weight:800;font-size:11px;letter-spacing:2.5px}
+.pcard{background:#fff;color:#1B8FD1;border-radius:26px;padding:34px 32px;text-align:center;box-shadow:0 34px 90px rgba(248,180,8,.18),0 30px 70px rgba(0,0,0,.45);width:min(340px,100%)}
+.pcard .pk{color:#2AA8DE;font-weight:800;font-size:11px;letter-spacing:2.5px}
 .pcard .pamt{font-family:'Fraunces',Georgia,serif;font-size:74px;font-weight:700;line-height:1;margin-top:10px}
 .pcard .pamt small{font-size:24px;color:#67718A}
 .pcard .psetup{color:#67718A;font-weight:700;font-size:14px;margin-top:8px}
@@ -4014,13 +4014,13 @@ ul.pts.big li{font-size:clamp(16px,2.2vw,22px);padding:19px 0;line-height:1.6;ga
 .ch-head{color:#5E6470;font-weight:800;font-size:12px;text-align:center;padding-bottom:10px;border-bottom:1px solid #EDF0F5;margin-bottom:12px}
 .bub{max-width:85%;border-radius:16px;padding:10px 14px;font-size:13.5px;font-weight:600;line-height:1.5;margin-bottom:8px}
 .bub.them{background:#F0F2F6;color:#16202E;border-bottom-left-radius:5px}
-.bub.me{background:#0C5A8A;color:#fff;margin-left:auto;border-bottom-right-radius:5px}
+.bub.me{background:#1B8FD1;color:#fff;margin-left:auto;border-bottom-right-radius:5px}
 .ch-foot{color:#9AA0AC;font-weight:700;font-size:11.5px;text-align:center;padding-top:8px}
 #chatlog{max-height:300px;overflow-y:auto;display:flex;flex-direction:column}
 .ch-in{display:flex;gap:8px;margin-top:10px}
 .ch-in input{flex:1;border:1.5px solid #E2E6ED;border-radius:11px;padding:11px 13px;font-size:13.5px;font-weight:600;outline:none;color:#16202E;min-width:0}
-.ch-in input:focus{border-color:#3FB6E8}
-.ch-in button{background:#3FB6E8;color:#0C5A8A;border:none;border-radius:11px;padding:0 18px;font-weight:800;font-size:17px;cursor:pointer}
+.ch-in input:focus{border-color:#5BC8F0}
+.ch-in button{background:#5BC8F0;color:#1B8FD1;border:none;border-radius:11px;padding:0 18px;font-weight:800;font-size:17px;cursor:pointer}
 .bub.typing{color:#9AA0AC;background:#F0F2F6;font-weight:800;letter-spacing:2px}
 .duo{display:grid;gap:44px;align-items:start;margin-top:6px}
 @media(min-width:980px){.duo{grid-template-columns:1fr 350px}}
@@ -4036,7 +4036,7 @@ ul.pts.big li{font-size:clamp(16px,2.2vw,22px);padding:19px 0;line-height:1.6;ga
 .bbar .prev{background:transparent;color:#fff;border:1.5px solid rgba(255,255,255,.25)}
 .bbar .next{background:var(--gold);color:var(--navy);border:none}
 .bbar .ct{font-family:'Fraunces',Georgia,serif;font-size:15px;color:var(--mut)}
-.langpill{position:fixed;top:16px;right:18px;z-index:45;background:rgba(255,255,255,.95);color:#0C5A8A;border-radius:99px;padding:9px 18px;font-weight:800;font-size:13px;text-decoration:none;box-shadow:0 10px 28px rgba(0,0,0,.35)}
+.langpill{position:fixed;top:16px;right:18px;z-index:45;background:rgba(255,255,255,.95);color:#1B8FD1;border-radius:99px;padding:9px 18px;font-weight:800;font-size:13px;text-decoration:none;box-shadow:0 10px 28px rgba(0,0,0,.35)}
 @media(max-width:899px){
   aside{position:fixed;z-index:60;left:0;top:0;bottom:0;transform:translateX(-100%);transition:transform .25s ease;width:260px}
   aside.open{transform:none}
@@ -4048,13 +4048,13 @@ ul.pts.big li{font-size:clamp(16px,2.2vw,22px);padding:19px 0;line-height:1.6;ga
 .mtop{display:none;align-items:center;justify-content:space-between;padding:12px 16px;background:var(--navy);border-bottom:1px solid var(--line)}
 .mtop .mt-b{background:none;border:1.5px solid rgba(255,255,255,.25);color:#fff;border-radius:10px;padding:8px 14px;font-weight:800;font-size:13px;cursor:pointer}
 .mtop b em{color:var(--gold);font-style:normal}
-#ckit{display:none;position:fixed;right:18px;bottom:70px;z-index:80;background:#fff;color:#0C5A8A;border-radius:16px;padding:14px 16px;box-shadow:0 24px 60px rgba(0,0,0,.5);width:280px}
+#ckit{display:none;position:fixed;right:18px;bottom:70px;z-index:80;background:#fff;color:#1B8FD1;border-radius:16px;padding:14px 16px;box-shadow:0 24px 60px rgba(0,0,0,.5);width:280px}
 #ckit.on{display:block}
 #ckit .ck-t{font-weight:800;font-size:13px;margin-bottom:10px}
 #ckit .ck-t small{color:#9AA0AC;font-weight:600;font-size:10.5px}
 #ckit .ck-row{display:flex;align-items:center;gap:8px;padding:6px 0;font-weight:700;font-size:13px}
 #ckit .ck-row span{flex:1}
-#ckit button{background:#3FB6E8;color:#0C5A8A;border:none;border-radius:8px;padding:6px 12px;font-weight:800;font-size:12px;cursor:pointer}
+#ckit button{background:#5BC8F0;color:#1B8FD1;border:none;border-radius:8px;padding:6px 12px;font-weight:800;font-size:12px;cursor:pointer}
 #ckit .ck-k{color:#9AA0AC;font-size:10.5px;font-weight:600;margin-top:8px}
 #ktoast{display:none;position:fixed;left:18px;bottom:70px;z-index:80;background:#34A853;color:#fff;border-radius:99px;width:34px;height:34px;align-items:center;justify-content:center;font-weight:800}
 #ktoast.on{display:flex}
@@ -4063,7 +4063,7 @@ ul.pts.big li{font-size:clamp(16px,2.2vw,22px);padding:19px 0;line-height:1.6;ga
 <a class="langpill" href="${L.langHref}">${L.langBtn}</a>
 <div class="layout">
 <aside id="sb">
-  <div class="sb-brand"><b style="color:#0C5A8A;font-weight:900;font-size:24px">Maid<span style="color:#3FB6E8">Flow</span></b></div>
+  <div class="sb-brand"><b style="color:#1B8FD1;font-weight:900;font-size:24px">Maid<span style="color:#5BC8F0">Flow</span></b></div>
   <div class="sb-label">${L.presentation}</div>
   <nav id="nav"></nav>
   <div class="sb-foot">${L.forClients}</div>
@@ -4074,7 +4074,7 @@ ul.pts.big li{font-size:clamp(16px,2.2vw,22px);padding:19px 0;line-height:1.6;ga
 <div class="stage" id="stage">
 
 <section class="slide" data-t="${L.t1}">
-  <div class="s-bg" style="background:linear-gradient(160deg,#062B22,#0C5A8A)"></div><div class="s-veil"></div>
+  <div class="s-bg" style="background:linear-gradient(160deg,#062B22,#1B8FD1)"></div><div class="s-veil"></div>
   <div class="s-in">
     <p class="kick">${L.k1}</p>
     <h1>${L.h1a}<br><em>${L.h1b}</em></h1>
@@ -4123,7 +4123,7 @@ ul.pts.big li{font-size:clamp(16px,2.2vw,22px);padding:19px 0;line-height:1.6;ga
       <li><b>🌐</b><span>${L.p3c}</span></li>
       <li><b>🤖</b><span>${L.p3d}</span></li>
     </ul>
-    <p class="body" style="margin-top:28px;font-size:clamp(17px,2.3vw,23px);max-width:940px"><b style="color:#3FB6E8">${L.c3}</b></p>
+    <p class="body" style="margin-top:28px;font-size:clamp(17px,2.3vw,23px);max-width:940px"><b style="color:#5BC8F0">${L.c3}</b></p>
   </div>
 </section>
 
@@ -4225,7 +4225,7 @@ ul.pts.big li{font-size:clamp(16px,2.2vw,22px);padding:19px 0;line-height:1.6;ga
 </section>
 
 <section class="slide" data-t="${L.t8}">
-  <div class="s-bg" style="background:linear-gradient(160deg,#062B22,#0C5A8A)"></div><div class="s-veil"></div>
+  <div class="s-bg" style="background:linear-gradient(160deg,#062B22,#1B8FD1)"></div><div class="s-veil"></div>
   <div class="s-in" style="max-width:1150px">
     <p class="kick">${L.k8}</p>
     <h1>${L.h8a} <em>${L.h8b}</em></h1>
@@ -4366,12 +4366,12 @@ app.get("/i", (req, res) => {
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${esc(d.biz)} · ${d.k === "inv" ? L.inv : L.est} #${esc(d.inv)}</title>
 <style>
-  body{margin:0;font-family:-apple-system,'Segoe UI',Roboto,sans-serif;background:#F4F5F7;color:#0C5A8A}
+  body{margin:0;font-family:-apple-system,'Segoe UI',Roboto,sans-serif;background:#F4F5F7;color:#1B8FD1}
   .page{max-width:560px;margin:0 auto;background:#fff;min-height:100vh}
-  .hd{background:#0C5A8A;color:#fff;padding:22px 24px}
+  .hd{background:#1B8FD1;color:#fff;padding:22px 24px}
   .hd .biz{font-size:22px;font-weight:800;letter-spacing:.02em}
   .hd .sub{color:#9DA8C4;font-size:13px;margin-top:2px}
-  .tag{display:inline-block;background:#3FB6E8;color:#fff;font-size:12px;font-weight:800;border-radius:99px;padding:3px 12px;margin-top:10px;letter-spacing:.06em}
+  .tag{display:inline-block;background:#5BC8F0;color:#fff;font-size:12px;font-weight:800;border-radius:99px;padding:3px 12px;margin-top:10px;letter-spacing:.06em}
   .tag.paid{background:#1E9E5A}
   .sec{padding:18px 24px;border-bottom:1px solid #E6E8EC}
   .lbl{font-size:11px;font-weight:700;letter-spacing:.1em;color:#67718A;margin-bottom:6px}
@@ -4382,10 +4382,10 @@ app.get("/i", (req, res) => {
   td{padding:7px 0}td:last-child{text-align:right;font-weight:700}
   .tot td{border-top:2px solid #E6E8EC;font-size:15px}
   .due td{font-size:20px;font-weight:800}
-  .due .amt{color:${d.paid ? "#1E9E5A" : "#3FB6E8"}}
+  .due .amt{color:${d.paid ? "#1E9E5A" : "#5BC8F0"}}
   .pay{background:#E9F6FD;border-radius:12px;padding:14px 16px;font-size:15px}
-  .pay b{display:block;font-size:11px;letter-spacing:.1em;color:#3FB6E8;margin-bottom:6px}
-  .btn{display:block;width:calc(100% - 48px);margin:18px 24px;background:#3FB6E8;color:#fff;border:none;border-radius:12px;padding:15px;font-size:16px;font-weight:800;cursor:pointer}
+  .pay b{display:block;font-size:11px;letter-spacing:.1em;color:#5BC8F0;margin-bottom:6px}
+  .btn{display:block;width:calc(100% - 48px);margin:18px 24px;background:#5BC8F0;color:#fff;border:none;border-radius:12px;padding:15px;font-size:16px;font-weight:800;cursor:pointer}
   .ft{text-align:center;color:#9DA8C4;font-size:12px;padding:14px 0 26px}
   @media print{.btn{display:none}body{background:#fff}}
 </style></head><body><div class="page">
@@ -4414,8 +4414,8 @@ ${d.dep ? `<tr><td>${L.deposit}</td><td style="color:#1E9E5A">–${fmtM(d.dep)}<
 ${d.k === "est" && !d.paid ? `<div class="sec" style="font-size:12px;color:#67718A">
 <p>${L.valid}</p>
 <div style="display:flex;gap:24px;margin-top:34px">
-  <div style="flex:2;border-top:1.5px solid #0C5A8A;padding-top:5px">${L.sig}</div>
-  <div style="flex:1;border-top:1.5px solid #0C5A8A;padding-top:5px">${L.sigDate}</div>
+  <div style="flex:2;border-top:1.5px solid #1B8FD1;padding-top:5px">${L.sig}</div>
+  <div style="flex:1;border-top:1.5px solid #1B8FD1;padding-top:5px">${L.sigDate}</div>
 </div></div>` : ""}
 <button class="btn" onclick="window.print()">${L.print}</button>
 <div class="ft">⚡ ${L.made}</div>

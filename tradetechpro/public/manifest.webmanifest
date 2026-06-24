@@ -4,8 +4,8 @@
   "description": "Cotizaciones de limpieza al instante. Ingresa la dirección, confirma los detalles y envía un precio profesional por WhatsApp en minutos.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0C5A8A",
-  "theme_color": "#0C5A8A",
+  "background_color": "#1B8FD1",
+  "theme_color": "#1B8FD1",
   "lang": "es",
   "icons": [
     { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
