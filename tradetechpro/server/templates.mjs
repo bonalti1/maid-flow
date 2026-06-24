@@ -1,5 +1,5 @@
 /*
- * Quick Comp website factory — the 3 realtor client templates.
+ * Maid Flow website factory — the 3 cleaning-business client templates.
  *
  * Every client site is RENDERED FROM DATA through these battle-tested
  * templates; no code is ever generated per client. Improve a template
@@ -25,10 +25,10 @@ function shade(hex, f) {
 }
 
 const DEFAULT_SERVICES = [
-  ["🏡", "Vende tu casa", "Te ponemos al precio correcto desde el día uno, con un plan de marketing que atrae compradores reales."],
-  ["🔑", "Compra tu casa", "Te representamos como comprador — buscamos, negociamos y cuidamos cada detalle hasta las llaves."],
-  ["📊", "Valuación / CMA gratis", "Un análisis comparativo de mercado con ventas reales cercanas para saber qué vale tu casa hoy."],
-  ["🤝", "Asesoría de mercado", "Te decimos la verdad del mercado — cuándo vender, cuándo esperar — aunque no sea hoy."],
+  ["🧹", "Limpieza regular", "Mantenemos tu casa impecable cada semana o quincena — cocina, baños, pisos, polvo y todos los detalles."],
+  ["✨", "Limpieza profunda", "De arriba a abajo: acumulación, rincones olvidados, zócalos y electrodomésticos por dentro."],
+  ["📦", "Mudanza (entrada / salida)", "Dejamos la casa lista para entregar o para estrenar — vacía y reluciente, lista para las llaves."],
+  ["🏨", "Rotación Airbnb", "Limpieza rápida y confiable entre huéspedes para que tu propiedad siempre brille en cada reseña."],
 ];
 
 /* Shared pieces */
@@ -36,7 +36,7 @@ function headBase(d, css) {
   return `<!doctype html><html lang="es"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${esc(d.biz)}${d.city ? " · " + esc(d.city) : ""}</title>
-<meta name="description" content="${esc(d.biz)} — bienes raíces${d.city ? " en " + esc(d.city) : ""}. Conoce el valor de tu casa en 60 segundos, con ventas reales cercanas.">
+<meta name="description" content="${esc(d.biz)} — limpieza de casas${d.city ? " en " + esc(d.city) : ""}. Cotiza tu limpieza en 60 segundos, según el tamaño de tu casa.">
 <style>${css}</style></head><body>`;
 }
 
@@ -47,11 +47,11 @@ function ribbonHtml(opts) {
 
 function backAltoHtml(opts) {
   if (!opts.backAlto) return "";
-  return `<a style="position:fixed;bottom:18px;left:50%;transform:translateX(-50%);z-index:50;background:#15244C;color:#fff;text-decoration:none;font-weight:800;font-size:14px;padding:13px 22px;border-radius:99px;box-shadow:0 14px 36px rgba(16,27,48,.5);font-family:Inter,Arial,sans-serif;white-space:nowrap" href="/ventas#precio">← Volver a <span style="color:#C9973A">QUICK COMP</span></a>`;
+  return `<a style="position:fixed;bottom:18px;left:50%;transform:translateX(-50%);z-index:50;background:#15244C;color:#fff;text-decoration:none;font-weight:800;font-size:14px;padding:13px 22px;border-radius:99px;box-shadow:0 14px 36px rgba(16,27,48,.5);font-family:Inter,Arial,sans-serif;white-space:nowrap" href="/ventas#precio">← Volver a <span style="color:#C9973A">MAID FLOW</span></a>`;
 }
 
 function footerBits(d) {
-  return `<b>${esc(d.biz)}</b>${d.city ? ` · ${esc(d.city)}` : ""}${d.license ? ` · Lic. ${esc(d.license)}` : ""}<br>Página hecha con ⚡ Quick Comp`;
+  return `<b>${esc(d.biz)}</b>${d.city ? ` · ${esc(d.city)}` : ""}${d.license ? ` · Lic. ${esc(d.license)}` : ""}<br>Página hecha con ⚡ Maid Flow`;
 }
 
 const statsCells = (d) => [
@@ -120,20 +120,20 @@ ${ribbonHtml(opts)}
 </div></header>
 <div class="hero"><div class="veil"></div>
   <div class="wrap in">
-    <span class="kick">BIENES RAÍCES${d.city ? ` · ${esc(d.city).toUpperCase()}` : ""}</span>
-    <h1>${d.hero || `Vende tu casa por<br>lo que <em>de verdad vale</em>`}</h1>
-    <p>${esc(d.tagline) || "Conoce el valor de tu casa al instante, con ventas reales cercanas — gratis y sin que nadie te visite."}</p>
-    <a class="cta" href="#cotiza">VALÚA TU CASA EN 60 SEGUNDOS</a>${d.phone ? `<a class="cta ghost" href="tel:+1${d.phone}">Llámanos</a>` : ""}
+    <span class="kick">LIMPIEZA DE CASAS${d.city ? ` · ${esc(d.city).toUpperCase()}` : ""}</span>
+    <h1>${d.hero || `Tu casa, <em>impecable</em><br>sin mover un dedo`}</h1>
+    <p>${esc(d.tagline) || "Recibe el precio de tu limpieza al instante, según el tamaño de tu casa — gratis y sin que nadie te visite."}</p>
+    <a class="cta" href="#cotiza">COTIZA TU LIMPIEZA EN 60 SEGUNDOS</a>${d.phone ? `<a class="cta ghost" href="tel:+1${d.phone}">Llámanos</a>` : ""}
   </div>
   <div class="wrap stats">${statsCells(d).map(([b, s]) => `<div class="stat"><b>${b}</b><span>${s}</span></div>`).join("")}</div>
 </div>
-<div class="trust"><span>✓ ${d.license ? "Agente licenciado" : "Agente local"}</span><span>✓ Ventas reales comparables</span><span>✓ Valuación gratis</span><span>✓ Hablamos español</span></div>
+<div class="trust"><span>✓ ${d.license ? "Negocio asegurado" : "Limpiadoras locales"}</span><span>✓ Precio claro desde el inicio</span><span>✓ Cotización gratis</span><span>✓ Hablamos español</span></div>
 
 <div class="wrap"><section id="cotiza">
-  <p class="eyebrow">Valuación instantánea</p>
-  <h2 class="t">El valor de tu casa, <em>sin esperar</em></h2>
-  <p class="sub">Escribe tu dirección y mira el valor de tu casa con ventas reales cercanas. Gratis y sin compromiso.</p>
-  <div class="qframe"><iframe src="/w/${esc(d.slug)}" loading="lazy" title="Valuador"></iframe></div>
+  <p class="eyebrow">Cotización instantánea</p>
+  <h2 class="t">El precio de tu limpieza, <em>sin esperar</em></h2>
+  <p class="sub">Escribe tu dirección y mira el precio de tu limpieza según el tamaño de tu casa. Gratis y sin compromiso.</p>
+  <div class="qframe"><iframe src="/w/${esc(d.slug)}" loading="lazy" title="Cotizador"></iframe></div>
 </section></div>
 
 <div class="wrap"><section style="padding-top:6px">
@@ -157,8 +157,8 @@ ${d.photos.length ? `<div class="wrap"><section style="padding-top:10px">
 </section></div>` : ""}
 
 <div class="ctaband">
-  <h2>¿Listo para vender<br><em>al mejor precio?</em></h2>
-  <a class="a1" href="#cotiza">VALÚA AHORA</a>${d.phone ? `<a class="a2" href="https://wa.me/1${d.phone}">💬 WhatsApp</a>` : ""}
+  <h2>¿Lista para una<br><em>casa impecable?</em></h2>
+  <a class="a1" href="#cotiza">COTIZA AHORA</a>${d.phone ? `<a class="a2" href="https://wa.me/1${d.phone}">💬 WhatsApp</a>` : ""}
 </div>
 <footer>${footerBits(d)}</footer>
 ${backAltoHtml(opts)}
@@ -230,20 +230,20 @@ ${ribbonHtml(opts)}
 <div class="hero">
   <div class="ghostword bc">${ghost}</div>
   <div class="wrap in">
-    <p class="hk">Bienes raíces${d.city ? ` · ${esc(d.city).toUpperCase()}` : ""}</p>
-    <h1>${d.hero || `Vende <em>al mejor</em><br>precio.`}</h1>
-    <p class="lede">${esc(d.tagline) || "Conoce el valor de tu casa en 60 segundos — con ventas reales cercanas, sin visitas y sin compromiso."}</p>
-    <div class="ctas"><a class="btn p" href="#cotiza">Valúa ya</a>${d.phone ? `<a class="btn g" href="tel:+1${d.phone}">Llámanos</a>` : ""}</div>
+    <p class="hk">Limpieza de casas${d.city ? ` · ${esc(d.city).toUpperCase()}` : ""}</p>
+    <h1>${d.hero || `Casa <em>impecable</em><br>sin estrés.`}</h1>
+    <p class="lede">${esc(d.tagline) || "Recibe el precio de tu limpieza en 60 segundos — según el tamaño de tu casa, sin visitas y sin compromiso."}</p>
+    <div class="ctas"><a class="btn p" href="#cotiza">Cotiza ya</a>${d.phone ? `<a class="btn g" href="tel:+1${d.phone}">Llámanos</a>` : ""}</div>
   </div>
 </div>
 <div class="strip"><div class="wrap in">${statsCells(d).map(([b, s]) => `<div class="num"><b>${b}</b><span>${s}</span></div>`).join("")}</div></div>
 <div class="quote" id="cotiza"><div class="wrap"><div class="qgrid">
   <div>
-    <p class="lab">Valuación instantánea</p>
-    <h2 class="t">Tu valor <em>en 60 segundos</em></h2>
-    <p class="lead">Escribe tu dirección. Analizamos ventas comparables reales y te damos el valor estimado al instante. Gratis, sin compromiso, sin esperar a nadie.</p>
+    <p class="lab">Cotización instantánea</p>
+    <h2 class="t">Tu precio <em>en 60 segundos</em></h2>
+    <p class="lead">Escribe tu dirección. Medimos tu casa y te damos el precio estimado al instante. Gratis, sin compromiso, sin esperar a nadie.</p>
   </div>
-  <div class="qframe"><iframe src="/w/${esc(d.slug)}" loading="lazy" title="Valuador"></iframe></div>
+  <div class="qframe"><iframe src="/w/${esc(d.slug)}" loading="lazy" title="Cotizador"></iframe></div>
 </div></div></div>
 <div class="wrap"><div class="svcwrap">
   ${d.services.map(([ic, t, x], i) => `<div class="svc"><div class="no">${String(i + 1).padStart(2, "0")}</div><div><h3>${esc(t)}</h3><p>${esc(x)}</p></div><div class="ic">${ic}</div></div>`).join("")}
@@ -251,7 +251,7 @@ ${ribbonHtml(opts)}
 ${d.about ? `<div class="about"><div class="wrap"><div class="qm bc">&ldquo;</div><p>${esc(d.about)}</p></div></div>` : ""}
 ${d.photos.length ? `<div class="wrap"><div class="gal">${d.photos.map((p) => `<img loading="lazy" src="${esc(p)}" alt="">`).join("")}</div></div>` : ""}
 <footer>${footerBits(d)}</footer>
-<div class="bar"><a href="#cotiza">🏡 Valúa gratis</a>${d.phone ? `<a href="https://wa.me/1${d.phone}">💬 WhatsApp</a>` : ""}</div>
+<div class="bar"><a href="#cotiza">🧹 Cotiza gratis</a>${d.phone ? `<a href="https://wa.me/1${d.phone}">💬 WhatsApp</a>` : ""}</div>
 ${backAltoHtml(opts)}
 </body></html>`;
 }
@@ -322,24 +322,24 @@ ${ribbonHtml(opts)}
 </div></header>
 <div class="hero"><div class="wrap"><div class="hgrid">
   <div>
-    <span class="pill">🏡 Bienes raíces${d.city ? ` · ${esc(d.city)}` : ""}</span>
-    <h1>${d.hero || `Vende tu casa.<br><em>Sin estrés.</em>`}</h1>
-    <p class="lede">${esc(d.tagline) || "Conoce el valor de tu casa con ventas reales cercanas — aquí mismo, gratis y sin que nadie te visite."}</p>
-    <div class="hcta"><a class="btn p" href="#cotiza">Valúa gratis</a>${d.phone ? `<a class="btn g" href="tel:+1${d.phone}">📞 Llámanos</a>` : ""}</div>
+    <span class="pill">🧹 Limpieza de casas${d.city ? ` · ${esc(d.city)}` : ""}</span>
+    <h1>${d.hero || `Tu casa, impecable.<br><em>Sin estrés.</em>`}</h1>
+    <p class="lede">${esc(d.tagline) || "Recibe el precio de tu limpieza según el tamaño de tu casa — aquí mismo, gratis y sin que nadie te visite."}</p>
+    <div class="hcta"><a class="btn p" href="#cotiza">Cotiza gratis</a>${d.phone ? `<a class="btn g" href="tel:+1${d.phone}">📞 Llámanos</a>` : ""}</div>
   </div>
   <div class="qcard" id="cotiza">
-    <div class="qtag"><span class="dot"></span> Valúa tu casa aquí — gratis</div>
-    <iframe src="/w/${esc(d.slug)}" loading="lazy" title="Valuador"></iframe>
+    <div class="qtag"><span class="dot"></span> Cotiza tu limpieza aquí — gratis</div>
+    <iframe src="/w/${esc(d.slug)}" loading="lazy" title="Cotizador"></iframe>
   </div>
 </div>
-<div class="trust" style="margin-top:36px">${statsCells(d).map(([b, s]) => `<span>✓ ${b} ${s}</span>`).join("")}<span>✓ Valuación gratis</span></div>
+<div class="trust" style="margin-top:36px">${statsCells(d).map(([b, s]) => `<span>✓ ${b} ${s}</span>`).join("")}<span>✓ Cotización gratis</span></div>
 </div></div>
 <div class="wrap"><section>
   <div class="head"><p class="eye">Servicios</p><h2 class="t">¿Cómo te <em>ayudamos</em>?</h2></div>
   <div class="svcs">${d.services.map(([ic, t, x]) => `<div class="svc"><div class="ic">${ic}</div><h3>${esc(t)}</h3><p>${esc(x)}</p></div>`).join("")}</div>
 </section></div>
 ${d.about ? `<div class="wrap"><section style="padding-top:6px"><div class="about">
-  <div class="badge">🏡</div>
+  <div class="badge">🧹</div>
   <div><p class="eye">Quiénes somos</p><h2 class="t">Nuestra <em>historia</em></h2><p class="body">${esc(d.about)}</p></div>
 </div></section></div>` : ""}
 ${d.photos.length ? `<div class="wrap"><section style="padding-top:6px">
@@ -347,9 +347,9 @@ ${d.photos.length ? `<div class="wrap"><section style="padding-top:6px">
   <div class="gal">${d.photos.map((p) => `<img loading="lazy" src="${esc(p)}" alt="">`).join("")}</div>
 </section></div>` : ""}
 <div class="wrap"><section style="padding-top:6px"><div class="ctacard">
-  <h2>¿Listo para empezar?</h2>
-  <p>Tu valuación está a 60 segundos de distancia.</p>
-  <a class="a1" href="#cotiza">Valúa ahora</a>${d.phone ? `<a class="a2" href="https://wa.me/1${d.phone}">💬 WhatsApp</a>` : ""}
+  <h2>¿Lista para empezar?</h2>
+  <p>Tu cotización está a 60 segundos de distancia.</p>
+  <a class="a1" href="#cotiza">Cotiza ahora</a>${d.phone ? `<a class="a2" href="https://wa.me/1${d.phone}">💬 WhatsApp</a>` : ""}
 </div></section></div>
 <footer>${footerBits(d)}</footer>
 ${backAltoHtml(opts)}
@@ -362,7 +362,7 @@ export function renderSite(data, opts = {}) {
   const d = {
     services: DEFAULT_SERVICES,
     photos: [],
-    color: "#B30F24",
+    color: "#0E8C72",
     ...data,
   };
   const fn = TEMPLATES[String(d.template || "1")] || t1;

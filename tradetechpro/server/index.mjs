@@ -2345,74 +2345,74 @@ function landingPage(req) {
   const langHref = `${req.path.startsWith("/ventas") ? "/ventas" : "/"}?lang=${en ? "es" : "en"}`;
   const L = en ? {
     lang: "en", langBtn: "🇲🇽 Español", langHref: "/?lang=es",
-    title: "Quick Comp — Your website finds you sellers by itself",
-    desc: "Website + instant home-value tool + app. Homeowners leave their phone to see their home's value and you get them as seller leads. Built for realtors.",
-    ogTitle: "Quick Comp — Your website finds you sellers by itself",
-    ogDesc: "The homeowner types their address, sees their home's value from real comps, and their phone number lands in your phone. Try it live.",
-    h1: "LET YOUR WEBSITE<br>FIND YOU SELLERS &<br>VALUE HOMES <em>24/7</em>",
-    sub: "The homeowner types their address, leaves their phone and sees their home's value from <b>real nearby sales</b> — and that seller lands straight in your phone. Even while you're showing a house or asleep.",
+    title: "Maid Flow — Your website finds you cleaning jobs by itself",
+    desc: "Website + instant cleaning-quote tool + app. Homeowners leave their phone to see their price and you get them as cleaning leads. Built for house cleaners.",
+    ogTitle: "Maid Flow — Your website finds you cleaning jobs by itself",
+    ogDesc: "The homeowner types their address, sees an instant cleaning price, and their phone number lands in your phone. Try it live.",
+    h1: "LET YOUR WEBSITE<br>FIND YOU CLEANING JOBS &<br>QUOTE THEM <em>24/7</em>",
+    sub: "The homeowner types their address, leaves their phone and sees an <b>instant cleaning price</b> — and that customer lands straight in your phone. Even while you're cleaning or asleep.",
     cta1: "SEE THE LIVE DEMO ↓", cta2: "See pricing",
-    chips: ["🇺🇸 Bilingual", "🏡 Built for realtors", "📲 No App Store"],
+    chips: ["🇺🇸 Bilingual", "🧹 Built for cleaners", "📲 No App Store"],
     tryT: "TRY IT <em>RIGHT NOW</em>",
-    trySub: `This is what homeowners will see on YOUR website — with your logo and <b style="color:#101B30">your brand</b>. They type a real address and watch it value the home from recent comparable sales. The value shows as a <b style="color:#101B30">range</b>, and to see it they leave their name and phone — that's your seller lead.`,
-    fullQ: "What about the full website?", fullSub: "See a sample realtor website, actually working — imagine your logo, your colors and your name.",
+    trySub: `This is what homeowners will see on YOUR website — with your logo and <b style="color:#101B30">your brand</b>. They type a real address and watch it price the cleaning from the home's size. The price shows as a <b style="color:#101B30">range</b>, and to see it they leave their name and phone — that's your cleaning lead.`,
+    fullQ: "What about the full website?", fullSub: "See a sample cleaner website, actually working — imagine your logo, your colors and your name.",
     fullBtn: "TAP TO SEE YOUR WEBSITE →",
     howT: "HOW DOES IT <em>WORK</em>?",
-    s1t: "The homeowner lands on your site", s1x: "From an ad, from Google, or because someone shared your link. Your website works even while you're showing a property.",
-    s2t: "They leave their phone to see the value", s2x: `<b style="color:#D99E00">No name and phone, no value.</b> The engine pulls recent comparable sales and calculates a value range for their home — instantly, branded as you.`,
-    s3t: "The seller lead hits your phone", s3x: "Name, address, phone and the value they saw — instantly, in your app. One button and you're already writing them on WhatsApp with the message pre-written.",
-    leadsT: "SELLERS LAND<br><em>ON YOUR PHONE</em>",
-    leads: ["<b>📥</b> Every seller lead buzzes in your pocket instantly", "<b>💰</b> Real comp-based values — credible, not a guess", "<b>💬</b> WhatsApp message pre-written — one tap and you reply", "<b>🛰️</b> Instant home values in 60 seconds", "<b>🧾</b> Professional CMA reports with your logo"],
+    s1t: "The homeowner lands on your site", s1x: "From an ad, from Google, or because someone shared your link. Your website works even while you're on a job.",
+    s2t: "They leave their phone to see the price", s2x: `<b style="color:#D99E00">No name and phone, no price.</b> The engine sizes the home and calculates a cleaning price range — instantly, branded as you.`,
+    s3t: "The cleaning lead hits your phone", s3x: "Name, address, phone and the price they saw — instantly, in your app. One button and you're already writing them on WhatsApp with the message pre-written.",
+    leadsT: "CUSTOMERS LAND<br><em>ON YOUR PHONE</em>",
+    leads: ["<b>📥</b> Every cleaning lead buzzes in your pocket instantly", "<b>💰</b> Prices from your own rates — consistent, not a guess", "<b>💬</b> WhatsApp message pre-written — one tap and you reply", "<b>⚡</b> Instant cleaning quotes in 60 seconds", "<b>🧾</b> Professional branded quotes with your logo"],
     pNew: "1 NEW", pNew2: "NEW",
     appT: "AND ON YOUR PHONE, <em>THE APP</em>",
-    appSub: `You're at an open house and a neighbor asks "what's mine worth?" — you type their address (or use your GPS), pull the comps, and send a polished CMA right there.`,
-    cap1: "Valued from comps<br>in 60 seconds", cap2: "Want to be sure?<br>Pick your own comparables", cap3: "Professional CMA with your<br>brand, ready to send",
+    appSub: `A neighbor asks "how much to clean mine?" — you type their address (or use your GPS), answer a few questions, and send a polished quote right there.`,
+    cap1: "Quoted from the home's size<br>in 60 seconds", cap2: "Set your own rates<br>and minimums", cap3: "Professional quote with your<br>brand, ready to send",
     priceT: "ONE <em>PRICE</em>", priceSub: "No fine print. No long contracts. Cancel anytime and your domain is yours.",
-    mo: "/mo", setup: "+ $297 to start (one time)", buyNow: "Start now →", orBook: "or book a call first",
-    inc: ["Your professional website with your brand", "Instant home-value tool on your site", "The Quick Comp app: values, CMAs, leads", "Seller leads straight to your WhatsApp", "Your domain (yourname.com) is yours — by contract", "Bilingual support"],
+    mo: "/mo", setup: "+ $97 to start (one time)", buyNow: "Start now →", orBook: "or book a call first",
+    inc: ["Your professional website with your brand", "Instant cleaning-quote tool on your site", "The Maid Flow app: quotes, rates, leads", "Cleaning leads straight to your WhatsApp", "Your domain (yourname.com) is yours — by contract", "Bilingual support"],
     talkT: "READY? <em>LET'S TALK</em>", talkSub: "Answer 4 quick questions and schedule a call with the team. No obligation — we answer everything and you decide.",
-    q1: "What do you focus on?", q1o: ["Residential", "Luxury", "Both", "Other"],
-    q2: "How long have you been licensed?", q2o: ["Just starting", "1–3 years", "3–10 years", "10+ years"],
-    q3: "About how many deals per year?", q3o: ["Under 6", "6–15", "15–30", "Over 30"],
+    q1: "What do you focus on?", q1o: ["Homes", "Airbnb / rentals", "Offices", "Other"],
+    q2: "How long have you been cleaning?", q2o: ["Just starting", "1–3 years", "3–10 years", "10+ years"],
+    q3: "About how many jobs per week?", q3o: ["Under 5", "5–10", "10–20", "Over 20"],
     q4: "How much do you spend on marketing monthly?", q4o: ["Nothing yet", "Under $500", "$500–$2,000", "Over $2,000"],
     q5: "Last step — where do we call you?", back: "← Back",
-    fName: "Your name", fBiz: "Your brokerage", fPhone: "Your phone (mobile)", fBtn: "SCHEDULE MY CALL →", fOk: "✓ Done! The team will contact you today to set a time.",
-    foot: `Quick Comp · Made in Texas 🤠`,
+    fName: "Your name", fBiz: "Your cleaning business", fPhone: "Your phone (mobile)", fBtn: "SCHEDULE MY CALL →", fOk: "✓ Done! The team will contact you today to set a time.",
+    foot: `Maid Flow · Made in Texas 🤠`,
   } : {
     lang: "es", langBtn: "🇺🇸 English", langHref: "/?lang=en",
-    title: "Quick Comp — Tu página web te consigue vendedores sola",
-    desc: "Página web + valuador de casas instantáneo + app. Los dueños dejan su teléfono para ver el valor de su casa y tú los recibes como leads de venta. Para agentes de bienes raíces.",
-    ogTitle: "Quick Comp — Tu página web te consigue vendedores sola",
-    ogDesc: "El dueño pone su dirección, ve el valor de su casa con ventas reales, y su teléfono te llega a tu celular. Pruébalo en vivo.",
-    h1: "DEJA QUE TU PÁGINA<br>TE CONSIGA VENDEDORES Y<br>VALÚE CASAS <em>24/7</em>",
-    sub: "El dueño escribe su dirección, deja su teléfono y ve el valor de su casa con <b>ventas reales cercanas</b> — y ese vendedor te llega directo a tu celular. Aunque estés enseñando una casa o dormido.",
+    title: "Maid Flow — Tu página web te consigue trabajos de limpieza sola",
+    desc: "Página web + cotizador de limpieza instantáneo + app. Los dueños dejan su teléfono para ver su precio y tú los recibes como clientes. Para limpiadoras de casas.",
+    ogTitle: "Maid Flow — Tu página web te consigue trabajos de limpieza sola",
+    ogDesc: "El dueño pone su dirección, ve un precio de limpieza al instante, y su teléfono te llega a tu celular. Pruébalo en vivo.",
+    h1: "DEJA QUE TU PÁGINA<br>TE CONSIGA CLIENTES Y<br>COTICE LIMPIEZAS <em>24/7</em>",
+    sub: "El dueño escribe su dirección, deja su teléfono y ve un <b>precio de limpieza al instante</b> — y ese cliente te llega directo a tu celular. Aunque estés limpiando o dormida.",
     cta1: "VER DEMO EN VIVO ↓", cta2: "Ver precio",
-    chips: ["🇺🇸 En español", "🏡 Hecho para agentes", "📲 Sin App Store"],
+    chips: ["🇺🇸 En español", "🧹 Hecho para limpiadoras", "📲 Sin App Store"],
     tryT: "PRUÉBALO <em>AHORA MISMO</em>",
-    trySub: `Esto es lo que verán los dueños en TU página web — con tu logo y <b style="color:#101B30">tu marca</b>. Escriben una dirección de verdad y miran cómo valúa la casa con ventas comparables recientes. El valor sale en <b style="color:#101B30">rango</b>, y para verlo dejan su nombre y teléfono — ese es tu lead de venta.`,
-    fullQ: "¿Y la página completa?", fullSub: "Mira una página de ejemplo de un agente, funcionando de verdad — imagina tu logo, tus colores y tu nombre.",
+    trySub: `Esto es lo que verán los dueños en TU página web — con tu logo y <b style="color:#101B30">tu marca</b>. Escriben una dirección de verdad y miran cómo cotiza la limpieza según el tamaño de la casa. El precio sale en <b style="color:#101B30">rango</b>, y para verlo dejan su nombre y teléfono — ese es tu cliente.`,
+    fullQ: "¿Y la página completa?", fullSub: "Mira una página de ejemplo de una limpiadora, funcionando de verdad — imagina tu logo, tus colores y tu nombre.",
     fullBtn: "PRESIONA PARA VER TU PÁGINA →",
     howT: "¿CÓMO <em>FUNCIONA</em>?",
-    s1t: "El dueño entra a tu página", s1x: "De un anuncio, de Google, o porque alguien le pasó tu link. Tu página trabaja aunque tú estés enseñando una propiedad.",
-    s2t: "Deja su teléfono para ver el valor", s2x: `<b style="color:#D99E00">Sin nombre y teléfono, no hay valor.</b> El motor saca ventas comparables recientes y calcula un rango de valor para su casa — al instante, con tu marca.`,
-    s3t: "El lead de venta te llega a tu teléfono", s3x: "Nombre, dirección, teléfono y el valor que vio — al instante, en tu app. Un botón y ya le estás escribiendo por WhatsApp con el mensaje listo.",
-    leadsT: "LOS VENDEDORES LLEGAN<br><em>A TU TELÉFONO</em>",
-    leads: ["<b>📥</b> Cada lead de venta suena en tu bolsillo al instante", "<b>💰</b> Valores con ventas reales — creíbles, no un estimado al azar", "<b>💬</b> Mensaje de WhatsApp ya escrito — un tap y contestas", "<b>🛰️</b> Valores de casas al instante en 60 segundos", "<b>🧾</b> Reportes CMA profesionales con tu logo"],
+    s1t: "El dueño entra a tu página", s1x: "De un anuncio, de Google, o porque alguien le pasó tu link. Tu página trabaja aunque tú estés en un trabajo.",
+    s2t: "Deja su teléfono para ver el precio", s2x: `<b style="color:#D99E00">Sin nombre y teléfono, no hay precio.</b> El motor mide la casa y calcula un rango de precio de limpieza — al instante, con tu marca.`,
+    s3t: "El cliente te llega a tu teléfono", s3x: "Nombre, dirección, teléfono y el precio que vio — al instante, en tu app. Un botón y ya le estás escribiendo por WhatsApp con el mensaje listo.",
+    leadsT: "LOS CLIENTES LLEGAN<br><em>A TU TELÉFONO</em>",
+    leads: ["<b>📥</b> Cada cliente suena en tu bolsillo al instante", "<b>💰</b> Precios con tus propias tarifas — consistentes, no al azar", "<b>💬</b> Mensaje de WhatsApp ya escrito — un tap y contestas", "<b>⚡</b> Cotizaciones de limpieza al instante en 60 segundos", "<b>🧾</b> Cotizaciones profesionales con tu logo"],
     pNew: "1 NUEVO", pNew2: "NUEVO",
     appT: "Y EN TU TELÉFONO, <em>LA APP</em>",
-    appSub: `Estás en un open house y el vecino te pregunta "¿cuánto vale la mía?" — pones su dirección (o usas tu GPS), sacas las comparables, y le mandas un CMA profesional ahí mismo.`,
-    cap1: "Valuado con comparables<br>en 60 segundos", cap2: "¿Quieres estar seguro?<br>Escoge tú mismo las comparables", cap3: "CMA profesional con tu<br>marca, listo para mandar",
+    appSub: `El vecino te pregunta "¿cuánto por limpiar la mía?" — pones su dirección (o usas tu GPS), contestas unas preguntas, y le mandas una cotización profesional ahí mismo.`,
+    cap1: "Cotizado por el tamaño<br>de la casa en 60 segundos", cap2: "Pon tus propias tarifas<br>y mínimos", cap3: "Cotización profesional con tu<br>marca, lista para mandar",
     priceT: "UN SOLO <em>PRECIO</em>", priceSub: "Sin letras chiquitas. Sin contratos largos. Cancelas cuando quieras y tu dominio es tuyo.",
-    mo: "/mes", setup: "+ $297 para empezar (una sola vez)", buyNow: "Comenzar ahora →", orBook: "o agenda una llamada primero",
-    inc: ["Tu página web profesional con tu marca", "Valuador de casas instantáneo en tu página", "La app Quick Comp: valores, CMAs, leads", "Leads de venta directo a tu WhatsApp", "Tu dominio (tunombre.com) es tuyo — por contrato", "Soporte en español"],
-    talkT: "¿LISTO? <em>HABLEMOS</em>", talkSub: "Contesta 4 preguntas rápidas y agenda una llamada con el equipo. Sin compromiso — resolvemos todas tus dudas y tú decides.",
-    q1: "¿En qué te enfocas?", q1o: ["Residencial", "Lujo", "Ambos", "Otro"],
-    q2: "¿Cuánto llevas con licencia?", q2o: ["Empezando", "1–3 años", "3–10 años", "10+ años"],
-    q3: "¿Cuántos cierres al año (aprox.)?", q3o: ["Menos de 6", "6–15", "15–30", "Más de 30"],
+    mo: "/mes", setup: "+ $97 para empezar (una sola vez)", buyNow: "Comenzar ahora →", orBook: "o agenda una llamada primero",
+    inc: ["Tu página web profesional con tu marca", "Cotizador de limpieza instantáneo en tu página", "La app Maid Flow: cotizaciones, tarifas, clientes", "Clientes directo a tu WhatsApp", "Tu dominio (tunombre.com) es tuyo — por contrato", "Soporte en español"],
+    talkT: "¿LISTA? <em>HABLEMOS</em>", talkSub: "Contesta 4 preguntas rápidas y agenda una llamada con el equipo. Sin compromiso — resolvemos todas tus dudas y tú decides.",
+    q1: "¿En qué te enfocas?", q1o: ["Casas", "Airbnb / rentas", "Oficinas", "Otro"],
+    q2: "¿Cuánto llevas limpiando?", q2o: ["Empezando", "1–3 años", "3–10 años", "10+ años"],
+    q3: "¿Cuántos trabajos por semana (aprox.)?", q3o: ["Menos de 5", "5–10", "10–20", "Más de 20"],
     q4: "¿Cuánto inviertes en marketing al mes?", q4o: ["Nada todavía", "Menos de $500", "$500–$2,000", "Más de $2,000"],
     q5: "Último paso — ¿a dónde te llamamos?", back: "← Atrás",
-    fName: "Tu nombre", fBiz: "Tu inmobiliaria / brokerage", fPhone: "Tu teléfono (celular)", fBtn: "AGENDAR MI LLAMADA →", fOk: "✓ ¡Listo! El equipo te contacta hoy mismo para apartar tu hora.",
-    foot: `Quick Comp · Hecho en Texas 🤠`,
+    fName: "Tu nombre", fBiz: "Tu negocio de limpieza", fPhone: "Tu teléfono (celular)", fBtn: "AGENDAR MI LLAMADA →", fOk: "✓ ¡Listo! El equipo te contacta hoy mismo para apartar tu hora.",
+    foot: `Maid Flow · Hecho en Texas 🤠`,
   };
   return `<!doctype html><html lang="${L.lang}"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -2500,7 +2500,7 @@ footer a{color:#8A94A8}
 </style></head><body>
 <a class="langpill" href="${langHref}">${L.langBtn}</a>
 <div class="wrap">
-<nav><span class="lg"><img src="/brand-logo.png" alt="Quick Comp"></span></nav>
+<nav><span class="lg" style="font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:40px;letter-spacing:.5px;color:#101B30">Maid<span style="color:#F8B408">Flow</span></span></nav>
 <div class="hero">
   <h1>${L.h1}</h1>
   <p>${L.sub}</p>
@@ -2534,7 +2534,7 @@ footer a{color:#8A94A8}
     <div class="phone"><div class="notch"></div>
       <div class="papp">
         <div class="phead">📥 Leads <span class="pbadge">${L.pNew}</span></div>
-        <div class="plead"><b>Carlos Pérez</b> <span class="pnew">${L.pNew2}</span><br>📍 502 Britton Ave<br>(956) 555-0188 · <span class="gold">$385,000–$412,000</span>
+        <div class="plead"><b>Carlos Pérez</b> <span class="pnew">${L.pNew2}</span><br>📍 502 Britton Ave<br>(956) 555-0188 · <span class="gold">$240–$300</span>
           <div class="pwa">💬 WhatsApp</div>
         </div>
       </div>
@@ -2550,9 +2550,9 @@ footer a{color:#8A94A8}
   <h2 class="sec-t">${L.appT}</h2>
   <p class="sec-sub">${L.appSub}</p>
   <div class="shots">
-    <div class="shot"><img src="/landing/app-measure.png" alt="" loading="lazy"><p>${L.cap1}</p></div>
-    <div class="shot"><img src="/landing/app-trace.png" alt="" loading="lazy"><p>${L.cap2}</p></div>
-    <div class="shot"><img src="/landing/app-quote.png" alt="" loading="lazy"><p>${L.cap3}</p></div>
+    <div class="shot"><div style="width:240px;height:380px;border-radius:26px;border:1px solid #E6EBF3;display:flex;align-items:center;justify-content:center;font-size:84px;background:linear-gradient(160deg,#F4F7FB,#E9EEF6)">📍</div><p>${L.cap1}</p></div>
+    <div class="shot"><div style="width:240px;height:380px;border-radius:26px;border:1px solid #E6EBF3;display:flex;align-items:center;justify-content:center;font-size:84px;background:linear-gradient(160deg,#F4F7FB,#E9EEF6)">💲</div><p>${L.cap2}</p></div>
+    <div class="shot"><div style="width:240px;height:380px;border-radius:26px;border:1px solid #E6EBF3;display:flex;align-items:center;justify-content:center;font-size:84px;background:linear-gradient(160deg,#F4F7FB,#E9EEF6)">🧾</div><p>${L.cap3}</p></div>
   </div>
 </section></div>
 
@@ -2560,7 +2560,7 @@ footer a{color:#8A94A8}
   <h2 class="sec-t">${L.priceT}</h2>
   <p class="sec-sub">${L.priceSub}</p>
   <div class="price-card">
-    <div class="amt">$297<small>${L.mo}</small></div>
+    <div class="amt">$97<small>${L.mo}</small></div>
     <div class="setup">${L.setup}</div>
     <ul>${L.inc.map((x) => `<li>${x}</li>`).join("")}</ul>
     ${stripeLink
@@ -2647,7 +2647,7 @@ app.get("/ejemplo", (req, res) => {
   const embed = req.query.embed != null;
   res.send(`<!doctype html><html lang="es"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Casa Bella Realty — Ejemplo Quick Comp</title>
+<title>Brillo Cleaning — Ejemplo Maid Flow</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&display=swap');
 *{box-sizing:border-box;font-family:Inter,Arial,sans-serif;margin:0;-webkit-tap-highlight-color:transparent}
@@ -2734,39 +2734,39 @@ footer a{color:#9AA0AC}
 .fade.on{opacity:1;transform:none}
 @media (prefers-reduced-motion: reduce){.fade{opacity:1;transform:none;transition:none}}
 </style></head><body>
-${embed ? "" : `<div class="ribbon">📋 PÁGINA DE EJEMPLO — imagina TU logo y TU nombre aquí. Así se vería tu página con Quick Comp.</div>`}
+${embed ? "" : `<div class="ribbon">📋 PÁGINA DE EJEMPLO — imagina TU logo y TU nombre aquí. Así se vería tu página con Maid Flow.</div>`}
 <header><div class="wrap hrow">
   <span class="logo-ph">TU LOGO</span>
   <span class="hcall"><small>Lun–Sáb · 7am–7pm</small><a class="callbtn" href="tel:+19565550100">📞 (956) 555-0100</a></span>
 </div></header>
 
 <div class="hero">
-  <img class="bgimg" src="/api/roofimg?lat=26.3828&lng=-98.8198&zoom=18" alt="">
+  <div class="bgimg" style="background:linear-gradient(160deg,#2A0E12,#5A0814)"></div>
   <div class="veil"></div>
   <div class="wrap in">
-    <span class="kick">BIENES RAÍCES · TU CIUDAD, TX</span>
-    <h1>Vende tu casa por<br>lo que <em>de verdad vale</em></h1>
-    <p>Descubre el valor de tu casa al instante, con ventas reales cercanas — gratis y sin que nadie te visite.</p>
-    <a class="cta" href="#cotiza">VALÚA TU CASA EN 60 SEGUNDOS</a><a class="cta ghost" href="tel:+19565550100">Llámanos</a>
+    <span class="kick">LIMPIEZA DE CASAS · TU CIUDAD, TX</span>
+    <h1>Tu casa, <em>impecable</em><br>sin mover un dedo</h1>
+    <p>Recibe el precio de tu limpieza al instante, según el tamaño de tu casa — gratis y sin que nadie te visite.</p>
+    <a class="cta" href="#cotiza">COTIZA TU LIMPIEZA EN 60 SEGUNDOS</a><a class="cta ghost" href="tel:+19565550100">Llámanos</a>
   </div>
   <div class="wrap stats">
-    <div class="stat"><b>15+</b><span>años</span></div>
-    <div class="stat"><b>300+</b><span>casas vendidas</span></div>
-    <div class="stat"><b>100%</b><span>dedicación</span></div>
+    <div class="stat"><b>10+</b><span>años</span></div>
+    <div class="stat"><b>2,000+</b><span>casas limpiadas</span></div>
+    <div class="stat"><b>100%</b><span>satisfacción</span></div>
   </div>
 </div>
 
 <div class="wrap"><section id="cotiza">
-  <p class="eyebrow">Valuación instantánea</p>
-  <h2 class="t">El valor de tu casa, <em>sin esperar</em></h2>
+  <p class="eyebrow">Cotización instantánea</p>
+  <h2 class="t">El precio de tu limpieza, <em>sin esperar</em></h2>
   <div class="qwrap fade">
     <div class="qgrid">
       <div class="qcopy">
-        <h3>Escribe tu dirección.<br>Las ventas reales hacen el resto.</h3>
-        <p>Nuestro sistema analiza ventas comparables recientes y te da el valor estimado al instante — gratis y sin compromiso.</p>
-        <ul><li>Valor real de TU casa</li><li>Estimado en menos de un minuto</li><li>Análisis completo (CMA) gratis</li></ul>
+        <h3>Escribe tu dirección.<br>El tamaño de la casa hace el resto.</h3>
+        <p>Nuestro sistema mide tu casa y te da el precio estimado al instante — gratis y sin compromiso.</p>
+        <ul><li>Precio real para TU casa</li><li>Estimado en menos de un minuto</li><li>Cotización por WhatsApp gratis</li></ul>
       </div>
-      <div class="qframe"><iframe src="/w/alto-demo" loading="lazy" title="Valuador"></iframe></div>
+      <div class="qframe"><iframe src="/w/alto-demo" loading="lazy" title="Cotizador"></iframe></div>
     </div>
   </div>
 </section></div>
@@ -2775,21 +2775,21 @@ ${embed ? "" : `<div class="ribbon">📋 PÁGINA DE EJEMPLO — imagina TU logo 
   <p class="eyebrow">Servicios</p>
   <h2 class="t">Lo que hacemos <em>bien</em></h2>
   <div style="margin-top:44px">
-    <div class="svc fade"><span class="no">01</span><div><h3>Vende tu casa</h3><p>Te ponemos al precio correcto desde el día uno, con un plan de marketing que atrae compradores reales.</p></div><span class="arr">→</span></div>
-    <div class="svc fade"><span class="no">02</span><div><h3>Compra tu casa</h3><p>Te representamos como comprador — buscamos, negociamos y cuidamos cada detalle hasta las llaves.</p></div><span class="arr">→</span></div>
-    <div class="svc fade"><span class="no">03</span><div><h3>Valuación / CMA gratis</h3><p>Un análisis comparativo de mercado con ventas reales cercanas para saber qué vale tu casa hoy.</p></div><span class="arr">→</span></div>
-    <div class="svc fade"><span class="no">04</span><div><h3>Asesoría de mercado</h3><p>Te decimos la verdad del mercado — cuándo vender, cuándo esperar — aunque no sea hoy.</p></div><span class="arr">→</span></div>
+    <div class="svc fade"><span class="no">01</span><div><h3>Limpieza regular</h3><p>Mantén tu casa impecable cada semana o quincena — cocina, baños, pisos, polvo y todos los detalles.</p></div><span class="arr">→</span></div>
+    <div class="svc fade"><span class="no">02</span><div><h3>Limpieza profunda</h3><p>De arriba a abajo: acumulación, rincones olvidados, zócalos y electrodomésticos por dentro.</p></div><span class="arr">→</span></div>
+    <div class="svc fade"><span class="no">03</span><div><h3>Mudanza (entrada / salida)</h3><p>Deja la casa lista para entregar o para estrenar — vacía y reluciente, lista para las llaves.</p></div><span class="arr">→</span></div>
+    <div class="svc fade"><span class="no">04</span><div><h3>Rotación Airbnb</h3><p>Limpieza rápida y confiable entre huéspedes para que tu propiedad siempre brille en cada reseña.</p></div><span class="arr">→</span></div>
   </div>
 </section></div>
 
 <div class="wrap"><section style="padding-top:10px">
-  <p class="eyebrow">Ventas recientes</p>
-  <h2 class="t">Casas vendidas <em>al mejor precio</em></h2>
-  <p class="sub">Cada venta empieza con un precio correcto, basado en ventas comparables reales — así vendemos rápido y sin dejar dinero en la mesa.</p>
+  <p class="eyebrow">Trabajos recientes</p>
+  <h2 class="t">Casas que dejamos <em>relucientes</em></h2>
+  <p class="sub">Cada limpieza con un precio claro desde el principio, según el tamaño de la casa — sin sorpresas y sin regateos.</p>
   <div class="projgrid">
-    <div class="proj fade"><img loading="lazy" src="/api/roofimg?lat=26.3827418&lng=-98.8196915&zoom=20" alt=""><span class="tag">Vendida en 9 días<small>3 rec · 2 baños · sobre el precio de lista</small></span></div>
-    <div class="proj fade"><img loading="lazy" src="/api/roofimg?lat=26.3795779&lng=-98.8186812&zoom=20" alt=""><span class="tag">Vendida en 14 días<small>4 rec · 3 baños · al precio de lista</small></span></div>
-    <div class="proj fade"><img loading="lazy" src="/api/roofimg?lat=26.3807212&lng=-98.8148616&zoom=20" alt=""><span class="tag">Comprador representado<small>Cerró $12k bajo el precio de lista</small></span></div>
+    <div class="proj fade"><div style="width:100%;height:240px;background:linear-gradient(160deg,#EAF6F1,#CDE7DE);display:flex;align-items:center;justify-content:center;font-size:64px">✨</div><span class="tag">Limpieza profunda<small>3 rec · 2 baños · misma semana</small></span></div>
+    <div class="proj fade"><div style="width:100%;height:240px;background:linear-gradient(160deg,#EAF6F1,#CDE7DE);display:flex;align-items:center;justify-content:center;font-size:64px">🧼</div><span class="tag">Mudanza (salida)<small>4 rec · 3 baños · lista para entregar</small></span></div>
+    <div class="proj fade"><div style="width:100%;height:240px;background:linear-gradient(160deg,#EAF6F1,#CDE7DE);display:flex;align-items:center;justify-content:center;font-size:64px">🏨</div><span class="tag">Rotación Airbnb<small>Lista en 3 horas entre huéspedes</small></span></div>
   </div>
 </section></div>
 
@@ -2797,9 +2797,9 @@ ${embed ? "" : `<div class="ribbon">📋 PÁGINA DE EJEMPLO — imagina TU logo 
   <p class="eyebrow">Nuestro proceso</p>
   <h2 class="t">Simple, <em>de principio a fin</em></h2>
   <div class="steps">
-    <div class="pstep fade"><div class="pn">1</div><h3>Valuación</h3><p>Analizamos ventas comparables reales para saber exactamente qué vale tu casa hoy. Gratis.</p></div>
-    <div class="pstep fade"><div class="pn">2</div><h3>Estrategia de precio</h3><p>Un plan claro de precio y marketing por escrito para vender rápido y al mejor valor.</p></div>
-    <div class="pstep fade"><div class="pn">3</div><h3>Cierre</h3><p>Negociamos por ti y cuidamos cada detalle del papeleo hasta que recibes tu cheque.</p></div>
+    <div class="pstep fade"><div class="pn">1</div><h3>Cotización</h3><p>Pon tu dirección y el tipo de limpieza para saber el precio al instante. Gratis.</p></div>
+    <div class="pstep fade"><div class="pn">2</div><h3>Agendamos</h3><p>Escogemos día y hora por WhatsApp y confirmamos tu cita con un recordatorio.</p></div>
+    <div class="pstep fade"><div class="pn">3</div><h3>Limpiamos</h3><p>Llegamos a tiempo, dejamos tu casa impecable y tú solo disfrutas el resultado.</p></div>
   </div>
 </section></div></div>
 
@@ -2813,16 +2813,16 @@ ${embed ? "" : `<div class="ribbon">📋 PÁGINA DE EJEMPLO — imagina TU logo 
 </section></div>
 
 <div class="ctaband">
-  <img class="bgimg" src="/api/roofimg?lat=26.3828&lng=-98.8198&zoom=17" alt="">
+  <div class="bgimg" style="background:linear-gradient(160deg,#2A0E12,#5A0814)"></div>
   <div class="veil"></div>
   <div class="in">
-    <h2>¿Listo para vender<br><em>al mejor precio?</em></h2>
-    <p>Valúa tu casa en 60 segundos o mándanos un WhatsApp.</p>
-    <a class="a1" href="#cotiza">VALÚA AHORA</a><a class="a2" href="https://wa.me/19565550100">💬 WhatsApp</a>
+    <h2>¿Lista para una<br><em>casa impecable?</em></h2>
+    <p>Cotiza tu limpieza en 60 segundos o mándanos un WhatsApp.</p>
+    <a class="a1" href="#cotiza">COTIZA AHORA</a><a class="a2" href="https://wa.me/19565550100">💬 WhatsApp</a>
   </div>
 </div>
-<footer><b>Casa Bella Realty</b><br>Tu Ciudad, TX · Lic. #00000 · Lun–Sáb 9am–7pm<br>Página de ejemplo hecha con ⚡ Quick Comp — <a href="/ventas">así puede ser la tuya</a></footer>
-${embed ? "" : `<a class="backalto" href="/ventas#precio">← Volver a <span>QUICK COMP</span></a>`}
+<footer><b>Brillo Cleaning</b><br>Tu Ciudad, TX · Lun–Sáb 7am–7pm<br>Página de ejemplo hecha con ⚡ Maid Flow — <a href="/ventas">así puede ser la tuya</a></footer>
+${embed ? "" : `<a class="backalto" href="/ventas#precio">← Volver a <span>MAID FLOW</span></a>`}
 <script>
 var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('on');io.unobserve(e.target)}})},{threshold:.15});
 document.querySelectorAll('.fade').forEach(function(el){io.observe(el)});
@@ -2843,7 +2843,7 @@ function siteDataOf(c) {
     logo: /^data:image\/(png|jpeg);base64,/.test(String(p.logo || "")) ? p.logo : null,
     license: p.license || "",
     template: site.template || "1",
-    color: site.color || "#B30F24",
+    color: site.color || "#0E8C72",
     hero: site.hero || "",
     city: site.city || "",
     years: site.years || null,
@@ -2903,16 +2903,16 @@ li b{margin-left:auto;font-size:12px;font-weight:800}
 </style></head><body><div class="card">
 ${cLogo ? `<img class="logo" src="${cLogo}" alt="${cBiz}">` : `<div class="biz">${cBiz}</div>`}
 <h1>🏗️ Tu página web se está armando</h1>
-<p class="sub">Nuestro equipo está poniendo los últimos detalles a tu página, tu valuador de casas y tu sistema de mensajes.</p>
+<p class="sub">Nuestro equipo está poniendo los últimos detalles a tu página, tu cotizador de limpieza y tu sistema de mensajes.</p>
 <div class="bar"><div class="fill"></div></div>
 <p class="eta">Lista en aproximadamente 10 días</p>
 <ul>
 <li class="done">🎨 Diseño y tu marca <b>✓ Listo</b></li>
-<li class="done">🏡 Valuador de casas <b>✓ Listo</b></li>
+<li class="done">🧹 Cotizador de limpieza <b>✓ Listo</b></li>
 <li class="wip">📞 Registro de tu número <b>En proceso</b></li>
 <li class="wip">🚀 Publicación de tu página <b>En proceso</b></li>
 </ul>
-<p class="ft">⚡ Hecho con Quick Comp</p>
+<p class="ft">⚡ Hecho con Maid Flow</p>
 </div></body></html>`);
   }
   res.send(renderSite(siteDataOf(c)));
@@ -2926,15 +2926,15 @@ app.get("/plantilla/:n", (req, res) => {
   const SIG = { 1: "#B30F24", 2: "#E8540C", 3: "#1B6FB8" };
   res.send(renderSite({
     slug: "alto-demo",
-    biz: "Casa Bella Realty",
+    biz: "Brillo Cleaning",
     phone: "9565550100",
     logo: null,
     template: n,
     color: req.query.color && /^#?[a-f0-9]{6}$/i.test(req.query.color) ? (req.query.color.startsWith("#") ? req.query.color : "#" + req.query.color) : SIG[n],
     city: "Tu Ciudad, TX",
-    years: 15,
-    license: "00000",
-    about: "Empezamos hace 15 años ayudando a familias a vender y comprar su casa en la región. Hoy seguimos con la misma idea: precio honesto, ventas reales y trato de familia — cada cliente como si fuera el único.",
+    years: 10,
+    license: "",
+    about: "Empezamos hace 10 años ayudando a familias a mantener su casa impecable en la región. Hoy seguimos con la misma idea: precio honesto, trabajo de calidad y trato de familia — cada cliente como si fuera el único.",
   }, embed ? {} : { ribbon: `PLANTILLA ${n} — imagina TU logo y TU nombre aquí.`, backAlto: true }));
 });
 
@@ -2946,7 +2946,7 @@ app.get("/plantillas", (req, res) => {
     ["3", "El Limpio", "Suave y de confianza — el vecino honesto.", "#1B6FB8"],
   ];
   res.send(`<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Quick Comp · Elige tu plantilla</title><link rel="icon" href="/icon-192.png"><style>
+<title>Maid Flow · Elige tu plantilla</title><link rel="icon" href="/icon-192.png"><style>
 *{box-sizing:border-box;font-family:Inter,Arial,sans-serif;margin:0}
 body{background:#101B30;color:#fff;padding:34px 20px 60px}
 h1{text-align:center;font-size:clamp(24px,4.5vw,36px);font-weight:800}
@@ -5204,10 +5204,10 @@ async function ensureAccount(slug, name, profile) {
   }
   return c;
 }
-await ensureAccount("alto-demo", "Casa Bella Realty (Demo)", { biz: "Casa Bella Realty (Demo)", lang: "es", trade: "realtor" });
-await ensureAccount("alto-ventas", "Quick Comp Ventas", { biz: "Quick Comp", lang: "es", trade: "realtor" });
+await ensureAccount("alto-demo", "Brillo Cleaning (Demo)", { biz: "Brillo Cleaning (Demo)", lang: "es" });
+await ensureAccount("alto-ventas", "Maid Flow Ventas", { biz: "Maid Flow", lang: "es" });
 
 app.listen(PORT, () => {
-  console.log(`Quick Comp server on http://localhost:${PORT}`);
+  console.log(`Maid Flow server on http://localhost:${PORT}`);
   console.log(`  google: ${GOOGLE_KEY ? "LIVE" : "demo"} · parcels: ${REGRID_KEY ? "LIVE" : "demo"} · property: ${RENTCAST_KEY ? "LIVE" : "demo"} · ai: ${aiLive ? `LIVE (${anthropic ? "anthropic" : "openai"})` : "demo"}`);
 });

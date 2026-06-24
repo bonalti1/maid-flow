@@ -17,3 +17,6 @@ build/
 # ── OS / editor noise ──
 .DS_Store
 *.log
+
+# ── Runtime local DB (json store) ──
+tradetechpro/server/data/
