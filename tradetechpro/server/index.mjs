@@ -2165,9 +2165,9 @@ app.get("/w/:slug", async (req, res) => {
 h1{font-size:20px;margin:12px 0 8px}p{color:#5A6478;font-weight:600;font-size:14.5px;line-height:1.6}
 a{display:inline-block;margin-top:18px;background:#101B30;color:#fff;text-decoration:none;font-weight:800;padding:14px 26px;border-radius:12px}
 </style></head><body><div class="card">
-<span style="font-size:40px">🏡</span>
+<span style="font-size:40px">🧹</span>
 <h1>${pBiz}</h1>
-<p>La estimación de valor en línea no está disponible por el momento.<br>Online home valuations are temporarily unavailable.</p>
+<p>La cotización en línea no está disponible por el momento.<br>Online cleaning quotes are temporarily unavailable.</p>
 ${pPhone ? `<a href="tel:+1${pPhone}">📞 Llámanos / Call us</a>` : ""}
 </div></body></html>`);
   }
@@ -2178,35 +2178,41 @@ ${pPhone ? `<a href="tel:+1${pPhone}">📞 Llámanos / Call us</a>` : ""}
   const logo = /^data:image\/(png|jpeg);base64,[A-Za-z0-9+/=]+$/.test(String(prof.logo || "")) ? prof.logo : null;
   const es = (req.query.lang || prof.lang || "es") !== "en";
   const L = es ? {
-    title: `El valor de tu casa en 60 segundos`,
-    sub: "Basado en ventas reales cercanas · 100% gratis · Sin compromiso",
+    title: `Cotiza tu limpieza en 60 segundos`,
+    sub: "Precio al instante según el tamaño de tu casa · 100% gratis · Sin compromiso",
     addr: "Dirección de tu casa", cont: "CONTINUAR →",
-    who: "¿A dónde mandamos tu estimado?", name: "Tu nombre", phone: "Tu teléfono (celular)",
-    see: "VER EL VALOR →", back: "← Cambiar dirección",
-    m1: "Buscando tu propiedad…", m2: "Analizando ventas comparables…", m3: "Calculando el valor…",
-    range: "VALOR ESTIMADO", rangeSub: "Basado en ventas recientes de casas similares. Estimado preliminar — contáctanos para un análisis completo (CMA).",
-    sent: "✓ Recibimos tus datos", call: (b) => `${b} te contacta hoy mismo.`,
-    nores: "¡Listo! Recibimos tu información.", noresSub: (b) => `${b} te llama hoy con el valor de tu casa.`,
+    ctype: "Tipo de limpieza",
+    who: "¿A dónde mandamos tu cotización?", name: "Tu nombre", phone: "Tu teléfono (celular)",
+    see: "VER EL PRECIO →", back: "← Cambiar dirección",
+    m1: "Buscando la propiedad…", m2: "Midiendo el trabajo…", m3: "Calculando tu cotización…",
+    range: "PRECIO ESTIMADO", recoLbl: "Recomendado", rangeSub: "Estimado preliminar según el tamaño de tu casa. El precio final puede cambiar después de ver fotos o la casa.",
+    sent: "✓ Recibimos tus datos", call: (b) => `${b} te contacta hoy mismo para apartar tu cita.`,
+    nores: "¡Listo! Recibimos tu información.", noresSub: (b) => `${b} te llama hoy con tu cotización de limpieza.`,
     callBtn: "📞 LLAMAR AHORA", phoneErr: "Pon un teléfono de 10 dígitos", addrErr: "Pon la dirección de tu casa",
     err: "Algo falló — intenta otra vez o llámanos.",
   } : {
-    title: "Your home's value in 60 seconds",
-    sub: "Based on real nearby sales · 100% free · No obligation",
+    title: "Quote your cleaning in 60 seconds",
+    sub: "Instant price based on your home size · 100% free · No obligation",
     addr: "Your home address", cont: "CONTINUE →",
-    who: "Where do we send your estimate?", name: "Your name", phone: "Your phone (mobile)",
-    see: "SEE MY VALUE →", back: "← Change address",
-    m1: "Finding your property…", m2: "Analyzing comparable sales…", m3: "Calculating your value…",
-    range: "ESTIMATED VALUE", rangeSub: "Based on recent sales of similar homes. Preliminary estimate — contact us for a full CMA.",
-    sent: "✓ We got your info", call: (b) => `${b} will contact you today.`,
-    nores: "Done! We received your information.", noresSub: (b) => `${b} will call you today with your home's value.`,
+    ctype: "Cleaning type",
+    who: "Where do we send your quote?", name: "Your name", phone: "Your phone (mobile)",
+    see: "SEE MY PRICE →", back: "← Change address",
+    m1: "Finding the property…", m2: "Sizing the job…", m3: "Calculating your quote…",
+    range: "ESTIMATED PRICE", recoLbl: "Recommended", rangeSub: "Preliminary estimate based on your home size. Final price may change after photos or a walkthrough.",
+    sent: "✓ We got your info", call: (b) => `${b} will contact you today to book your appointment.`,
+    nores: "Done! We received your information.", noresSub: (b) => `${b} will call you today with your cleaning quote.`,
     callBtn: "📞 CALL NOW", phoneErr: "Enter a 10-digit phone", addrErr: "Enter your home address",
     err: "Something went wrong — try again or call us.",
   };
+  // Cleaning-type options for the widget's quick selector (Spanish-first labels).
+  const wTypes = es
+    ? [["regular","Limpieza regular"],["deep","Limpieza profunda"],["move_out","Mudanza (salida)"],["move_in","Mudanza (entrada)"],["airbnb","Rotación Airbnb"],["post_construction","Post-construcción"],["office","Oficina"]]
+    : [["regular","Regular cleaning"],["deep","Deep cleaning"],["move_out","Move-out"],["move_in","Move-in"],["airbnb","Airbnb turnover"],["post_construction","Post-construction"],["office","Office"]];
   const wBase = `${req.protocol}://${req.get("host")}`;
   res.send(`<!doctype html><html lang="${es ? "es" : "en"}"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1"><title>${biz}</title>
-<meta property="og:title" content="${biz} — ${es ? "El valor de tu casa en 60 segundos" : "Your home's value in 60 seconds"}">
-<meta property="og:description" content="${es ? "Pon tu dirección y mira el valor estimado de tu casa, basado en ventas reales cercanas. Gratis, sin compromiso." : "Type your address and see your home's estimated value from real nearby sales. Free, no obligation."}">
+<meta property="og:title" content="${biz} — ${es ? "Cotiza tu limpieza en 60 segundos" : "Quote your cleaning in 60 seconds"}">
+<meta property="og:description" content="${es ? "Pon tu dirección y recibe un precio estimado de limpieza al instante, según el tamaño de tu casa. Gratis, sin compromiso." : "Type your address and get an instant cleaning price estimate based on your home size. Free, no obligation."}">
 <meta property="og:image" content="${wBase}/landing/og.png">
 <meta name="twitter:card" content="summary_large_image">
 <style>
@@ -2221,6 +2227,10 @@ h1{font-size:24px;margin:0 0 4px;line-height:1.15}
 .sub{color:#67718A;font-size:13px;font-weight:600;margin:0 0 16px}
 input{width:100%;padding:14px;border:1.5px solid #E6E8EC;border-radius:12px;font-size:16px;font-weight:600;outline:none;margin-bottom:10px}
 input:focus{border-color:#F8B408}
+select{width:100%;padding:14px;border:1.5px solid #E6E8EC;border-radius:12px;font-size:16px;font-weight:600;outline:none;margin-bottom:10px;background:#fff;color:#101B30;-webkit-appearance:none}
+select:focus{border-color:#F8B408}
+.range .reco{color:#fff;font-size:38px;font-weight:800;margin-top:2px}
+.range .rg{color:#C9D2E4;font-size:14px;font-weight:700;margin-top:4px}
 .btn{width:100%;padding:15px;border:none;border-radius:12px;background:#F8B408;color:#fff;font-size:16px;font-weight:800;cursor:pointer}
 .btn:active{transform:scale(.98)}
 .btn[disabled]{opacity:.5}
@@ -2249,6 +2259,8 @@ input:focus{border-color:#F8B408}
     <h1>${L.title}</h1><p class="sub">${L.sub}</p>
     <input id="addr" placeholder="${L.addr}" autocomplete="street-address">
     <div class="sug" id="sug" style="display:none"></div>
+    <label style="display:block;color:#67718A;font-size:12px;font-weight:700;margin:2px 0 6px">${L.ctype}</label>
+    <select id="ctype">${wTypes.map(([v, lbl]) => `<option value="${v}">${lbl}</option>`).join("")}</select>
     <p class="err" id="e1" style="display:none">${L.addrErr}</p>
     <button class="btn" onclick="toStep2()">${L.cont}</button>
   </div>
@@ -2263,15 +2275,15 @@ input:focus{border-color:#F8B408}
   <div id="s3" style="display:none" class="load"><div class="spin"></div><p class="lmsg" id="lmsg">${L.m1}</p></div>
   <div id="s4" style="display:none"></div>
 </div>
-<div class="ft">⚡ Quick Comp</div>
+<div class="ft">⚡ Maid Flow</div>
 </div>
 <script>
 var SLUG=${JSON.stringify(c.slug)},BIZ=${JSON.stringify(prof.biz || c.name)},BPH=${JSON.stringify(bizPhone)};
 var L=${JSON.stringify({ m1: L.m1, m2: L.m2, m3: L.m3, range: L.range, rangeSub: L.rangeSub, sent: L.sent, callTxt: L.call(prof.biz || c.name), nores: L.nores, noresSub: L.noresSub(prof.biz || c.name), callBtn: L.callBtn, err: L.err,
   // contractor-facing note, demo widget only — homeowners on client sites get the free-inspection line instead
   manual: c.slug === "alto-demo" ? (es
-    ? "👆 Este es el imán de leads. En tu app Quick Comp generas el CMA completo con comparables y lo compartes con tu cliente — para captar y cerrar con confianza."
-    : "👆 This is the lead magnet. In your Quick Comp app you build the full CMA with comparables and share it with your client — to capture and close with confidence.") : null })};
+    ? "👆 Este es el imán de clientes. En tu app Maid Flow armas la cotización completa con tus precios y la mandas por WhatsApp — para captar y cerrar con confianza."
+    : "👆 This is the lead magnet. In your Maid Flow app you build the full quote with your prices and send it on WhatsApp — to capture and close with confidence.") : null })};
 function track(ev){try{fetch('/api/track',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({event:ev})})}catch(e){}}
 track('w_view');
 var placeId=null,tmr=null;
@@ -2297,15 +2309,16 @@ function submit(){
   var mt=setInterval(function(){mi=(mi+1)%msgs.length;lm.textContent=msgs[mi]},1600);
   var wait=new Promise(function(r){setTimeout(r,2800)});
   var req=fetch('/api/widget/quote',{method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({slug:SLUG,name:document.getElementById('nm').value.trim(),phone:ph,address:addr.value.trim(),placeId:placeId})
+    body:JSON.stringify({slug:SLUG,name:document.getElementById('nm').value.trim(),phone:ph,address:addr.value.trim(),placeId:placeId,cleaningType:(document.getElementById('ctype')||{}).value||'regular'})
   }).then(function(r){return r.ok?r.json():null}).catch(function(){return null});
   Promise.all([req,wait]).then(function(a){clearInterval(mt);render(a[0])})}
 function fmt(n){return '$'+Number(n).toLocaleString('en-US',{maximumFractionDigits:0})}
 function render(j){track('w_result');var s4=document.getElementById('s4'),h='';
   if(!j){s4.innerHTML='<p class="err">'+L.err+'</p>';show('s4');return}
-  if(j.measured){
-    if(j.img)h+='<img class="photo" src="'+j.img+'" alt="">';
-    h+='<div class="range"><div class="lbl">'+L.range+'</div><div class="val">'+fmt(j.low)+' – '+fmt(j.high)+'</div></div>';
+  if(j.quoted){
+    h+='<div class="range"><div class="lbl">'+L.range+'</div>';
+    if(j.recommended)h+='<div class="reco">'+fmt(j.recommended)+'</div>';
+    h+='<div class="rg">'+fmt(j.low)+' – '+fmt(j.high)+'</div></div>';
     h+='<p class="note">'+L.rangeSub+'</p>';
     h+='<div class="ok">'+L.sent+' — '+L.callTxt+'</div>';
   }else{
