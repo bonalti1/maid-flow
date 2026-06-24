@@ -1343,7 +1343,7 @@ app.get("/admin", async (req, res) => {
   const ago = (x) => { if (!x) return "—"; const h = (Date.now() - new Date(x).getTime()) / 36e5; return h < 1 ? "hace minutos" : h < 24 ? `hace ${Math.round(h)}h` : `hace ${Math.round(h / 24)}d`; };
   const esc = (x) => String(x || "").replace(/[&<>"]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch]));
   res.send(`<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Quick Comp · Admin</title><link rel="icon" href="/icon-192.png">
+<title>Maid Flow · Admin</title><link rel="icon" href="/icon-192.png">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 *{box-sizing:border-box;margin:0;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display",Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
@@ -1419,13 +1419,13 @@ td .pill{margin:2px 3px 2px 0}
 .lbtns{display:flex;gap:6px;flex-shrink:0}
 @media(max-width:620px){.lprev{display:none}}
 </style></head><body>
-<header><img src="/brand-logo.png" alt=""><b>QUICK <em>COMP</em> · Admin</b><span class="tag"><a href="/admin/economics" style="color:#F8B408">🧮 Calculadora</a> · <a href="/cs" style="color:#9DA8C4">🎧 Servicio</a> · <a href="/admin?logout" style="color:#9DA8C4">salir</a></span></header>
+<header><b style="color:#fff;font-weight:900">Maid<span style="color:#F8B408">Flow</span></b><b>· Admin</b><span class="tag"><a href="/admin/economics" style="color:#F8B408">🧮 Calculadora</a> · <a href="/cs" style="color:#9DA8C4">🎧 Servicio</a> · <a href="/admin?logout" style="color:#9DA8C4">salir</a></span></header>
 <div class="wrap">
 
 <div class="cards">
   <div class="card gold"><div class="v">$${mrr.toLocaleString("en-US")}</div><div class="l" style="color:#9DA8C4">MRR · clientes pagando</div></div>
   <div class="card"><div class="v">${paying}</div><div class="l">Pagando</div>${(pendingPay || failedPay) ? `<div style="font-size:11px;font-weight:700;color:#8A94A8;margin-top:4px">${pendingPay ? `${pendingPay} pendiente` : ""}${pendingPay && failedPay ? " · " : ""}${failedPay ? `<span style="color:#C5221F">${failedPay} falló</span>` : ""}</div>` : ""}</div>
-  <div class="card"><div class="v">${realClients.length}</div><div class="l">Agentes total</div></div>
+  <div class="card"><div class="v">${realClients.length}</div><div class="l">Limpiadoras total</div></div>
   <div class="card"><div class="v">${leads7}</div><div class="l">Leads · 7 días</div></div>
   <div class="card"><div class="v">${tot("visit")}</div><div class="l">Visitas · 7 días</div></div>
   <div class="card"><div class="v">${tot("quiz_done")}</div><div class="l">Llamadas pedidas</div></div>
@@ -1457,7 +1457,7 @@ td .pill{margin:2px 3px 2px 0}
     <tr><th>Visitas</th><th>Widget visto</th><th>Cotizó</th><th>Quiz inició</th><th>Agendó</th></tr>
     <tr><td>${tot("visit")}</td><td>${tot("w_view")}</td><td>${tot("w_result")}</td><td>${tot("quiz_work")}</td><td>${tot("quiz_done")}</td></tr>
   </table></div>
-  <p class="legend">Visitas = página de ventas · Widget visto = abrieron el valuador · Valuó = vieron el valor · Quiz inició = 1ª pregunta · Agendó = dejaron datos.</p>
+  <p class="legend">Visitas = página de ventas · Widget visto = abrieron el cotizador · Cotizó = vieron el precio · Quiz inició = 1ª pregunta · Agendó = dejaron datos.</p>
 </div>
 </div>
 
@@ -1466,7 +1466,7 @@ td .pill{margin:2px 3px 2px 0}
   ${[
     ["PÚBLICO · VENTAS", [
       ["🌐 Página de ventas", `${base}/ventas`],
-      ["🏡 Demo del valuador (mándalo a prospectos)", `${base}/w/alto-demo`],
+      ["🧼 Demo del cotizador (mándalo a prospectos)", `${base}/w/alto-demo`],
       ["🏠 Página de ejemplo", `${base}/ejemplo`],
       ["🎨 Las 3 plantillas", `${base}/plantillas`],
     ]],
@@ -1510,9 +1510,9 @@ td .pill{margin:2px 3px 2px 0}
 </div>
 
 <div class="panel">
-  <h2>➕ Nuevo agente</h2>
+  <h2>➕ Nueva limpiadora</h2>
   <form class="newform" method="post" action="/api/admin/contractors?html=1&key=${KEY}">
-    <input name="name" placeholder="Nombre del agente o inmobiliaria" required>
+    <input name="name" placeholder="Nombre de la limpiadora o negocio de limpieza" required>
     <input name="phone" placeholder="Teléfono">
     <button>Crear cuenta</button>
   </form>
@@ -1520,10 +1520,10 @@ td .pill{margin:2px 3px 2px 0}
 </div>
 
 <div class="panel">
-  <h2>👥 Agentes</h2>
-  <input id="csearch" placeholder="🔍 Buscar agente por nombre…" onkeyup="filterClients()" style="width:100%;padding:14px 16px;border:1px solid #E4E7EC;border-radius:14px;font-size:14.5px;font-weight:500;font-family:inherit;outline:none;margin-bottom:14px;transition:border-color .15s,box-shadow .15s" onfocus="this.style.borderColor='#F8B408';this.style.boxShadow='0 0 0 4px rgba(248,180,8,.18)'" onblur="this.style.borderColor='#E4E7EC';this.style.boxShadow='none'">
+  <h2>👥 Limpiadoras</h2>
+  <input id="csearch" placeholder="🔍 Buscar limpiadora por nombre…" onkeyup="filterClients()" style="width:100%;padding:14px 16px;border:1px solid #E4E7EC;border-radius:14px;font-size:14.5px;font-weight:500;font-family:inherit;outline:none;margin-bottom:14px;transition:border-color .15s,box-shadow .15s" onfocus="this.style.borderColor='#F8B408';this.style.boxShadow='0 0 0 4px rgba(248,180,8,.18)'" onblur="this.style.borderColor='#E4E7EC';this.style.boxShadow='none'">
   <div class="scroll"><table>
-  <tr><th>Agente / Inmobiliaria</th><th>Estado</th><th>Leads 7d</th><th>Total</th><th>Último lead</th><th>Widget</th><th>Acceso</th><th>IA / GHL</th><th>Creado</th></tr>
+  <tr><th>Limpiadora / Negocio</th><th>Estado</th><th>Leads 7d</th><th>Total</th><th>Último lead</th><th>Widget</th><th>Acceso</th><th>IA / GHL</th><th>Creado</th></tr>
   ${list.map((c) => {
     const st = statOf(c.id);
     const hook = !!(c.data && c.data.webhook);
@@ -1598,7 +1598,7 @@ app.post("/api/admin/ceo", async (req, res) => {
   if (!adminOk(req)) return res.status(403).json({ error: "no auth" });
   const en = req.body?.lang === "en";
   const m = req.body?.metrics || {};
-  const system = `You are a sharp, no-nonsense fractional CEO / growth advisor for Quick Comp, a Spanish-first SaaS sold to Hispanic real-estate agents at about $297-349/month (website + home-value widget + app + AI secretary + leads). Given the numbers, write a concise, PRIORITIZED action plan in ${en ? "English" : "Spanish"}, max 160 words, plain text (no markdown headers). Be direct and specific: if close rate is low, say to fix/coach/replace closers BEFORE scaling ads; if unit economics are strong (LTV:CAC >= 3, payback < 3mo), say to scale ad spend and by roughly how much; flag churn and failed payments as fires to put out first. End with the single most important next action. No fluff.`;
+  const system = `You are a sharp, no-nonsense fractional CEO / growth advisor for Maid Flow, a Spanish-first SaaS sold to Hispanic house cleaners at about $97-149/month (website + cleaning-quote widget + app + AI secretary + leads). Given the numbers, write a concise, PRIORITIZED action plan in ${en ? "English" : "Spanish"}, max 160 words, plain text (no markdown headers). Be direct and specific: if close rate is low, say to fix/coach/replace closers BEFORE scaling ads; if unit economics are strong (LTV:CAC >= 3, payback < 3mo), say to scale ad spend and by roughly how much; flag churn and failed payments as fires to put out first. End with the single most important next action. No fluff.`;
   const user = `Numbers: ${JSON.stringify(m)}`;
   try {
     const text = await aiChat({ system, messages: [{ role: "user", content: user }], maxTokens: 380 });
@@ -1629,7 +1629,7 @@ app.get("/admin/economics", async (req, res) => {
     clients: clients.length, paying: payCount("ok"), pending: payCount("pending"), failed: payCount("failed"), canceled: payCount("canceled"),
   };
   res.send(`<!doctype html><html lang="${en ? "en" : "es"}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Quick Comp · ${tr("Centro de mando", "Command center")}</title><link rel="icon" href="/icon-192.png"><style>
+<title>Maid Flow · ${tr("Centro de mando", "Command center")}</title><link rel="icon" href="/icon-192.png"><style>
 *{box-sizing:border-box;margin:0;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
 body{background:#F5F6F8;color:#0B1220;letter-spacing:-0.011em}
 ::selection{background:rgba(248,180,8,.35)}
@@ -1680,7 +1680,7 @@ h1{font-size:25px;font-weight:700;letter-spacing:-0.03em}
 .vnote b{color:#7a5600}
 </style></head><body>
 <div class="appheader">
-  <img src="/brand-logo.png" alt=""><b>QUICK <em>COMP</em> · ${tr("Centro de mando", "Command center")}</b>
+  <b>Maid<em>Flow</em> · ${tr("Centro de mando", "Command center")}</b>
   <div class="right"><a href="/admin">← Admin</a><a href="/admin/economics?lang=${en ? "es" : "en"}">${en ? "🇲🇽 Español" : "🇺🇸 English"}</a><a class="dark" href="/admin?logout">${tr("salir", "log out")}</a></div>
 </div>
 <div class="wrap">
@@ -1739,7 +1739,7 @@ var LIVE=${JSON.stringify(live)};
 function mm(es,eng){return EN?eng:es;}
 function money(n){return "$"+Math.round(n).toLocaleString("en-US");}
 // inputs
-var F=[["spend",1000],["price",297],["serve",25],["comm",100],["lead",8],["book",20],["close",${live.realClose != null ? live.realClose : 33}],["life",12]];
+var F=[["spend",1000],["price",97],["serve",25],["comm",100],["lead",8],["book",20],["close",${live.realClose != null ? live.realClose : 33}],["life",12]];
 var S={};try{S=JSON.parse(localStorage.getItem("alto_cockpit")||"{}")||{}}catch(e){S={}}
 F.forEach(function(f){if(S[f[0]]==null)S[f[0]]=f[1];});
 // fixed costs
@@ -1830,7 +1830,7 @@ app.get("/admin/c/:slug", async (req, res) => {
   const payColor = pay === "ok" ? "#1E7B3C" : pay === "failed" ? "#C5221F" : pay === "pending" ? "#9A6E00" : "#8A94A8";
   const payLabel = { ok: "✓ pagando", failed: "💳 pago falló", pending: "⏳ pendiente de pago", canceled: "canceló" }[pay] || "sin estado";
   res.send(`<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${esc(c.name)} · Quick Comp Admin</title><link rel="icon" href="/icon-192.png"><style>
+<title>${esc(c.name)} · Maid Flow Admin</title><link rel="icon" href="/icon-192.png"><style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 *{box-sizing:border-box;margin:0;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display",Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
 body{background:#F5F6F8;color:#0B1220;letter-spacing:-0.011em}
@@ -1861,7 +1861,7 @@ th{text-align:left;color:#9097A3;font-size:10.5px;letter-spacing:.7px;text-trans
 td{padding:13px 10px;border-bottom:1px solid #F2F4F7;font-weight:600;color:#1B2433}
 .sw{width:18px;height:18px;border-radius:6px;display:inline-block;vertical-align:middle;border:1px solid rgba(0,0,0,.1)}
 </style></head><body>
-<header><img src="/brand-logo.png" alt=""><a href="/admin">← Tablero</a></header>
+<header><b style="color:#fff;font-weight:900">Maid<span style="color:#F8B408">Flow</span></b><a href="/admin">← Tablero</a></header>
 <div class="wrap">
 <h1>${esc(c.name)}</h1><div class="slug">/${c.slug}</div>
 <div class="badges">
@@ -1873,7 +1873,7 @@ td{padding:13px 10px;border-bottom:1px solid #F2F4F7;font-weight:600;color:#1B24
 <div class="panel"><h2>Acciones</h2><div class="acts">
   ${isPaused
     ? `<button class="b-gold" onclick="act('/api/admin/status?key=${KEY}&id=${c.id}&status=active','¿Reactivar?')">▶ Reactivar</button>`
-    : `<button class="b-red" onclick="act('/api/admin/status?key=${KEY}&id=${c.id}&status=paused','¿Pausar? Su sitio y valuador dejan de recibir leads.')">⏸ Pausar</button>`}
+    : `<button class="b-red" onclick="act('/api/admin/status?key=${KEY}&id=${c.id}&status=paused','¿Pausar? Su sitio y cotizador dejan de recibir leads.')">⏸ Pausar</button>`}
   <button class="b-dark" onclick="pub(${st.published ? "false" : "true"})">${st.published ? "Ocultar página" : "🚀 Publicar página"}</button>
   <a class="b-line" href="/onboarding?key=${KEY}&slug=${c.slug}">🎨 Onboarding</a>
   <a class="b-line" href="/api/admin/invite?key=${KEY}&id=${c.id}">🔑 Link de acceso</a>
@@ -1926,15 +1926,15 @@ app.get("/invite/:token", async (req, res) => {
   const who = await db.getSessionContractor(session).catch(() => null);
   if (who?.data?.payStatus === "pending") {
     return res.send(`<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Quick Comp</title><style>
+<title>Maid Flow</title><style>
 *{box-sizing:border-box;font-family:Inter,Arial,sans-serif;margin:0}
 body{background:#15244C;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
 .card{background:#fff;border-radius:22px;padding:36px 28px;max-width:400px;text-align:center;box-shadow:0 30px 80px rgba(0,0,0,.45)}
-img{height:54px;margin-bottom:12px}h1{font-size:19px;color:#15244C;margin-bottom:8px}
+.wordmark{font-size:26px;font-weight:900;color:#15244C;margin-bottom:12px}h1{font-size:19px;color:#15244C;margin-bottom:8px}
 p{color:#5A6478;font-size:14px;font-weight:600;line-height:1.6}
 a{display:inline-block;margin-top:18px;background:#C9973A;color:#fff;text-decoration:none;font-weight:800;padding:13px 24px;border-radius:12px}
 </style></head><body><div class="card">
-<img src="/brand-logo.png" alt="Quick Comp">
+<div class="wordmark">Maid<span style="color:#F8B408">Flow</span></div>
 <h1>⏳ Tu cuenta se está activando</h1>
 <p>Se activa sola en cuanto se confirme tu pago — normalmente toma <b>1 minuto</b>.<br><br>Guarda este link (es tu llave 🔑) y vuelve a tocarlo en un momento.</p>
 <a href="">Intentar de nuevo</a>
@@ -3057,7 +3057,7 @@ app.get("/cs", async (req, res) => {
     if (dev >= 4) attention.push({ slug: c.slug, name: c.name, tag: "link compartido", icon: "📱", msg: `${dev} dispositivos — ofrécele cuentas para su equipo`, act: "site", c });
   }
   res.send(`<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Quick Comp · Servicio</title><link rel="icon" href="/icon-192.png"><style>
+<title>Maid Flow · Servicio</title><link rel="icon" href="/icon-192.png"><style>
 *{box-sizing:border-box;margin:0;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
 body{background:#F5F6F8;color:#0B1220;letter-spacing:-0.011em}
 ::selection{background:rgba(248,180,8,.35)}
@@ -3117,7 +3117,7 @@ td a{color:#B07A00;font-weight:700;text-decoration:none}
 .guide .gb ol{margin:6px 0 0 18px}.guide .gb li{margin:3px 0}
 </style></head><body>
 <div class="appheader">
-  <img src="/brand-logo.png" alt=""><b>QUICK <em>COMP</em> · Servicio al cliente</b>
+  <b>Maid<em>Flow</em> · Servicio al cliente</b>
   <div class="right"><a href="/cs?logout">salir</a></div>
 </div>
 <div class="wrap">
@@ -3192,7 +3192,7 @@ ${attention.length ? `<div class="panel">
   <details><summary>El cliente quiere subir fotos nuevas</summary><div class="gb"><ol><li>Pídele las fotos por <b>💬 WhatsApp</b>.</li><li><b>✏️ Editar</b> → paso <b>Logo y fotos</b> → súbelas.</li><li>Guarda y <b>Publica</b>. Marca <b>Hecho</b>.</li></ol></div></details>
   <details><summary>La página está "en construcción" / sin publicar</summary><div class="gb"><ol><li><b>✏️ Editar</b> y revisa que esté completa.</li><li>En el último paso toca <b>🚀 Publicar página al cliente</b>.</li></ol></div></details>
   <details><summary>El cliente quiere su propio dominio (ej. sucasa.com)</summary><div class="gb"><ol><li><b>✏️ Editar</b> → paso <b>Su dominio</b> → buscar/conectar.</li><li>Pásale el registro <b>CNAME</b> para que lo ponga en su dominio.</li></ol></div></details>
-  <details><summary>Dice que su página "no aparece" en Google</summary><div class="gb">Su página ya está en línea (sitio + valuador). Salir en Google toma tiempo. Confírmale que su link funciona y que ya puede compartirlo por WhatsApp y redes.</div></details>
+  <details><summary>Dice que su página "no aparece" en Google</summary><div class="gb">Su página ya está en línea (sitio + cotizador). Salir en Google toma tiempo. Confírmale que su link funciona y que ya puede compartirlo por WhatsApp y redes.</div></details>
   <details><summary>Pago falló / cuenta pausada</summary><div class="gb">Recuérdale por <b>💬 WhatsApp</b> actualizar su tarjeta. Cuando pague, la cuenta se reactiva sola. Si pagó por otro medio, avísale al admin.</div></details>
   <details><summary>Aparece "📱 link compartido"</summary><div class="gb">Su cuenta se está abriendo en muchos teléfonos — su equipo la está compartiendo. Ofrécele por <b>💬 WhatsApp</b> cuentas para su equipo (más venta para nosotros).</div></details>
 </div>
@@ -3788,7 +3788,7 @@ function domainCandidates(input) {
   const base = raw.replace(/[^a-z0-9]/g, "");
   if (!base || base.length < 2) return [];
   const variations = [base + ".com", base + ".net", base + ".co", "get" + base + ".com"];
-  variations.push(/realty|homes|realtor|properties/.test(base) ? base + "tx.com" : base + "realty.com");
+  variations.push(/clean|maid|brillo|limpia/.test(base) ? base + "tx.com" : base + "cleaning.com");
   return variations.filter((d, i, a) => a.indexOf(d) === i).slice(0, 6);
 }
 async function rdapAvailable(domain) {
@@ -3853,7 +3853,7 @@ app.post("/api/onboarding/publish", async (req, res) => {
 app.get("/equipo", (req, res) => {
   const base = canonBase(req);
   res.send(`<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Quick Comp · Equipo</title><link rel="icon" href="/icon-192.png"><style>
+<title>Maid Flow · Equipo</title><link rel="icon" href="/icon-192.png"><style>
 @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;1,9..144,600&family=Inter:wght@400;500;600;700;800&display=swap');
 *{box-sizing:border-box;font-family:Inter,Arial,sans-serif;margin:0;-webkit-tap-highlight-color:transparent}
 :root{--navy:#101B30;--navy2:#0B1226;--gold:#F8B408;--mut:#9DA8C4;--line:rgba(255,255,255,.1)}
@@ -3917,16 +3917,16 @@ ul.pts li b{color:var(--gold);flex-shrink:0}
 @media(max-width:899px){aside{position:fixed;z-index:60;left:0;top:0;bottom:0;transform:translateX(-100%);transition:.25s;width:250px}aside.open{transform:none}.mtop{display:flex}.scrim{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:55;display:none}.scrim.on{display:block}}
 </style></head><body>
 <div class="layout">
-<aside id="sb"><div class="sb-brand"><img src="/brand-logo.png" alt=""></div><div class="sb-label">QUICK COMP</div><nav id="nav"></nav><div class="sb-foot">Presentación del rol</div></aside>
+<aside id="sb"><div class="sb-brand"><b style="color:#101B30;font-weight:900;font-size:22px">Maid<span style="color:#F8B408">Flow</span></b></div><div class="sb-label">MAID FLOW</div><nav id="nav"></nav><div class="sb-foot">Presentación del rol</div></aside>
 <div class="scrim" id="scrim" onclick="sb(false)"></div>
 <main>
-<div class="mtop"><button onclick="sb(true)">☰ Menú</button><b style="font-weight:800">QUICK <span style="color:#F8B408">COMP</span></b><span style="width:64px"></span></div>
+<div class="mtop"><button onclick="sb(true)">☰ Menú</button><b style="font-weight:800">Maid<span style="color:#F8B408">Flow</span></b><span style="width:64px"></span></div>
 <div class="stage" id="stage">
 
 <section class="slide" data-t="El rol">
-  <img class="s-bg" src="/api/roofimg?lat=26.3828&lng=-98.8198&zoom=17" alt=""><div class="s-veil"></div>
+  <div class="s-bg" style="background:linear-gradient(160deg,#062B22,#0E8C72)"></div><div class="s-veil"></div>
   <div class="s-in">
-    <p class="kick">QUICK COMP · MARKETING Y TECNOLOGÍA PARA AGENTES DE BIENES RAÍCES</p>
+    <p class="kick">MAID FLOW · MARKETING Y TECNOLOGÍA PARA NEGOCIOS DE LIMPIEZA</p>
     <h1>Dos trabajos, <em>un solo rol.</em></h1>
     <div class="rule"></div>
     <p class="body">El rol combina dos cosas: <b style="color:#fff">cerrar ventas</b> y <b style="color:#fff">crear el contenido</b> que trae esos clientes. En esta presentación vas a ver, en vivo, los productos que venderías y grabarías.</p>
@@ -3937,13 +3937,13 @@ ul.pts li b{color:var(--gold);flex-shrink:0}
   <div class="s-veil"></div>
   <div class="s-in">
     <p class="kick">01 · A QUIÉN LE VENDES</p>
-    <h1>Agentes hispanos <em>de bienes raíces.</em></h1>
+    <h1>Limpiadoras hispanas <em>de casas.</em></h1>
     <div class="rule"></div>
     <ul class="pts">
       <li><b>🇲🇽</b> Hablan español, trabajan por relación, odian la tecnología complicada</li>
-      <li><b>📞</b> Consiguen clientes por recomendación — pero pierden vendedores que no saben que su casa ya subió de valor</li>
-      <li><b>💵</b> Una comisión les deja miles de dólares — tienen con qué pagar</li>
-      <li><b>🎯</b> Empezamos SOLO con agentes hispanos — enfocados</li>
+      <li><b>📞</b> Consiguen clientes por recomendación — pero pierden clientes porque no contestan a tiempo con un precio</li>
+      <li><b>💵</b> Cada cliente fijo les deja cientos de dólares al mes — tienen con qué pagar</li>
+      <li><b>🎯</b> Empezamos SOLO con limpiadoras hispanas — enfocados</li>
     </ul>
     <p class="body" style="margin-top:16px"><b style="color:var(--gold)">Háblales como un amigo que entiende su negocio — no como vendedor de tecnología.</b></p>
   </div>
@@ -3957,11 +3957,11 @@ ul.pts li b{color:var(--gold);flex-shrink:0}
     <div class="rule"></div>
     <div class="grid">
       <div class="card"><div class="ic">🌐</div><h3>Página web</h3><p>Profesional, con su marca. Lista en 10-14 días.</p></div>
-      <div class="card"><div class="ic">🏡</div><h3>Valuador de casas</h3><p>El dueño pone su dirección y ve el valor de su casa en 60 seg.</p></div>
-      <div class="card"><div class="ic">📲</div><h3>La app Quick Comp</h3><p>Valúa casas, arma el CMA, recibe los leads.</p></div>
+      <div class="card"><div class="ic">🧼</div><h3>Cotizador de limpieza</h3><p>El cliente pone su info y ve el precio de su limpieza en 60 seg.</p></div>
+      <div class="card"><div class="ic">📲</div><h3>La app Maid Flow</h3><p>Cotiza limpiezas, manda la cotización, recibe los leads.</p></div>
       <div class="card"><div class="ic">🤖</div><h3>Secretaria IA</h3><p>Contesta y agenda citas a cualquier hora.</p></div>
     </div>
-    <div class="glass"><div><b>$297</b><span>para empezar</span></div><div><b>$297</b><span>al mes</span></div></div>
+    <div class="glass"><div><b>$97</b><span>para empezar</span></div><div><b>$97</b><span>al mes</span></div></div>
   </div>
 </section>
 
@@ -3978,17 +3978,17 @@ ul.pts li b{color:var(--gold);flex-shrink:0}
   </div>
 </section>
 
-<section class="slide" data-t="El valuador (wow)">
+<section class="slide" data-t="El cotizador (wow)">
   <div class="s-veil"></div>
   <div class="s-in" style="max-width:1000px">
-    <p class="kick">04 · EL VALUADOR · EL WOW</p>
-    <h1>Pon una <em>dirección.</em></h1>
+    <p class="kick">04 · EL COTIZADOR · EL WOW</p>
+    <h1>Pon los <em>detalles.</em></h1>
     <div class="duo">
       <div>
-        <p class="body">El momento "wow" de toda la venta. Escribe una dirección real y mira cómo aparece el valor de la casa con ventas comparables reales. ESTO es lo que grabas para los anuncios.</p>
+        <p class="body">El momento "wow" de toda la venta. Pon los detalles de una casa real y mira cómo aparece el precio de la limpieza al instante. ESTO es lo que grabas para los anuncios.</p>
         <a class="link" href="/demo" target="_blank">Ver la presentación de venta →</a>
       </div>
-      <div class="frame"><iframe data-src="/w/alto-demo" title="Valuador"></iframe></div>
+      <div class="frame"><iframe data-src="/w/alto-demo" title="Cotizador"></iframe></div>
     </div>
   </div>
 </section>
@@ -4001,9 +4001,9 @@ ul.pts li b{color:var(--gold);flex-shrink:0}
     <div class="duo">
       <div>
         <ul class="pts" style="margin-top:0">
-          <li><b>🏡</b> Valúa casas: dirección o GPS, con ventas comparables reales</li>
+          <li><b>🧼</b> Cotiza limpiezas: tipo de casa y servicio, con precio al instante</li>
           <li><b>📥</b> Los leads le llegan con botón de WhatsApp</li>
-          <li><b>🧾</b> Reportes CMA profesionales con su marca</li>
+          <li><b>🧾</b> Cotizaciones profesionales con su marca</li>
         </ul>
         <p class="body" style="font-size:14px;margin-top:14px">👉 La app de la derecha está EN VIVO — tócala.</p>
       </div>
@@ -4021,7 +4021,7 @@ ul.pts li b{color:var(--gold);flex-shrink:0}
     <ul class="pts">
       <li><b>1</b> El prospecto agenda una llamada (de los anuncios que TÚ grabas)</li>
       <li><b>2</b> Compartes pantalla y caminas la presentación: <b style="color:#fff">/demo</b></li>
-      <li><b>3</b> En vivo pones SU dirección y le valúas SU casa — ahí cambia todo</li>
+      <li><b>3</b> En vivo cotizas SU limpieza ahí mismo y se la mandas — ahí cambia todo</li>
       <li><b>4</b> Le mandas el link de pago y cierras en la misma llamada</li>
     </ul>
     <p class="body" style="margin-top:14px">Tu portal privado tiene el guion, los links y las respuestas a objeciones:</p>
@@ -4035,12 +4035,12 @@ ul.pts li b{color:var(--gold);flex-shrink:0}
     <p class="kick">07 · TU SEGUNDO TRABAJO · CONTENIDO</p>
     <h1>El contenido que <em>trae clientes.</em></h1>
     <div class="rule"></div>
-    <p class="body">Corremos anuncios en WhatsApp e Instagram/Facebook, en español, para agentes. Tu contenido es el motor del negocio.</p>
+    <p class="body">Corremos anuncios en WhatsApp e Instagram/Facebook, en español, para limpiadoras. Tu contenido es el motor del negocio.</p>
     <div class="grid">
       <div class="card"><div class="ic">🎬</div><h3>Anuncios cortos (9:16)</h3><p>15-40 seg para WhatsApp/Reels. Hook fuerte en los primeros 3 seg.</p></div>
       <div class="card"><div class="ic">🎥</div><h3>VSL (1-2 min)</h3><p>Video para la página explicando la oferta — tú a cámara, directo.</p></div>
-      <div class="card"><div class="ic">📱</div><h3>Grabación de pantalla</h3><p>Valuando una casa en 60 seg — el wow en video.</p></div>
-      <div class="card"><div class="ic">📸</div><h3>Fotos del equipo</h3><p>Tú y el equipo con la camisa Quick Comp, profesionales.</p></div>
+      <div class="card"><div class="ic">📱</div><h3>Grabación de pantalla</h3><p>Cotizando una limpieza en 60 seg — el wow en video.</p></div>
+      <div class="card"><div class="ic">📸</div><h3>Fotos del equipo</h3><p>Tú y el equipo con la camisa Maid Flow, profesionales.</p></div>
     </div>
   </div>
 </section>
@@ -4051,18 +4051,18 @@ ul.pts li b{color:var(--gold);flex-shrink:0}
     <p class="kick">08 · TUS PRIMEROS VIDEOS</p>
     <h1>Lista para <em>grabar ya.</em></h1>
     <ul class="pts">
-      <li><b>🎯</b> "¿Cuántos vendedores pierdes porque no saben lo que vale su casa?" — hook de dolor, a cámara</li>
-      <li><b>🏡</b> "Mira cómo valúo una casa en 60 segundos con ventas reales" — grabación de pantalla</li>
+      <li><b>🎯</b> "¿Cuántos clientes pierdes porque no contestas a tiempo con un precio?" — hook de dolor, a cámara</li>
+      <li><b>🧼</b> "Mira cómo cotizo una limpieza en 60 segundos" — grabación de pantalla</li>
       <li><b>💬</b> "Tus clientes te llegan directo al WhatsApp" — muestra el lead llegando</li>
       <li><b>🌐</b> "Tu página web vende sola, 24/7" — muestra la página de ejemplo</li>
       <li><b>🤖</b> "Una secretaria con IA que nunca duerme" — muestra el chat contestando</li>
     </ul>
-    <p class="body" style="margin-top:12px">Regla de oro: <b style="color:#fff">habla como agente, no como tecnología.</b></p>
+    <p class="body" style="margin-top:12px">Regla de oro: <b style="color:#fff">habla como limpiadora, no como tecnología.</b></p>
   </div>
 </section>
 
 <section class="slide" data-t="Empecemos">
-  <img class="s-bg" src="/api/roofimg?lat=26.3828&lng=-98.8198&zoom=18" alt=""><div class="s-veil"></div>
+  <div class="s-bg" style="background:linear-gradient(160deg,#062B22,#0E8C72)"></div><div class="s-veil"></div>
   <div class="s-in">
     <p class="kick">09 · EMPECEMOS</p>
     <h1>Manos a la <em>obra.</em></h1>
@@ -4070,7 +4070,7 @@ ul.pts li b{color:var(--gold);flex-shrink:0}
     <ul class="pts">
       <li><b>1</b> Explora la presentación de venta y el portal del closer</li>
       <li><b>2</b> Graba los primeros 3 anuncios de la lista esta semana</li>
-      <li><b>3</b> Agenda la foto del equipo con la camisa Quick Comp</li>
+      <li><b>3</b> Agenda la foto del equipo con la camisa Maid Flow</li>
     </ul>
     <div style="margin-top:20px">
       <a class="link" href="/demo" target="_blank">/demo · venta</a>
@@ -4206,11 +4206,11 @@ app.get("/closer", async (req, res) => {
   const closeRate = mst.total ? Math.round((mst.closed / mst.total) * 100) : 0;
   const stripeLink = process.env.STRIPE_PAYMENT_LINK || "";
   const wMsg = en
-    ? `Check this out 👀 — type your address and see what your customers would see on YOUR website:\n${base}/w/alto-demo`
-    : `Mira esto 👀 — escribe tu dirección y ve lo que tus clientes verían en TU página web:\n${base}/w/alto-demo`;
+    ? `Check this out 👀 — enter your details and see the cleaning price your customers would get on YOUR website:\n${base}/w/alto-demo`
+    : `Mira esto 👀 — pon los detalles y ve el precio de limpieza que tus clientes recibirían en TU página web:\n${base}/w/alto-demo`;
   const welcome = en
-    ? `Congratulations and welcome to Quick Comp! 🎉 Tap this link from your phone and save it — it's your personal key to your app: [PASTE THEIR ACCESS LINK HERE]. You can value homes and build CMAs starting today. See you at your onboarding call 💪`
-    : `¡Felicidades y bienvenido a Quick Comp! 🎉 Toca este link desde tu teléfono y guárdalo — es tu llave personal a tu app: [PEGA AQUÍ SU LINK DE ACCESO]. Hoy mismo puedes valuar casas y armar CMAs. Nos vemos en tu llamada de onboarding 💪`;
+    ? `Congratulations and welcome to Maid Flow! 🎉 Tap this link from your phone and save it — it's your personal key to your app: [PASTE THEIR ACCESS LINK HERE]. You can quote cleanings and send quotes starting today. See you at your onboarding call 💪`
+    : `¡Felicidades y bienvenido a Maid Flow! 🎉 Toca este link desde tu teléfono y guárdalo — es tu llave personal a tu app: [PEGA AQUÍ SU LINK DE ACCESO]. Hoy mismo puedes cotizar limpiezas y mandar cotizaciones. Nos vemos en tu llamada de onboarding 💪`;
   const esc = (x) => String(x).replace(/</g, "&lt;");
   const L = en ? {
     title: "Closer portal", langBtn: "🇲🇽 Español", langQ: "",
@@ -4221,18 +4221,18 @@ app.get("/closer", async (req, res) => {
     playT: "The close, step by step (all on the same call)",
     play: ["Press <b>P</b> in the presentation → payment link copied → send it on WhatsApp.", "While they pay: <b>create their account above</b> and copy their access link.", "Press <b>B</b> → welcome message copied → paste their access link → send it.", "Book their <b>onboarding</b> before hanging up."],
     linksT: "Links & messages",
-    payT: "💳 Payment link — $297 today + $297/mo", payMissing: "Not configured yet (STRIPE_PAYMENT_LINK in Render).",
-    welT: "👋 Welcome (paste their access link)", demoT: "🏡 Valuator demo", demoMsgT: "👀 Demo message",
+    payT: "💳 Payment link — $97 today + $97/mo", payMissing: "Not configured yet (STRIPE_PAYMENT_LINK in Render).",
+    welT: "👋 Welcome (paste their access link)", demoT: "🧼 Cleaning-quote demo", demoMsgT: "👀 Demo message",
     open: "Open", copy: "Copy",
     scriptT: "🎤 Talk track — what you say on each slide",
     script: [
-      ["01 · Welcome", "“Thanks for booking. In 10 minutes you'll see a home valued from real comparable sales. If it's not for you, no problem. Sound good?”"],
-      ["02 · Who we are", "“Before I show you anything: the owner runs construction and tech companies in Texas. He built this tool for his own deals — and uses it today for his own company. We're not an agency reselling software.”"],
-      ["03 · The problem", "“Quick question: how many sellers do you lose because they don't know their home already went up in value? … Most list with whoever shows them a number first. You don't lack contacts — you lack a system that brings sellers to you.”"],
-      ["04 · Your website", "“This is what YOUR site would look like — phone and computer. Now the good part: type YOUR address in the valuator. (wait for the wow — say nothing) That feeling? That's what your sellers will feel.”"],
-      ["05 · Your app", "“This app is your office. The one on the right is LIVE — tap VALUE A HOME. Every lead hits your phone with WhatsApp ready. Neighbor asks what theirs is worth? You value it standing right there and send a CMA.”"],
-      ["06 · AI secretary", "“Text it like you're a homeowner thinking of selling. (let them try) This same AI answers YOUR leads at 11pm and books the appointment. You just show up.”"],
-      ["07 · Investment", "“Separately this runs $1,500 plus monthlies. With us: 297 a month, 297 to start. One commission is thousands of dollars — ONE extra deal pays your whole year. (silence — let them talk first)”"],
+      ["01 · Welcome", "“Thanks for booking. In 10 minutes you'll see a cleaning quoted instantly from real numbers. If it's not for you, no problem. Sound good?”"],
+      ["02 · Who we are", "“Before I show you anything: the owner runs service businesses in Texas. He built this tool for his own business — and uses it today for his own company. We're not an agency reselling software.”"],
+      ["03 · The problem", "“Quick question: how many customers do you lose because you can't answer in time with a price? … Most hire whoever sends them a number first. You don't lack contacts — you lack a system that brings customers to you.”"],
+      ["04 · Your website", "“This is what YOUR site would look like — phone and computer. Now the good part: enter the details in the cleaning quoter. (wait for the wow — say nothing) That feeling? That's what your customers will feel.”"],
+      ["05 · Your app", "“This app is your office. The one on the right is LIVE — tap QUOTE A CLEANING. Every lead hits your phone with WhatsApp ready. Neighbor asks what a cleaning costs? You quote it standing right there and send it on WhatsApp.”"],
+      ["06 · AI secretary", "“Text it like you're a customer who needs a cleaning. (let them try) This same AI answers YOUR leads at 11pm and books the appointment. You just show up.”"],
+      ["07 · Investment", "“Separately this runs $1,500 plus monthlies. With us: 97 a month, 97 to start. One steady client is hundreds of dollars a month — ONE extra client pays your whole year. (silence — let them talk first)”"],
       ["08 · Let's begin", "“This starts today: you pay, I send your app by WhatsApp before we hang up, and we book your onboarding. Want me to send the payment link?”"],
     ],
     keysT: "⌨️ Secret shortcuts in the presentation (/demo)",
@@ -4240,17 +4240,17 @@ app.get("/closer", async (req, res) => {
     keysWarn: "⚠️ If you share your FULL SCREEN, the Stripe tab is visible. Share only the /demo tab.",
     objT: "Objections & comebacks",
     obj: [
-      ["\"It's expensive\"", "“One commission is thousands of dollars in your pocket. ONE extra deal a year and this paid for itself.”"],
-      ["\"I already have a website\"", "“Does it put sellers' phone numbers in your pocket with their home already valued? Your current site is the business card; this one sells.”"],
+      ["\"It's expensive\"", "“One steady client is hundreds of dollars a month in your pocket. ONE extra client a year and this paid for itself.”"],
+      ["\"I already have a website\"", "“Does it put customers' phone numbers in your pocket with their cleaning already quoted? Your current site is the business card; this one sells.”"],
       ["\"Let me think about it\"", "“What do you want to think over — the price, or whether it works? (resolve it). I'll hold today's price for you.”"],
       ["\"I need to talk to my wife/partner\"", "“Perfect. Let's book 10 minutes tomorrow with both of you and I'll show them the same demo. What time works?”"],
       ["\"My clients come from referrals\"", "“And what do people do with a referral? They Google you before calling. This turns your referrals into appointments.”"],
-      ["\"I'm not good with technology\"", "“If you can send a WhatsApp, you can use Quick Comp. We do the onboarding with you, step by step.”"],
+      ["\"I'm not good with technology\"", "“If you can send a WhatsApp, you can use Maid Flow. We do the onboarding with you, step by step.”"],
       ["\"What if it doesn't work for me?\"", "“No long contracts: cancel anytime and your domain leaves with you — it's in the contract.”"],
-      ["\"It's slow season / no money right now\"", "“That's exactly why: your site gets built NOW so you're positioned when listings pick up. Building it mid-season is too late.”"],
-      ["\"I already have a marketing agency\"", "“We don't compete with them — we give them somewhere to send people. Does their website value homes by itself?”"],
+      ["\"It's slow season / no money right now\"", "“That's exactly why: your site gets built NOW so you're positioned when bookings pick up. Building it mid-season is too late.”"],
+      ["\"I already have a marketing agency\"", "“We don't compete with them — we give them somewhere to send people. Does their website quote cleanings by itself?”"],
       ["\"Why so cheap?\"", "“It's software we already built — we don't bill agency hours. We win when you stay for months.”"],
-      ["\"Internet leads are garbage\"", "“Bought leads, yes. These typed THEIR address and THEIR phone to value THEIR home. It doesn't get warmer than that.”"],
+      ["\"Internet leads are garbage\"", "“Bought leads, yes. These typed THEIR details and THEIR phone to get a price for THEIR cleaning. It doesn't get warmer than that.”"],
     ],
   } : {
     title: "Portal del closer", langBtn: "🇺🇸 English", langQ: "&lang=en",
@@ -4261,18 +4261,18 @@ app.get("/closer", async (req, res) => {
     playT: "El cierre, paso a paso (todo en la misma llamada)",
     play: ["Tecla <b>P</b> en la presentación → link de pago copiado → mándalo por WhatsApp.", "Mientras paga: <b>crea su cuenta aquí arriba</b> y copia su link de acceso.", "Tecla <b>B</b> → bienvenida copiada → pega su link de acceso → envíala.", "Agenda su <b>onboarding</b> antes de colgar."],
     linksT: "Links y mensajes",
-    payT: "💳 Link de pago — $297 hoy + $297/mes", payMissing: "Aún no configurado (STRIPE_PAYMENT_LINK en Render).",
-    welT: "👋 Bienvenida (pega su link de acceso)", demoT: "🏡 Demo del valuador", demoMsgT: "👀 Mensaje de demo",
+    payT: "💳 Link de pago — $97 hoy + $97/mes", payMissing: "Aún no configurado (STRIPE_PAYMENT_LINK en Render).",
+    welT: "👋 Bienvenida (pega su link de acceso)", demoT: "🧼 Demo del cotizador", demoMsgT: "👀 Mensaje de demo",
     open: "Abrir", copy: "Copiar",
     scriptT: "🎤 Guion — qué dices en cada slide",
     script: [
-      ["01 · Bienvenida", "“Gracias por agendar. En 10 minutos vas a ver una casa valuada con ventas comparables reales. Si no es para ti, no pasa nada. ¿Te parece?”"],
-      ["02 · Quiénes somos", "“Antes de enseñarte nada: el dueño tiene compañías de construcción y tecnología en Texas. Esta herramienta la hizo para sus propios negocios — y hoy la usa para su propia compañía. No somos una agencia revendiendo software.”"],
-      ["03 · El problema", "“Te pregunto algo: ¿cuántos vendedores pierdes porque no saben que su casa ya subió de valor? … La mayoría lista con el primero que les enseña un número. No te faltan contactos — te falta un sistema que te traiga vendedores.”"],
-      ["04 · Tu página", "“Así se vería TU página — en celular y computadora. Ahora lo bueno: pon TU dirección en el valuador. (espera el wow — no digas nada) ¿Eso que sentiste? Eso van a sentir tus vendedores.”"],
-      ["05 · Tu app", "“Esta app es tu oficina. La de la derecha está VIVA — toca VALUAR CASA. Cada lead te llega con WhatsApp listo. ¿El vecino te pregunta cuánto vale la suya? La valúas ahí parado y le mandas un CMA.”"],
-      ["06 · Secretaria IA", "“Escríbele como si fueras un dueño pensando en vender. (déjalo probar) Esta misma IA le contesta a TUS leads a las 11 de la noche y agenda la cita. Tú solo llegas.”"],
-      ["07 · Inversión", "“Por separado esto cuesta $1,500 más mensualidades. Con nosotros: 297 al mes y 297 para empezar. Una comisión son miles de dólares — UN cierre extra paga tu año entero. (silencio — deja que hable él primero)”"],
+      ["01 · Bienvenida", "“Gracias por agendar. En 10 minutos vas a ver una limpieza cotizada al instante con números reales. Si no es para ti, no pasa nada. ¿Te parece?”"],
+      ["02 · Quiénes somos", "“Antes de enseñarte nada: el dueño tiene negocios de servicios en Texas. Esta herramienta la hizo para su propio negocio — y hoy la usa para su propia compañía. No somos una agencia revendiendo software.”"],
+      ["03 · El problema", "“Te pregunto algo: ¿cuántos clientes pierdes porque no contestas a tiempo con un precio? … La mayoría contrata con el primero que les manda un número. No te faltan contactos — te falta un sistema que te traiga clientes.”"],
+      ["04 · Tu página", "“Así se vería TU página — en celular y computadora. Ahora lo bueno: pon los detalles en el cotizador. (espera el wow — no digas nada) ¿Eso que sentiste? Eso van a sentir tus clientes.”"],
+      ["05 · Tu app", "“Esta app es tu oficina. La de la derecha está VIVA — toca COTIZAR LIMPIEZA. Cada lead te llega con WhatsApp listo. ¿El vecino te pregunta cuánto cuesta una limpieza? La cotizas ahí mismo y se la mandas por WhatsApp.”"],
+      ["06 · Secretaria IA", "“Escríbele como si fueras un cliente que necesita una limpieza. (déjalo probar) Esta misma IA le contesta a TUS leads a las 11 de la noche y agenda la cita. Tú solo llegas.”"],
+      ["07 · Inversión", "“Por separado esto cuesta $1,500 más mensualidades. Con nosotros: 97 al mes y 97 para empezar. Un cliente fijo son cientos de dólares al mes — UN cliente extra paga tu año entero. (silencio — deja que hable él primero)”"],
       ["08 · Empecemos", "“Esto empieza hoy: pagas, te mando tu app por WhatsApp antes de colgar, y agendamos tu onboarding. ¿Te mando el link de pago?”"],
     ],
     keysT: "⌨️ Atajos secretos en la presentación (/demo)",
@@ -4280,21 +4280,21 @@ app.get("/closer", async (req, res) => {
     keysWarn: "⚠️ Si compartes la PANTALLA completa, la pestaña de Stripe se ve. Comparte solo la pestaña de /demo.",
     objT: "Objeciones y cómo regresar",
     obj: [
-      ["\"Está caro\"", "“Una comisión son miles de dólares en tu bolsillo. Con UN cierre extra al año, esto ya se pagó.”"],
-      ["\"Ya tengo página\"", "“¿Y te manda los teléfonos de los vendedores al bolsillo, con su casa ya valuada? Tu página de hoy es la tarjeta; esta es la que vende.”"],
+      ["\"Está caro\"", "“Un cliente fijo son cientos de dólares al mes en tu bolsillo. Con UN cliente extra al año, esto ya se pagó.”"],
+      ["\"Ya tengo página\"", "“¿Y te manda los teléfonos de los clientes al bolsillo, con su limpieza ya cotizada? Tu página de hoy es la tarjeta; esta es la que vende.”"],
       ["\"Déjame pensarlo\"", "“¿Qué quieres pensar — el precio, o si funciona? (resuélvelo). Te aparto el precio de hoy.”"],
       ["\"Lo hablo con mi esposa/socio\"", "“Perfecto. Agendemos 10 minutos mañana con los dos y les enseño la misma demo. ¿A qué hora pueden?”"],
       ["\"Mis clientes llegan por recomendación\"", "“¿Y qué hace la gente cuando le recomiendan a alguien? Lo busca en Google antes de llamar. Esto convierte tus recomendaciones en citas.”"],
-      ["\"No soy bueno con la tecnología\"", "“Si sabes mandar un WhatsApp, sabes usar Quick Comp. El onboarding lo hacemos contigo, paso a paso.”"],
+      ["\"No soy bueno con la tecnología\"", "“Si sabes mandar un WhatsApp, sabes usar Maid Flow. El onboarding lo hacemos contigo, paso a paso.”"],
       ["\"¿Y si no me funciona?\"", "“Sin contratos largos: cancelas cuando quieras y tu dominio se va contigo — está en el contrato.”"],
-      ["\"Es temporada baja / no hay dinero\"", "“Justo por eso: tu página se construye AHORA para que cuando se mueva el mercado ya estés posicionado. Montarla en plena temporada es llegar tarde.”"],
-      ["\"Ya tengo agencia de marketing\"", "“No competimos con ella — le damos a dónde mandar a la gente. ¿Su página valúa casas sola?”"],
+      ["\"Es temporada baja / no hay dinero\"", "“Justo por eso: tu página se construye AHORA para que cuando se muevan las reservas ya estés posicionado. Montarla en plena temporada es llegar tarde.”"],
+      ["\"Ya tengo agencia de marketing\"", "“No competimos con ella — le damos a dónde mandar a la gente. ¿Su página cotiza limpiezas sola?”"],
       ["\"¿Por qué tan barato?\"", "“Es software que ya construimos — no cobramos horas de agencia. Ganamos cuando te quedas meses.”"],
-      ["\"Los leads de internet son basura\"", "“Los comprados, sí. Estos pusieron SU dirección y SU teléfono para ver el valor de SU casa. Más caliente no existe.”"],
+      ["\"Los leads de internet son basura\"", "“Los comprados, sí. Estos pusieron SUS detalles y SU teléfono para ver el precio de SU limpieza. Más caliente no existe.”"],
     ],
   };
   res.send(`<!doctype html><html lang="${en ? "en" : "es"}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Quick Comp · ${L.title}</title><link rel="icon" href="/icon-192.png"><style>
+<title>Maid Flow · ${L.title}</title><link rel="icon" href="/icon-192.png"><style>
 *{box-sizing:border-box;margin:0;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display",Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
 html{background:#F5F6F8}
 body{max-width:680px;margin:0 auto;padding:34px 20px 72px;color:#0B1220;line-height:1.55;letter-spacing:-0.011em}
@@ -4381,8 +4381,7 @@ body{max-width:none;margin:0;padding:0}
 @media(min-width:920px){.cols{grid-template-columns:1fr 1fr;align-items:start}}
 </style></head><body>
 <div class="appheader">
-  <img src="/brand-logo.png" alt="">
-  <b>QUICK <em>COMP</em> · ${en ? "Closer" : "Closer"}</b>
+  <b>Maid<em>Flow</em> · ${en ? "Closer" : "Closer"}</b>
   <div class="right">
     <a href="/closer?logout">${en ? "log out" : "salir"}</a>
     <a class="dark" href="/closer${en ? "" : "?lang=en"}">${L.langBtn}</a>
@@ -4470,11 +4469,11 @@ function saveNote(id){var el=document.getElementById('note_'+id);if(!el)return;f
 app.get("/cierre", (req, res) => {
   const base = canonBase(req);
   const stripeLink = process.env.STRIPE_PAYMENT_LINK || "";
-  const wMsg = `Mira esto 👀 — escribe tu dirección y ve lo que tus clientes verían en TU página web:\n${base}/w/alto-demo`;
-  const welcome = `¡Felicidades y bienvenido a Quick Comp! 🎉 Toca este link desde tu teléfono y guárdalo — es tu llave personal a tu app: [PEGA AQUÍ SU LINK DE ACCESO]. Hoy mismo puedes valuar casas y armar CMAs. Nos vemos en tu llamada de onboarding 💪`;
+  const wMsg = `Mira esto 👀 — pon los detalles y ve el precio de limpieza que tus clientes recibirían en TU página web:\n${base}/w/alto-demo`;
+  const welcome = `¡Felicidades y bienvenido a Maid Flow! 🎉 Toca este link desde tu teléfono y guárdalo — es tu llave personal a tu app: [PEGA AQUÍ SU LINK DE ACCESO]. Hoy mismo puedes cotizar limpiezas y mandar cotizaciones. Nos vemos en tu llamada de onboarding 💪`;
   const esc = (s) => String(s).replace(/</g, "&lt;");
   res.send(`<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Quick Comp · Cierre (privado)</title><style>
+<title>Maid Flow · Cierre (privado)</title><style>
 body{font-family:Arial;max-width:640px;margin:30px auto;padding:0 18px;color:#101B30;line-height:1.55}
 h1{font-size:22px}h2{font-size:16px;margin-top:24px}
 .warn{background:#FDECEC;border:1.5px solid #D93025;color:#9B1C10;border-radius:12px;padding:10px 14px;font-weight:700;font-size:13px}
@@ -4483,7 +4482,7 @@ h1{font-size:22px}h2{font-size:16px;margin-top:24px}
 .link small{color:#67718A}
 ol li{margin-bottom:10px}small{color:#67718A}
 </style></head><body>
-<h1>🔒 Cierre · QUICK <span style="color:#D99E00">COMP</span></h1>
+<h1>🔒 Cierre · Maid<span style="color:#D99E00">Flow</span></h1>
 <p class="warn">⚠️ Página privada del closer — NUNCA la compartas en pantalla. La presentación para el cliente es /demo.</p>
 <h2>El cierre, paso a paso (todo en la misma llamada)</h2>
 <ol>
@@ -4493,10 +4492,10 @@ ol li{margin-bottom:10px}small{color:#67718A}
 <li>Agenda su <b>onboarding</b> antes de colgar.</li>
 </ol>
 <h2>Links y mensajes</h2>
-<div class="link"><span><b>💳 Link de pago — $297 hoy + $297/mes</b><br><small>${esc(stripeLink || "buy.stripe.com/… (ejemplo — aún sin configurar)")}</small></span><a href="${stripeLink || "#"}" ${stripeLink ? `target="_blank" rel="noreferrer"` : `onclick="alert('Aún no está configurado: crea el Payment Link en Stripe y agrégalo en Render como STRIPE_PAYMENT_LINK');return false"`} style="background:#101B30;color:#fff;border-radius:8px;padding:8px 14px;font-weight:800;text-decoration:none;flex-shrink:0">Abrir</a><button onclick="${stripeLink ? `cp(this,'${stripeLink}')` : `alert('Aún no está configurado: crea el Payment Link en Stripe y agrégalo en Render como STRIPE_PAYMENT_LINK')`}">Copiar</button></div>
+<div class="link"><span><b>💳 Link de pago — $97 hoy + $97/mes</b><br><small>${esc(stripeLink || "buy.stripe.com/… (ejemplo — aún sin configurar)")}</small></span><a href="${stripeLink || "#"}" ${stripeLink ? `target="_blank" rel="noreferrer"` : `onclick="alert('Aún no está configurado: crea el Payment Link en Stripe y agrégalo en Render como STRIPE_PAYMENT_LINK');return false"`} style="background:#101B30;color:#fff;border-radius:8px;padding:8px 14px;font-weight:800;text-decoration:none;flex-shrink:0">Abrir</a><button onclick="${stripeLink ? `cp(this,'${stripeLink}')` : `alert('Aún no está configurado: crea el Payment Link en Stripe y agrégalo en Render como STRIPE_PAYMENT_LINK')`}">Copiar</button></div>
 <p style="font-size:12px;color:#67718A;margin:-2px 0 10px"><b>Copiar</b> → se lo mandas por WhatsApp y paga desde su teléfono. <b>Abrir</b> → si te da la tarjeta por teléfono, la escribes tú aquí mismo.${stripeLink ? "" : ` <b style="color:#D93025">⚠️ Link de ejemplo — falta configurar STRIPE_PAYMENT_LINK en Render.</b>`}</p>
 <div class="link"><span><b>👋 Bienvenida (pega su link de acceso)</b><br><small>${esc(welcome.slice(0, 70))}…</small></span><button onclick='cp(this,${JSON.stringify(welcome)})'>Copiar</button></div>
-<div class="link"><span><b>🏡 Demo del valuador</b><br><small>${base}/w/alto-demo</small></span><button onclick="cp(this,'${base}/w/alto-demo')">Copiar</button></div>
+<div class="link"><span><b>🧼 Demo del cotizador</b><br><small>${base}/w/alto-demo</small></span><button onclick="cp(this,'${base}/w/alto-demo')">Copiar</button></div>
 <div class="link"><span><b>👀 Mensaje de demo</b><br><small>${esc(wMsg.slice(0, 70))}…</small></span><button onclick='cp(this,${JSON.stringify(wMsg)})'>Copiar</button></div>
 <h2>⌨️ Atajos secretos en la presentación (/demo)</h2>
 <p><small>El cliente nunca los ve. Funcionan en cualquier slide:</small></p>
@@ -4510,17 +4509,17 @@ ol li{margin-bottom:10px}small{color:#67718A}
 <p><small>⚠️ Si compartes la PANTALLA completa, la pestaña de Stripe se ve. Comparte solo la pestaña de /demo y usa las teclas — el cliente no nota nada.</small></p>
 <h2>Objeciones y cómo regresar</h2>
 <p><small>
-<b>"Está caro"</b> → "Una comisión son miles de dólares en tu bolsillo. Con UN cierre extra al año, esto ya se pagó. La pregunta no es si cuesta — es cuántos vendedores se te están yendo hoy."<br><br>
-<b>"Ya tengo página"</b> → "Qué bueno — ¿y te manda los teléfonos de los vendedores al bolsillo, con su casa ya valuada? Eso es lo que hace la diferencia. Tu página de hoy es la tarjeta; esta es la que vende."<br><br>
+<b>"Está caro"</b> → "Un cliente fijo son cientos de dólares al mes en tu bolsillo. Con UN cliente extra al año, esto ya se pagó. La pregunta no es si cuesta — es cuántos clientes se te están yendo hoy."<br><br>
+<b>"Ya tengo página"</b> → "Qué bueno — ¿y te manda los teléfonos de los clientes al bolsillo, con su limpieza ya cotizada? Eso es lo que hace la diferencia. Tu página de hoy es la tarjeta; esta es la que vende."<br><br>
 <b>"Déjame pensarlo"</b> → "Claro. ¿Qué es lo que quieres pensar — el precio, o si te va a funcionar? (espera la respuesta y resuélvela). Te aparto el precio hoy y la demo queda abierta."<br><br>
 <b>"Lo tengo que hablar con mi esposa / mi socio"</b> → "Perfecto, así debe ser. ¿Qué te va a preguntar? … Mejor aún: agendemos 10 minutos mañana con los dos y le enseño la demo igual que a ti — que lo vea con sus propios ojos. ¿Mañana a qué hora pueden?"<br><br>
 <b>"Mis clientes llegan por recomendación, no por internet"</b> → "Exacto — ¿y qué hace la gente cuando le recomiendan a alguien? Lo busca en Google antes de llamar. Si no encuentra nada, la recomendación se enfría. Esto convierte tus recomendaciones en citas."<br><br>
-<b>"No soy bueno con la tecnología"</b> → "Por eso lo hicimos así: si sabes mandar un WhatsApp, sabes usar Quick Comp. Y el onboarding lo hacemos contigo, en español, paso a paso. No estás solo."<br><br>
+<b>"No soy bueno con la tecnología"</b> → "Por eso lo hicimos así: si sabes mandar un WhatsApp, sabes usar Maid Flow. Y el onboarding lo hacemos contigo, en español, paso a paso. No estás solo."<br><br>
 <b>"¿Y si no me funciona?"</b> → "Sin contratos largos: cancelas cuando quieras y tu dominio se va contigo — está en el contrato. El riesgo lo cargamos nosotros, no tú."<br><br>
-<b>"Ahorita no hay dinero / es temporada baja"</b> → "Justo por eso es el momento: tu página se construye AHORA, para que cuando se mueva el mercado ya estés posicionado. El que la monta en plena temporada, llega tarde."<br><br>
-<b>"Ya trabajo con una agencia de marketing"</b> → "No competimos con tu agencia — le damos a dónde mandar a la gente. ¿Su página te valúa casas sola y te manda el teléfono al bolsillo? Eso es lo nuestro; lo demás lo puede seguir haciendo ella."<br><br>
+<b>"Ahorita no hay dinero / es temporada baja"</b> → "Justo por eso es el momento: tu página se construye AHORA, para que cuando se muevan las reservas ya estés posicionado. El que la monta en plena temporada, llega tarde."<br><br>
+<b>"Ya trabajo con una agencia de marketing"</b> → "No competimos con tu agencia — le damos a dónde mandar a la gente. ¿Su página te cotiza limpiezas sola y te manda el teléfono al bolsillo? Eso es lo nuestro; lo demás lo puede seguir haciendo ella."<br><br>
 <b>"Suena demasiado bueno / ¿por qué tan barato?"</b> → "Porque es software que ya construimos — no te cobramos horas de agencia. Y ganamos cuando te quedas meses, así que nos conviene más que a nadie que te funcione."<br><br>
-<b>"Los leads de internet son basura"</b> → "Los leads comprados, sí. Estos no son comprados: es gente que puso SU dirección y SU teléfono para ver el valor de SU casa. Más caliente que eso no existe."
+<b>"Los leads de internet son basura"</b> → "Los leads comprados, sí. Estos no son comprados: es gente que puso SUS detalles y SU teléfono para ver el precio de SU limpieza. Más caliente que eso no existe."
 </small></p>
 <script>function cp(b,t){navigator.clipboard.writeText(t);b.textContent='✓'}</script>
 </body></html>`);
@@ -4530,12 +4529,12 @@ app.get("/demo", (req, res) => {
   const base = canonBase(req);
   const en = req.query.lang === "en";
   const wMsg = en
-    ? `Check this out 👀 — type your address and see what your customers would see on YOUR website:\n${base}/w/alto-demo`
-    : `Mira esto 👀 — escribe tu dirección y ve lo que tus clientes verían en TU página web:\n${base}/w/alto-demo`;
+    ? `Check this out 👀 — enter your details and see the cleaning price your customers would get on YOUR website:\n${base}/w/alto-demo`
+    : `Mira esto 👀 — pon los detalles y ve el precio de limpieza que tus clientes recibirían en TU página web:\n${base}/w/alto-demo`;
   const stripeLink = process.env.STRIPE_PAYMENT_LINK || "";
   const welcome = en
-    ? `Congratulations and welcome to Quick Comp! 🎉 Tap this link from your phone and save it — it's your personal key to your app: [PASTE THEIR ACCESS LINK HERE]. You can value homes and build CMAs starting today. See you at your onboarding call 💪`
-    : `¡Felicidades y bienvenido a Quick Comp! 🎉 Toca este link desde tu teléfono y guárdalo — es tu llave personal a tu app: [PEGA AQUÍ SU LINK DE ACCESO]. Hoy mismo puedes valuar casas y armar CMAs. Nos vemos en tu llamada de onboarding 💪`;
+    ? `Congratulations and welcome to Maid Flow! 🎉 Tap this link from your phone and save it — it's your personal key to your app: [PASTE THEIR ACCESS LINK HERE]. You can quote cleanings and send quotes starting today. See you at your onboarding call 💪`
+    : `¡Felicidades y bienvenido a Maid Flow! 🎉 Toca este link desde tu teléfono y guárdalo — es tu llave personal a tu app: [PEGA AQUÍ SU LINK DE ACCESO]. Hoy mismo puedes cotizar limpiezas y mandar cotizaciones. Nos vemos en tu llamada de onboarding 💪`;
   // marketing photos appear automatically once the files exist in public/landing/
   const hasAsset = (name) =>
     fs.existsSync(path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "dist", "landing", name))
@@ -4545,84 +4544,84 @@ app.get("/demo", (req, res) => {
 
   // Every visible string in both languages
   const L = en ? {
-    title: "Quick Comp · Presentation", presentation: "PRESENTATION", forClients: "Client presentation",
+    title: "Maid Flow · Presentation", presentation: "PRESENTATION", forClients: "Client presentation",
     menu: "☰ Menu", prev: "‹ Previous", next: "Next ›", langBtn: "🇲🇽 Español", langHref: "?lang=es",
     t1: "Welcome", t2: "Who we are", t3: "The problem", t4: "Your website", t5: "Your app", t6: "Your AI secretary", t7: "Your investment", t8: "Let's begin",
-    k1: "QUICK COMP · MARKETING & TECHNOLOGY FOR REALTORS", h1a: "More sellers,", h1b: "without chasing them.",
-    b1: "Thanks for booking. In the next 10 minutes you'll see a home valued from real comparable sales — and how your website can bring you sellers 24 hours a day.",
-    g1: "60 sec", g1s: "home valuation", g2: "24/7", g2s: "your site working", g3: "100%", g3s: "bilingual support", tag: "Your business, on top",
-    k2: "02 · WHO WE ARE", h2a: "Built by a Texas builder,", h2b: "for realtors.",
-    b2: "Rolando, our founder, owns residential construction and technology companies in Texas. Buying and valuing his own properties, he lived how hard it was to get an accurate number fast — so he built this tool for himself. It worked so well he opened it to the public, and today he uses this same system to get leads for his own company.",
-    p2a: "Builder-founder: he buys and sells real property, not just software", p2b: "20+ people on the Quick Comp team working behind your account", p2c: "We use our own tools, every single day",
-    cap2: "Rolando · Founder of Quick Comp", ph2a: "Photo of Rolando and the team", ph2b: "in Quick Comp shirts",
-    k3: "03 · WHY IT MATTERS", h3a: "Sellers slip away", h3b: "without a number.",
-    p3a: 'When you\'re showing a house, you can\'t answer. And most sellers list with <b style="color:#fff">whoever responds first</b>.',
-    p3b: 'Every CMA you build by hand costs you: the research, the comps, the time. <b style="color:#fff">And many of those never turn into a listing.</b>',
+    k1: "MAID FLOW · MARKETING & TECHNOLOGY FOR HOUSE CLEANERS", h1a: "More customers,", h1b: "without chasing them.",
+    b1: "Thanks for booking. In the next 10 minutes you'll see a cleaning quoted instantly from real numbers — and how your website can bring you customers 24 hours a day.",
+    g1: "60 sec", g1s: "cleaning quote", g2: "24/7", g2s: "your site working", g3: "100%", g3s: "bilingual support", tag: "Your business, on top",
+    k2: "02 · WHO WE ARE", h2a: "Built by a Texas operator,", h2b: "for house cleaners.",
+    b2: "Rolando, our founder, runs service businesses in Texas. Quoting and booking his own jobs, he lived how hard it was to send an accurate price fast — so he built this tool for himself. It worked so well he opened it to the public, and today he uses this same system to get leads for his own company.",
+    p2a: "Operator-founder: he runs real service businesses, not just software", p2b: "20+ people on the Maid Flow team working behind your account", p2c: "We use our own tools, every single day",
+    cap2: "Rolando · Founder of Maid Flow", ph2a: "Photo of Rolando and the team", ph2b: "in Maid Flow shirts",
+    k3: "03 · WHY IT MATTERS", h3a: "Customers slip away", h3b: "without a price.",
+    p3a: 'When you\'re cleaning a house, you can\'t answer. And most customers hire <b style="color:#fff">whoever responds first</b>.',
+    p3b: 'Every quote you put together by hand costs you: the back-and-forth, the guessing, the time. <b style="color:#fff">And many of those never turn into a booking.</b>',
     p3c: 'A pretty website with no system behind it is <b style="color:#fff">an expensive business card</b>.',
     p3d: 'Big companies already answer with artificial intelligence — in seconds, around the clock. <b style="color:#fff">The question isn\'t whether this is coming. It\'s which side you\'ll be on.</b>',
     c3: "You work hard. What you're missing is a system that works when you can't.",
     k4: "04 · YOUR WEBSITE", h4a: "This is what", h4b: "your site would look like.",
-    b4: "It looks excellent on the phone and on the computer — with your logo, your colors and the home-value tool inside. This one is a sample; yours is delivered in 10–14 days. Both are live: scroll, and type YOUR address into the valuator.",
+    b4: "It looks excellent on the phone and on the computer — with your logo, your colors and the cleaning quoter inside. This one is a sample; yours is delivered in 10–14 days. Both are live: scroll, and enter YOUR details into the quoter.",
     k5: "05 · YOUR APP", h5a: "Your office,", h5b: "in your pocket.",
-    p5a: "Value any home wherever you are: address or GPS, from real comparable sales", p5b: "Every lead hits your phone with a WhatsApp button and the message pre-written", p5c: "An AI texts your lead instantly and books the appointment for you", p5d: "Professional CMA reports with your brand",
-    live5: '🔴 <b style="color:#fff">The app on the right is LIVE</b> — explore it: tap VALUE A HOME, type a real address and value it right here, with the client.',
+    p5a: "Quote any cleaning wherever you are: type of home and service, with an instant price", p5b: "Every lead hits your phone with a WhatsApp button and the message pre-written", p5c: "An AI texts your lead instantly and books the appointment for you", p5d: "Professional quotes with your brand",
+    live5: '🔴 <b style="color:#fff">The app on the right is LIVE</b> — explore it: tap QUOTE A CLEANING, enter real details and quote it right here, with the client.',
     k6: "06 · ARTIFICIAL INTELLIGENCE", h6a: "Your own secretary,", h6b: "who never sleeps.",
     b6: "We all know artificial intelligence is here — what better way than starting now? Your own secretary answers the messages from customers landing on your website, at any hour of the day.",
     p6a: "Replies instantly — even at 11 at night", p6b: "Books the appointment for you. You just show up.", p6c: "You can read every conversation whenever you want", p6d: "Ready in 10–14 days — carrier registration of your number takes a few days",
-    chHead: "🔴 LIVE DEMO — text it like you're the homeowner", chGreet: "Hi! 👋 I'm the assistant at Casa Bella Realty. How can I help you buy or sell a home?",
-    chPh: "Type as the homeowner… (e.g., I want to sell my house)", chFoot: "This same AI will answer YOUR leads' texts", chRetry: "Give me one moment 🙏 (try again)",
+    chHead: "🔴 LIVE DEMO — text it like you're the customer", chGreet: "Hi! 👋 I'm the assistant at Bella Clean. How can I help you book a cleaning?",
+    chPh: "Type as the customer… (e.g., I need a deep cleaning)", chFoot: "This same AI will answer YOUR leads' texts", chRetry: "Give me one moment 🙏 (try again)",
     k7: "07 · YOUR INVESTMENT", h7a: "All of this,", h7b: "one single price.",
     b7: "What this would cost separately (typical market prices):",
-    s7a: "🌐 Professional website with your brand", s7b: "🏡 Home-value tool on your site", s7c: "🤖 AI secretary that texts and books", s7d: "📲 Values, CMAs & leads app", s7e: "🇺🇸 Domain, hosting & bilingual support",
-    s7tot: "Separately", roi7: '💰 <b style="color:#fff">One commission is thousands of dollars.</b> One single extra deal pays for your whole year.',
-    pk7: "WITH QUICK COMP · ALL INCLUDED", mo: "/mo", setup7: "+ $297 to start, one time only",
+    s7a: "🌐 Professional website with your brand", s7b: "🧼 Cleaning-quote tool on your site", s7c: "🤖 AI secretary that texts and books", s7d: "📲 Quotes & leads app", s7e: "🇺🇸 Domain, hosting & bilingual support",
+    s7tot: "Separately", roi7: '💰 <b style="color:#fff">One steady client is hundreds of dollars a month.</b> One single extra client pays for your whole year.',
+    pk7: "WITH MAID FLOW · ALL INCLUDED", mo: "/mo", setup7: "+ $97 to start, one time only",
     pr7a: "✓ No long contracts", pr7b: "✓ Cancel anytime", pr7c: "✓ Your domain is YOURS — by contract",
     k8: "08 · LET'S BEGIN", h8a: "Let's start", h8b: "today.",
     b8: "Getting started is this easy — everything begins on this very call:",
     d8a: "STEP 1", t8a: "Secure your spot", x8a: "We send a secure payment link to your WhatsApp. You pay by card, protected by Stripe 🔒.",
-    d8b: "STEP 2 · TODAY", t8b: "Your app, today", x8b: "Your access arrives by WhatsApp before we hang up. You're valuing homes today.",
+    d8b: "STEP 2 · TODAY", t8b: "Your app, today", x8b: "Your access arrives by WhatsApp before we hang up. You're quoting cleanings today.",
     d8c: "STEP 3", t8c: "Your onboarding", x8c: "We book your call right now: your logo, your colors, your prices and your photos.",
-    d8d: "DAY 10–14", t8d: "Everything live", x8d: "Your website, your home-value tool and your AI secretary — 24/7. Carriers take a few days to approve your number; we use that time to make everything perfect.",
+    d8d: "DAY 10–14", t8d: "Everything live", x8d: "Your website, your cleaning quoter and your AI secretary — 24/7. Carriers take a few days to approve your number; we use that time to make everything perfect.",
     c8: "🤝 Ready? I'll send you the link right now.",
   } : {
-    title: "Quick Comp · Presentación", presentation: "PRESENTACIÓN", forClients: "Presentación para clientes",
+    title: "Maid Flow · Presentación", presentation: "PRESENTACIÓN", forClients: "Presentación para clientes",
     menu: "☰ Menú", prev: "‹ Anterior", next: "Siguiente ›", langBtn: "🇺🇸 English", langHref: "?lang=en",
     t1: "Bienvenida", t2: "Quiénes somos", t3: "El problema", t4: "Tu página", t5: "Tu app", t6: "Tu secretaria IA", t7: "Tu inversión", t8: "Empecemos",
-    k1: "QUICK COMP · MARKETING Y TECNOLOGÍA PARA AGENTES", h1a: "Más vendedores,", h1b: "sin perseguirlos.",
-    b1: "Gracias por agendar. En los próximos 10 minutos vas a ver una casa valuada con ventas comparables reales — y cómo tu página puede traerte vendedores las 24 horas.",
-    g1: "60 seg", g1s: "valuación de casa", g2: "24/7", g2s: "tu página trabajando", g3: "100%", g3s: "en español", tag: "Tu negocio, en alto",
-    k2: "02 · QUIÉNES SOMOS", h2a: "Construido por un constructor de Texas,", h2b: "para agentes.",
-    b2: "Rolando, nuestro fundador, tiene compañías de construcción residencial y de tecnología en Texas. Comprando y valuando sus propias propiedades vivió lo difícil que era sacar un número correcto rápido — así que construyó esta herramienta para él mismo. Funcionó tan bien que la abrió al público, y hoy usa este mismo sistema para conseguir leads para su propia compañía.",
-    p2a: "Fundador constructor: compra y vende propiedades, no solo software", p2b: "Más de 20 personas del equipo Quick Comp trabajando detrás de tu cuenta", p2c: "Usamos nuestras propias herramientas, todos los días",
-    cap2: "Rolando · Fundador de Quick Comp", ph2a: "Foto de Rolando y el equipo", ph2b: "con la camisa Quick Comp",
-    k3: "03 · POR QUÉ IMPORTA", h3a: "Los vendedores se pierden", h3b: "sin un número.",
-    p3a: 'Cuando estás enseñando una casa, no puedes contestar. Y la mayoría de los vendedores lista con <b style="color:#fff">el primero que les responde</b>.',
-    p3b: 'Cada CMA que haces a mano cuesta: la investigación, las comparables, el tiempo. <b style="color:#fff">Y muchas nunca se vuelven un listing.</b>',
+    k1: "MAID FLOW · MARKETING Y TECNOLOGÍA PARA LIMPIADORAS", h1a: "Más clientes,", h1b: "sin perseguirlos.",
+    b1: "Gracias por agendar. En los próximos 10 minutos vas a ver una limpieza cotizada al instante con números reales — y cómo tu página puede traerte clientes las 24 horas.",
+    g1: "60 seg", g1s: "cotización de limpieza", g2: "24/7", g2s: "tu página trabajando", g3: "100%", g3s: "en español", tag: "Tu negocio, en alto",
+    k2: "02 · QUIÉNES SOMOS", h2a: "Construido por un emprendedor de Texas,", h2b: "para limpiadoras.",
+    b2: "Rolando, nuestro fundador, tiene negocios de servicios en Texas. Cotizando y agendando sus propios trabajos vivió lo difícil que era mandar un precio correcto rápido — así que construyó esta herramienta para él mismo. Funcionó tan bien que la abrió al público, y hoy usa este mismo sistema para conseguir leads para su propia compañía.",
+    p2a: "Fundador emprendedor: tiene negocios de servicios reales, no solo software", p2b: "Más de 20 personas del equipo Maid Flow trabajando detrás de tu cuenta", p2c: "Usamos nuestras propias herramientas, todos los días",
+    cap2: "Rolando · Fundador de Maid Flow", ph2a: "Foto de Rolando y el equipo", ph2b: "con la camisa Maid Flow",
+    k3: "03 · POR QUÉ IMPORTA", h3a: "Los clientes se pierden", h3b: "sin un precio.",
+    p3a: 'Cuando estás limpiando una casa, no puedes contestar. Y la mayoría de los clientes contrata con <b style="color:#fff">el primero que les responde</b>.',
+    p3b: 'Cada cotización que haces a mano cuesta: el ir y venir, el adivinar, el tiempo. <b style="color:#fff">Y muchas nunca se vuelven una reserva.</b>',
     p3c: 'Una página bonita sin un sistema detrás es <b style="color:#fff">una tarjeta de presentación cara</b>.',
     p3d: 'Las compañías grandes ya responden con inteligencia artificial — en segundos, a toda hora. <b style="color:#fff">La pregunta no es si esto llega. Es de qué lado vas a estar.</b>',
     c3: "Trabajas duro. Lo que te falta es un sistema que trabaje cuando tú no puedes.",
     k4: "04 · TU PÁGINA WEB", h4a: "Así se vería", h4b: "tu página.",
-    b4: "Se mira excelente en el celular y en la computadora — con tu logo, tus colores y el valuador adentro. Esta es de ejemplo; la tuya se entrega en 10–14 días. Las dos están vivas: haz scroll, y pon TU dirección en el valuador.",
+    b4: "Se mira excelente en el celular y en la computadora — con tu logo, tus colores y el cotizador adentro. Esta es de ejemplo; la tuya se entrega en 10–14 días. Las dos están vivas: haz scroll, y pon TUS detalles en el cotizador.",
     k5: "05 · TU APP", h5a: "Tu oficina,", h5b: "en tu bolsillo.",
-    p5a: "Valúa cualquier casa donde estés: dirección o GPS, con ventas comparables reales", p5b: "Cada lead llega a tu teléfono con botón de WhatsApp y el mensaje ya escrito", p5c: "Una IA le textea a tu lead al momento y agenda la cita por ti", p5d: "Reportes CMA profesionales con tu marca",
-    live5: '🔴 <b style="color:#fff">La app de la derecha está EN VIVO</b> — explórala: toca VALUAR CASA, pon una dirección real y valúala aquí mismo, con el cliente.',
+    p5a: "Cotiza cualquier limpieza donde estés: tipo de casa y servicio, con precio al instante", p5b: "Cada lead llega a tu teléfono con botón de WhatsApp y el mensaje ya escrito", p5c: "Una IA le textea a tu lead al momento y agenda la cita por ti", p5d: "Cotizaciones profesionales con tu marca",
+    live5: '🔴 <b style="color:#fff">La app de la derecha está EN VIVO</b> — explórala: toca COTIZAR LIMPIEZA, pon detalles reales y cotízala aquí mismo, con el cliente.',
     k6: "06 · INTELIGENCIA ARTIFICIAL", h6a: "Tu propia secretaria,", h6b: "que nunca duerme.",
     b6: "Todos sabemos que la inteligencia artificial ya viene — ¿qué mejor que empezar desde ahora? Tu propia secretaria contesta los mensajes de los clientes que llegan de tu página, a cualquier hora del día.",
     p6a: "Contesta al momento — aunque sean las 11 de la noche", p6b: "Agenda la cita por ti. Tú solo llegas a hacerla.", p6c: "Puedes ver cada conversación cuando quieras", p6d: "Lista en 10–14 días — el registro de tu número con las telefónicas tarda unos días",
-    chHead: "🔴 DEMO EN VIVO — escríbele como si fueras el dueño", chGreet: "¡Hola! 👋 Soy la asistente de Casa Bella Realty. ¿Le puedo ayudar a comprar o vender una casa?",
-    chPh: "Escribe como dueño… (ej. quiero vender mi casa)", chFoot: "Esta misma IA contestará los textos de TUS leads", chRetry: "Dame un momentito y te contesto 🙏 (intenta de nuevo)",
+    chHead: "🔴 DEMO EN VIVO — escríbele como si fueras el cliente", chGreet: "¡Hola! 👋 Soy la asistente de Bella Clean. ¿Le puedo ayudar a agendar una limpieza?",
+    chPh: "Escribe como cliente… (ej. necesito una limpieza profunda)", chFoot: "Esta misma IA contestará los textos de TUS leads", chRetry: "Dame un momentito y te contesto 🙏 (intenta de nuevo)",
     k7: "07 · TU INVERSIÓN", h7a: "Todo esto,", h7b: "un solo precio.",
     b7: "Lo que esto costaría por separado (precios típicos del mercado):",
-    s7a: "🌐 Página web profesional con tu marca", s7b: "🏡 Valuador de casas en tu página", s7c: "🤖 Secretaria IA que textea y agenda", s7d: "📲 App de valores, CMAs y leads", s7e: "🇺🇸 Dominio, hosting y soporte en español",
-    s7tot: "Por separado", roi7: '💰 <b style="color:#fff">Una comisión son miles de dólares.</b> Un solo cierre extra paga tu año entero.',
-    pk7: "CON QUICK COMP · TODO INCLUIDO", mo: "/mes", setup7: "+ $297 para empezar, una sola vez",
+    s7a: "🌐 Página web profesional con tu marca", s7b: "🧼 Cotizador de limpieza en tu página", s7c: "🤖 Secretaria IA que textea y agenda", s7d: "📲 App de cotizaciones y leads", s7e: "🇺🇸 Dominio, hosting y soporte en español",
+    s7tot: "Por separado", roi7: '💰 <b style="color:#fff">Un cliente fijo son cientos de dólares al mes.</b> Un solo cliente extra paga tu año entero.',
+    pk7: "CON MAID FLOW · TODO INCLUIDO", mo: "/mes", setup7: "+ $97 para empezar, una sola vez",
     pr7a: "✓ Sin contratos largos", pr7b: "✓ Cancelas cuando quieras", pr7c: "✓ Tu dominio es TUYO — por contrato",
     k8: "08 · EMPECEMOS", h8a: "Empecemos", h8b: "hoy mismo.",
     b8: "Así de fácil es arrancar — todo empieza en esta misma llamada:",
     d8a: "PASO 1", t8a: "Asegura tu lugar", x8a: "Te mandamos un link de pago seguro a tu WhatsApp. Pagas con tarjeta, protegido por Stripe 🔒.",
-    d8b: "PASO 2 · HOY", t8b: "Tu app, hoy mismo", x8b: "Tu acceso te llega por WhatsApp antes de colgar. Hoy mismo ya estás valuando casas.",
+    d8b: "PASO 2 · HOY", t8b: "Tu app, hoy mismo", x8b: "Tu acceso te llega por WhatsApp antes de colgar. Hoy mismo ya estás cotizando limpiezas.",
     d8c: "PASO 3", t8c: "Tu onboarding", x8c: "Agendamos tu llamada ahorita: tu logo, tus colores, tu especialidad y tus fotos.",
-    d8d: "DÍA 10–14", t8d: "Todo funcionando", x8d: "Tu página, tu valuador y tu secretaria IA — 24/7. Las telefónicas tardan unos días en aprobar tu número; usamos ese tiempo para dejar todo perfecto.",
+    d8d: "DÍA 10–14", t8d: "Todo funcionando", x8d: "Tu página, tu cotizador y tu secretaria IA — 24/7. Las telefónicas tardan unos días en aprobar tu número; usamos ese tiempo para dejar todo perfecto.",
     c8: "🤝 ¿Listo? Te mando el link ahora mismo.",
   };
 
@@ -4754,18 +4753,18 @@ ul.pts.big li{font-size:clamp(16px,2.2vw,22px);padding:19px 0;line-height:1.6;ga
 <a class="langpill" href="${L.langHref}">${L.langBtn}</a>
 <div class="layout">
 <aside id="sb">
-  <div class="sb-brand"><img src="/brand-logo.png" alt="Quick Comp"></div>
+  <div class="sb-brand"><b style="color:#101B30;font-weight:900;font-size:24px">Maid<span style="color:#F8B408">Flow</span></b></div>
   <div class="sb-label">${L.presentation}</div>
   <nav id="nav"></nav>
   <div class="sb-foot">${L.forClients}</div>
 </aside>
 <div class="scrim" id="scrim" onclick="toggleSb(false)"></div>
 <main>
-<div class="mtop"><button class="mt-b" onclick="toggleSb(true)">${L.menu}</button><b>QUICK <em>COMP</em></b><span style="width:64px"></span></div>
+<div class="mtop"><button class="mt-b" onclick="toggleSb(true)">${L.menu}</button><b>Maid<em>Flow</em></b><span style="width:64px"></span></div>
 <div class="stage" id="stage">
 
 <section class="slide" data-t="${L.t1}">
-  <img class="s-bg" src="/api/roofimg?lat=26.3828&lng=-98.8198&zoom=17" alt=""><div class="s-veil"></div>
+  <div class="s-bg" style="background:linear-gradient(160deg,#062B22,#0E8C72)"></div><div class="s-veil"></div>
   <div class="s-in">
     <p class="kick">${L.k1}</p>
     <h1>${L.h1a}<br><em>${L.h1b}</em></h1>
@@ -4840,7 +4839,7 @@ ul.pts.big li{font-size:clamp(16px,2.2vw,22px);padding:19px 0;line-height:1.6;ga
     <div class="duo">
       <div>
         <ul class="pts" style="margin-top:0">
-          <li><b>🛰️</b><span>${L.p5a}</span></li>
+          <li><b>🧼</b><span>${L.p5a}</span></li>
           <li><b>📥</b><span>${L.p5b}</span></li>
           <li><b>🤖</b><span>${L.p5c}</span></li>
           <li><b>🧾</b><span>${L.p5d}</span></li>
@@ -4904,7 +4903,7 @@ ul.pts.big li{font-size:clamp(16px,2.2vw,22px);padding:19px 0;line-height:1.6;ga
       </div>
       <div class="pcard">
         <p class="pk">${L.pk7}</p>
-        <div class="pamt">$297<small>${L.mo}</small></div>
+        <div class="pamt">$97<small>${L.mo}</small></div>
         <p class="psetup">${L.setup7}</p>
         <div class="pdiv"></div>
         <p class="prow">${L.pr7a}</p>
@@ -4916,7 +4915,7 @@ ul.pts.big li{font-size:clamp(16px,2.2vw,22px);padding:19px 0;line-height:1.6;ga
 </section>
 
 <section class="slide" data-t="${L.t8}">
-  <img class="s-bg" src="/api/roofimg?lat=26.3828&lng=-98.8198&zoom=18" alt=""><div class="s-veil"></div>
+  <div class="s-bg" style="background:linear-gradient(160deg,#062B22,#0E8C72)"></div><div class="s-veil"></div>
   <div class="s-in" style="max-width:1150px">
     <p class="kick">${L.k8}</p>
     <h1>${L.h8a} <em>${L.h8b}</em></h1>
@@ -4984,7 +4983,7 @@ document.addEventListener('keydown',function(e){
   if(k==='d')kCopy(K.dem);
   if(k==='o')kOpen();
 });
-var chatHist=[{role:'assistant',content:${JSON.stringify(en ? "Hi! 👋 I'm the assistant at Casa Bella Realty. How can I help you buy or sell a home?" : "¡Hola! 👋 Soy la asistente de Casa Bella Realty. ¿Le puedo ayudar a comprar o vender una casa?")}}],chatBusy=false;
+var chatHist=[{role:'assistant',content:${JSON.stringify(en ? "Hi! 👋 I'm the assistant at Bella Clean. How can I help you book a cleaning?" : "¡Hola! 👋 Soy la asistente de Bella Clean. ¿Le puedo ayudar a agendar una limpieza?")}}],chatBusy=false;
 function addBub(cls,txt){var log=document.getElementById('chatlog'),d=document.createElement('div');d.className='bub '+cls;d.textContent=txt;log.appendChild(d);log.scrollTop=log.scrollHeight;return d}
 function sendChat(){
   if(chatBusy)return;
@@ -5047,8 +5046,8 @@ app.get("/i", (req, res) => {
   }
   const es = d.lang !== "en";
   const L = es
-    ? { inv: "FACTURA", est: "COTIZACIÓN", for: "Preparado para", item: "Concepto", subtotal: "Subtotal", deposit: "Depósito recibido", due: "SALDO PENDIENTE", paid: "PAGADO", how: "CÓMO PAGAR", zelle: "Zelle", cash: "Efectivo o cheque aceptado", print: "🖨️ Imprimir / Guardar PDF", made: "Hecho con Quick Comp", meas: "Medición satelital del techo", date: "Fecha", area: "Área del techo", pitch: "Inclinación", sqs: "Cuadros (squares)", imgOf: "Imagen satelital", valid: "Esta cotización es válida por 30 días.", sig: "Autorizado por (firma del cliente)", sigDate: "Fecha" }
-    : { inv: "INVOICE", est: "QUOTE", for: "Prepared for", item: "Item", subtotal: "Subtotal", deposit: "Deposit received", due: "BALANCE DUE", paid: "PAID", how: "HOW TO PAY", zelle: "Zelle", cash: "Cash or check accepted", print: "🖨️ Print / Save PDF", made: "Made with Quick Comp", meas: "Satellite roof measurement", date: "Date", area: "Roof area", pitch: "Pitch", sqs: "Squares", imgOf: "Satellite imagery", valid: "This quote is valid for 30 days.", sig: "Authorized by (client signature)", sigDate: "Date" };
+    ? { inv: "FACTURA", est: "COTIZACIÓN", for: "Preparado para", item: "Concepto", subtotal: "Subtotal", deposit: "Depósito recibido", due: "SALDO PENDIENTE", paid: "PAGADO", how: "CÓMO PAGAR", zelle: "Zelle", cash: "Efectivo o cheque aceptado", print: "🖨️ Imprimir / Guardar PDF", made: "Hecho con Maid Flow", meas: "Detalles de la limpieza", date: "Fecha", area: "Área a limpiar", pitch: "Tipo de limpieza", sqs: "Recámaras / baños", imgOf: "Referencia", valid: "Esta cotización es válida por 30 días.", sig: "Autorizado por (firma del cliente)", sigDate: "Fecha" }
+    : { inv: "INVOICE", est: "QUOTE", for: "Prepared for", item: "Item", subtotal: "Subtotal", deposit: "Deposit received", due: "BALANCE DUE", paid: "PAID", how: "HOW TO PAY", zelle: "Zelle", cash: "Cash or check accepted", print: "🖨️ Print / Save PDF", made: "Made with Maid Flow", meas: "Cleaning details", date: "Date", area: "Area to clean", pitch: "Cleaning type", sqs: "Bedrooms / baths", imgOf: "Reference", valid: "This quote is valid for 30 days.", sig: "Authorized by (client signature)", sigDate: "Date" };
   const fmtM = (n) => "$" + Number(n || 0).toLocaleString("en-US", { maximumFractionDigits: 0 });
   const esc = (s) => String(s || "").replace(/[&<>"]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch]));
   const bal = (d.tot || 0) - (d.dep || 0);
@@ -5135,7 +5134,7 @@ app.post("/api/ai", async (req, res) => {
   try {
     const text = await aiChat({
       maxTokens: 1024,
-      system: `You are the AI assistant inside Quick Comp, an app for Latino real-estate agents. The user is a real-estate agent${bizName ? ` (brokerage: ${bizName})` : ""}. Reply in ${lang === "es" ? "Spanish" : "English"}, max 90 words, plain text only (no markdown). Help with home valuation and listing prep: how a comparative market value is built from recent SOLD comparable sales (adjusting for living area/sqft, beds/baths, age, condition and how recent the sale is), how to read price-per-sqft, days on market, and how to position a listing price. Active/pending listings are context only, never the value. NEVER promise a guaranteed sale price and never give legal or financial advice; a full CMA refines the number, and tell them to verify locally. Agent's current data: ${JSON.stringify(data)}`,
+      system: `You are the AI assistant inside Maid Flow, an app for Latino house cleaners. The user is a house cleaner${bizName ? ` (cleaning business: ${bizName})` : ""}. Reply in ${lang === "es" ? "Spanish" : "English"}, max 90 words, plain text only (no markdown). Help with cleaning quotes and winning the job: how a fair cleaning price is built (adjusting for home size/sqft, number of bedrooms/bathrooms, type of cleaning — standard, deep, move-in/move-out — frequency, and add-ons like inside the oven or fridge), how to charge by the job vs. by the hour, how to set a recurring discount, and how to follow up fast with a customer over WhatsApp. NEVER promise an exact price sight-unseen without seeing the home, and never give legal or financial advice; tell them to confirm details with the customer. Cleaner's current data: ${JSON.stringify(data)}`,
       messages,
     });
     res.json({ text, source: "live" });
@@ -5145,7 +5144,7 @@ app.post("/api/ai", async (req, res) => {
   }
 });
 
-/* Parse a spoken phrase like "factura para María García, reparación de techo,
+/* Parse a spoken phrase like "factura para María García, limpieza profunda,
  * 450 dólares" into draft invoice fields. Claude when a key is set, simple
  * pattern matching otherwise. Always returns a draft for human review. */
 function parseInvoiceFallback(text) {
