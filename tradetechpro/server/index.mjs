@@ -18,6 +18,7 @@ import { fromArrayBuffer } from "geotiff";
 import proj4 from "proj4";
 import * as db from "./db.mjs";
 import { renderSite } from "./templates.mjs";
+import { quote as priceQuote, mergeRates, DEFAULTS as RATE_DEFAULTS } from "./pricing.mjs";
 
 const PORT = process.env.PORT || 8787;
 const GOOGLE_KEY = process.env.GOOGLE_MAPS_API_KEY || "";
@@ -507,6 +508,37 @@ async function fetchRentcastValue({ address, radius, compCount, daysOld }) {
   return rcFetchJson(endpoint, { headers: { "X-Api-Key": RENTCAST_KEY } });
 }
 
+/* Cleaning needs the home's characteristics (sqft / beds / baths / type / year)
+ * — NOT a market valuation. RentCast's property-records endpoint returns those
+ * directly and, unlike the AVM, works even where there are no recent sold comps.
+ * This is the single property data call for both the widget and the in-app flow. */
+async function fetchRentcastProperty(address) {
+  const endpoint = new URL("https://api.rentcast.io/v1/properties");
+  endpoint.searchParams.set("address", address);
+  const data = await rcFetchJson(endpoint, { headers: { "X-Api-Key": RENTCAST_KEY } });
+  return Array.isArray(data) ? data[0] : data;
+}
+
+/* Look up a home and return normalized characteristics for the pricing engine.
+ * Returns { address, sqft, beds, baths, propertyType, yearBuilt, lat, lng } or
+ * null when nothing is found (the quote still works — sqft just defaults to 0). */
+async function propertyLookup(address) {
+  if (!RENTCAST_KEY || !address) return null;
+  const raw = await fetchRentcastProperty(address).catch((e) => { console.error("property:", e.message); return null; });
+  if (!raw) return null;
+  const s = normalizeSubjectProperty(raw, address);
+  return {
+    address: s.address,
+    sqft: s.squareFootage || null,
+    beds: s.bedrooms ?? null,
+    baths: s.bathrooms ?? null,
+    propertyType: s.propertyType || null,
+    yearBuilt: s.yearBuilt || null,
+    lat: s.latitude ?? null,
+    lng: s.longitude ?? null,
+  };
+}
+
 function normalizeRentcastComps(data) {
   const raw = data.comparables || data.comps || data.saleComparables || [];
   const comps = raw.map((c) => ({
@@ -919,32 +951,27 @@ app.post("/api/lookup", async (req, res) => {
       const parcel = REGRID_KEY ? await parcelLookup(geo.lat, geo.lng).catch((e) => { console.error("parcel:", e.message); return null; }) : null;
       return res.json({ found: true, source: parcel ? "live" : "demo", addr: geo.formatted, lat: geo.lat, lng: geo.lng, parcel });
     }
-    // Comps flow: weighted sold price-per-sqft valuation from RentCast.
+    // Property flow: pull the home's characteristics (sqft/beds/baths/type/year)
+    // so the cleaner can confirm them before quoting. No market valuation.
     const lookupAddr = (geo && geo.formatted) || address;
     if (!lookupAddr) return res.json({ found: false, source: "live" });
     if (!RENTCAST_KEY) return res.json({ found: false, source: "demo" });
-    const comp = await rentcastLookup(lookupAddr).catch((e) => { console.error("comps failed:", e.message); return null; });
-    // We may know where the house is even when the market is too thin to value.
-    if (!comp || !comp.value) {
+    const prop = await propertyLookup(lookupAddr);
+    // We may know where the house is even when no property record is found.
+    if (!prop) {
       return res.json({ found: false, source: "live", addr: (geo && geo.formatted) || address, lat: geo?.lat ?? null, lng: geo?.lng ?? null });
     }
     return res.json({
       found: true,
       source: "live",
-      addr: comp.subject?.address || (geo && geo.formatted) || address,
-      lat: geo?.lat ?? comp.subject?.latitude ?? null,
-      lng: geo?.lng ?? comp.subject?.longitude ?? null,
-      value: comp.value,
-      valueRange: { low: comp.low, high: comp.high },
-      confidence: comp.confidence,
-      method: comp.method,
-      subject: comp.subject,
-      comps: comp.comps,
-      compsUsed: comp.usedCompCount,
-      excludedOutliers: comp.excludedOutliers,
-      avgPpsf: comp.avgPpsf,
-      radius: comp.radius,
-      lookbackLabel: comp.lookbackLabel,
+      addr: prop.address || (geo && geo.formatted) || address,
+      lat: geo?.lat ?? prop.lat ?? null,
+      lng: geo?.lng ?? prop.lng ?? null,
+      sqft: prop.sqft,
+      beds: prop.beds,
+      baths: prop.baths,
+      propertyType: prop.propertyType,
+      yearBuilt: prop.yearBuilt,
     });
   } catch (e) {
     console.error("lookup failed:", e.message);
@@ -2017,7 +2044,7 @@ app.post("/api/widget/chat", async (req, res) => {
     const inEnglish = req.body?.lang === "en";
     const text = await aiChat({
       maxTokens: 180,
-      system: `Eres el asistente virtual de valuación de bienes raíces de un agente inmobiliario. Estás en una DEMO en vivo frente a un agente interesado en contratar este servicio. Responde SIEMPRE en ${inEnglish ? "inglés" : "español"}, estilo mensaje de texto: cálido, profesional, máximo 45 palabras, sin markdown. Tu meta: contestar dudas sobre el valor estimado de una propiedad (cómo se calcula con ventas comparables recientes — comps — cercanas, ajustadas por tamaño, recámaras/baños, año y recencia de venta) y AGENDAR una valuación detallada o consulta ofreciendo dos horarios concretos (por ejemplo "¿mañana 10am o 2pm?"). El estimado de la página es preliminar y se basa SOLO en ventas cerradas; las propiedades activas en el mercado son solo contexto, nunca el valor. NUNCA prometas un precio de venta garantizado ni des asesoría legal o financiera; un análisis de mercado completo (CMA) afina el número. Si confirman un horario, confirma con ✓ y menciona que les llegará un recordatorio. Si preguntan algo fuera de tema, redirige con amabilidad hacia el valor de la propiedad.`,
+      system: `Eres el asistente virtual de una empresa de limpieza de casas. Estás en una DEMO en vivo frente a una limpiadora interesada en contratar este servicio. Responde SIEMPRE en ${inEnglish ? "inglés" : "español"}, estilo mensaje de texto: cálido, profesional, máximo 45 palabras, sin markdown. Tu meta: contestar dudas sobre el precio estimado de una limpieza (cómo se calcula según los pies cuadrados de la casa, el tipo de limpieza — regular, profunda, mudanza, Airbnb —, el número de baños y recámaras, la condición del hogar, mascotas y extras) y AGENDAR la cita de limpieza ofreciendo dos horarios concretos (por ejemplo "¿mañana 10am o 2pm?"). El precio de la página es un estimado preliminar; el precio final puede cambiar si hay mucha acumulación, pelo de mascota o extras no mostrados en las fotos. NUNCA prometas un precio garantizado sin ver la casa. Si confirman un horario, confirma con ✓ y menciona que les llegará un recordatorio. Si preguntan algo fuera de tema, redirige con amabilidad hacia la cotización de limpieza.`,
       messages: msgs.map((m) => ({ role: m.role === "assistant" ? "assistant" : "user", content: String(m.content || "").slice(0, 400) })),
     });
     res.json({ text, source: "live" });
@@ -2027,8 +2054,31 @@ app.post("/api/widget/chat", async (req, res) => {
   }
 });
 
+/* In-app cleaning quote (authed). The cleaner has confirmed the home details
+ * and answered the questionnaire; we price the job with HER saved rates. This
+ * and the public widget below share one engine (pricing.mjs) — same inputs,
+ * same number. */
+app.post("/api/quote", async (req, res) => {
+  const c = await auth(req);
+  if (!c) return res.status(401).json({ error: "no session" });
+  const b = req.body || {};
+  const rates = mergeRates(c.data?.rates);
+  const q = priceQuote({
+    sqft: b.sqft, beds: b.beds, baths: b.baths,
+    cleaningType: b.cleaningType, condition: b.condition,
+    pets: b.pets, furnished: b.furnished, frequency: b.frequency,
+    addOns: b.addOns,
+  }, rates);
+  res.json({ ok: true, quote: q });
+});
+
 app.post("/api/widget/quote", async (req, res) => {
-  const { slug, name = "", phone = "", address = "", placeId = null } = req.body || {};
+  const {
+    slug, name = "", phone = "", address = "", placeId = null,
+    cleaningType = "regular", condition = "normal", pets = "none",
+    furnished = "partial", frequency = "one_time", addOns = [],
+    beds: bedsIn = null, baths: bathsIn = null, sqft: sqftIn = null,
+  } = req.body || {};
   const c = slug && (await db.getContractorBySlug(String(slug)));
   if (!c) return res.status(404).json({ error: "unknown contractor" });
   if (c.data?.status === "paused") return res.status(403).json({ error: "paused" });
@@ -2037,13 +2087,13 @@ app.post("/api/widget/quote", async (req, res) => {
   if (!String(address).trim()) return res.status(400).json({ error: "address required" });
   const ip = String(req.headers["x-forwarded-for"] || "").split(",")[0].trim() || req.socket.remoteAddress || "?";
   if (overQuota(`wip:${ip}`, 2) || overQuota(`wslug:${slug}`, 150)) return res.status(429).json({ error: "quota" });
-  // lifetime per connection per widget: homeowners quote a roof 1-3 times
-  // ever; only freeloaders and price-spies get anywhere near 20
+  // lifetime per connection per widget: homeowners quote a cleaning 1-3 times
+  // ever; only freeloaders and price-spies get anywhere near 5
   const wqLife = await db.incrCounter(`wq:${slug}:${ip}`).catch(() => 0);
   if (wqLife > 5) return res.status(429).json({ error: "quota" });
 
-  // Value the property (best effort — the lead is saved regardless). The value
-  // comes from RentCast sold comps; Google is only used to clean up the address.
+  // Pull the home's characteristics (best effort — the lead is saved regardless).
+  // sqft/beds/baths come from RentCast property records; Google cleans the address.
   let m = null;
   try {
     const ck = String(address).toLowerCase().replace(/\s+/g, " ").trim();
@@ -2053,14 +2103,14 @@ app.post("/api/widget/quote", async (req, res) => {
       const geo = GOOGLE_KEY
         ? ((placeId && (await placeDetails(placeId).catch(() => null))) || (await geocode(address).catch(() => null)))
         : null;
-      const comp = await rentcastLookup((geo && geo.formatted) || address).catch(() => null);
-      if (comp && comp.value) {
+      const prop = await propertyLookup((geo && geo.formatted) || address);
+      if (prop) {
         m = {
-          addr: comp.subject?.address || (geo && geo.formatted) || address,
-          lat: geo?.lat ?? comp.subject?.latitude ?? null,
-          lng: geo?.lng ?? comp.subject?.longitude ?? null,
-          value: comp.value, low: comp.low, high: comp.high,
-          confidence: comp.confidence, compsUsed: comp.usedCompCount,
+          addr: prop.address || (geo && geo.formatted) || address,
+          lat: geo?.lat ?? prop.lat ?? null,
+          lng: geo?.lng ?? prop.lng ?? null,
+          sqft: prop.sqft, beds: prop.beds, baths: prop.baths,
+          propertyType: prop.propertyType, yearBuilt: prop.yearBuilt,
         };
         quoteCache.set(ck, { at: Date.now(), data: m });
         if (quoteCache.size > 500) quoteCache.delete(quoteCache.keys().next().value);
@@ -2068,24 +2118,37 @@ app.post("/api/widget/quote", async (req, res) => {
         m = { addr: geo.formatted, lat: geo.lat, lng: geo.lng };
       }
     }
-  } catch (e) { console.error("widget value failed:", e.message); }
+  } catch (e) { console.error("widget property lookup failed:", e.message); }
 
-  // Homeowner sees an estimated market value + range, not a contractor bid.
-  const quote = m?.value ? { value: m.value, low: m.low, high: m.high } : null;
+  // Price the job with the cleaner's saved rates. Homeowner-supplied sqft/beds/
+  // baths (if any) override the looked-up record; otherwise we use the record.
+  const rates = mergeRates(c.data?.rates);
+  const sqft = sqftIn ?? m?.sqft ?? 0;
+  const beds = bedsIn ?? m?.beds ?? 0;
+  const baths = bathsIn ?? m?.baths ?? 0;
+  const q = (sqft || beds || baths)
+    ? priceQuote({ sqft, beds, baths, cleaningType, condition, pets, furnished, frequency, addOns }, rates)
+    : null;
 
   const leadId = await db.addLead(c.id, {
     name: String(name).slice(0, 80),
     phone: digits.slice(0, 15),
     address: String(m?.addr || address).slice(0, 160),
-    info: quote ? { value: quote.value, low: quote.low, high: quote.high, confidence: m.confidence, compsUsed: m.compsUsed } : { unvalued: true },
+    info: q
+      ? { recommended: q.recommended, low: q.range[0], high: q.range[1], cleaningType: q.cleaningType, condition: q.condition, frequency: q.frequency, sqft, beds, baths }
+      : { unquoted: true },
   });
   forwardLead(c, {
     id: leadId, name: String(name).slice(0, 80), phone: digits.slice(0, 15),
     address: String(m?.addr || address).slice(0, 160),
-    value: quote?.value ?? null, low: quote?.low ?? null, high: quote?.high ?? null,
+    recommended: q?.recommended ?? null, low: q?.range?.[0] ?? null, high: q?.range?.[1] ?? null,
   });
 
-  res.json({ ok: true, id: leadId, addr: m?.addr || address, measured: !!quote, value: quote?.value ?? null, low: quote?.low ?? null, high: quote?.high ?? null, img: null });
+  res.json({
+    ok: true, id: leadId, addr: m?.addr || address, quoted: !!q,
+    quote: q, sqft, beds, baths,
+    recommended: q?.recommended ?? null, low: q?.range?.[0] ?? null, high: q?.range?.[1] ?? null,
+  });
 });
 
 app.get("/w/:slug", async (req, res) => {
