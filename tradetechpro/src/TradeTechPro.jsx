@@ -1,197 +1,107 @@
-import React, { useState, useMemo, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect } from "react";
+// Single source of truth for pricing — the same engine the server uses for the
+// public widget. Pure JS, no node deps, so Vite bundles it for the browser.
+import { quote as priceQuote, mergeRates, DEFAULTS } from "../server/pricing.mjs";
 
-/* ─── Brand tokens (Quick Comp: navy + gold) ─── */
+/* ─── Brand tokens (Maid Flow: fresh teal + warm gold) ─── */
 const C = {
-  navy: "#15244C",      // primary navy — header bar, dark cards, headings
-  navyDeep: "#0B1733",  // deepest navy — gradients, deep panels
-  orange: "#C9973A",    // gold accent — section labels, $/sf, highlights
-  orangeSoft: "#F7EFD8",// soft gold tint — accent card backgrounds
-  bg: "#F1F4FA",        // app background
+  teal: "#0E8C72",       // primary — header bar, dark cards, headings
+  tealDeep: "#0A5C4C",   // deepest — gradients, deep panels
+  gold: "#E4A862", // warm accent
+  goldSoft: "#FBF1DC",
+  bg: "#F1F7F4",
   card: "#FFFFFF",
-  line: "#E4E8F0",
-  slate: "#6E7891",
+  line: "#E2EAE6",
+  slate: "#5F7068",
   green: "#1E9E5A",
   greenSoft: "#E6F5EC",
   red: "#D64545",
   redSoft: "#FBEAEA",
-  yellow: "#C9973A",    // align legacy "yellow" to brand gold
-  yellowSoft: "#F7EFD8",
+  navy: "#13332B",       // dark text
+};
+// Scoped visual language for the quote screens.
+const M = {
+  teal: "#0E8C72", tealDeep: "#0A5C4C",
+  cardGrad: "linear-gradient(135deg,#0E8C72,#0A5C4C)",
+  headGrad: "linear-gradient(135deg,#062B22 0%,#0A4537 62%,#0E8C72 100%)",
+  gold: "#D9A44E", goldHi: "#E9BE6A", goldSoft: "#FBF1DC",
+  bg: "#EFF6F2", line: "#DCE7E2", line2: "#D2E0DA",
+  muted: "#93A89F", muted2: "#5F7B70", body: "#3F564D",
+  green: "#1E9E5A", red: "#E8442E",
 };
 
-/* ─── Logo (Quick Comp QC monogram) ───
-   color="#fff" (or any light value) renders the white mark for navy backgrounds;
-   default renders the navy mark for light backgrounds. */
-const Logo = ({ size = 44, color = null }) => {
-  const light = !!color && color.toLowerCase() !== C.navy.toLowerCase();
-  return (
-    <img
-      src={light ? "/quick-comp-mark-white.png" : "/quick-comp-mark-navy.png"}
-      alt="Quick Comp"
-      width={size}
-      height={size}
-      draggable={false}
-      style={{ display: "block", objectFit: "contain" }}
-    />
-  );
-};
+/* ─── Catalogs (Spanish-first) ─── */
+const CLEANING_TYPES = [
+  ["regular", "🧹", "Limpieza regular", "Regular cleaning"],
+  ["deep", "✨", "Limpieza profunda", "Deep cleaning"],
+  ["move_in", "📦", "Mudanza (entrada)", "Move-in"],
+  ["move_out", "🚪", "Mudanza (salida)", "Move-out"],
+  ["airbnb", "🏨", "Rotación Airbnb", "Airbnb turnover"],
+  ["post_construction", "🏗️", "Post-construcción", "Post-construction"],
+  ["office", "🏢", "Oficina", "Office"],
+];
+const TYPE_ES = { regular: "regular", deep: "profunda", move_in: "mudanza (entrada)", move_out: "mudanza (salida)", airbnb: "rotación Airbnb", post_construction: "post-construcción", office: "de oficina" };
+const TYPE_EN = { regular: "regular", deep: "deep", move_in: "move-in", move_out: "move-out", airbnb: "Airbnb turnover", post_construction: "post-construction", office: "office" };
 
-/* ─── Google Maps JS loader (loaded once, key fetched from the server) ─── */
-let _gmapsPromise = null;
-let _gmapsAuthFailed = false;
-const _authFailListeners = new Set();
-if (typeof window !== "undefined") {
-  // Google calls this globally when the key is invalid/unauthorized.
-  window.gm_authFailure = () => { _gmapsAuthFailed = true; _authFailListeners.forEach((fn) => fn()); };
-}
-function loadGoogleMaps() {
-  if (_gmapsPromise) return _gmapsPromise;
-  _gmapsPromise = fetch("/api/mapconfig")
-    .then((r) => r.json())
-    .then(({ key }) => {
-      if (!key) throw new Error("no-map-key");
-      if (window.google?.maps) return window.google.maps;
-      return new Promise((resolve, reject) => {
-        const s = document.createElement("script");
-        s.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(key)}&v=quarterly`;
-        s.async = true;
-        s.onload = () => (window.google?.maps ? resolve(window.google.maps) : reject(new Error("gmaps-load")));
-        s.onerror = () => reject(new Error("gmaps-load"));
-        document.head.appendChild(s);
-      });
-    });
-  return _gmapsPromise;
-}
-
-/* ─── Interactive in-app comparables map (stays inside Quick Comp) ─── */
-function CompMap({ subjectLL, comps, satellite, focus, lang, fallbackSrc }) {
-  const elRef = useRef(null);
-  const st = useRef({ map: null, maps: null, markers: [], info: null, dirSvc: null, dirRend: null });
-  const [failed, setFailed] = useState(_gmapsAuthFailed);
-
-  useEffect(() => {
-    // Fall back to the static map if Google rejects the key (auth failure).
-    const onAuthFail = () => setFailed(true);
-    _authFailListeners.add(onAuthFail);
-    return () => { _authFailListeners.delete(onAuthFail); };
-  }, []);
-
-  useEffect(() => {
-    let cancelled = false;
-    loadGoogleMaps().then((maps) => {
-      if (cancelled || !elRef.current) return;
-      const s = st.current;
-      s.maps = maps;
-      const map = new maps.Map(elRef.current, {
-        mapTypeId: satellite ? "hybrid" : "roadmap",
-        disableDefaultUI: true, zoomControl: true, gestureHandling: "greedy", clickableIcons: false,
-      });
-      s.map = map;
-      s.info = new maps.InfoWindow();
-      s.dirRend = new maps.DirectionsRenderer({ map, suppressMarkers: true, preserveViewport: true, polylineOptions: { strokeColor: "#1B2A5C", strokeWeight: 5 } });
-      s.dirSvc = new maps.DirectionsService();
-      const bounds = new maps.LatLngBounds();
-      if (subjectLL) {
-        new maps.Marker({ position: subjectLL, map, zIndex: 999, title: lang === "es" ? "Propiedad" : "Subject",
-          label: { text: "S", color: "#fff", fontWeight: "700", fontSize: "12px" },
-          icon: { path: maps.SymbolPath.CIRCLE, scale: 13, fillColor: "#E8442E", fillOpacity: 1, strokeColor: "#fff", strokeWeight: 3 } });
-        bounds.extend(subjectLL);
-      }
-      comps.forEach((c, i) => {
-        if (c.latitude == null || c.longitude == null) return;
-        const pos = { lat: c.latitude, lng: c.longitude };
-        const mk = new maps.Marker({ position: pos, map,
-          label: { text: String(i + 1), color: "#fff", fontWeight: "700", fontSize: "11px" },
-          icon: { path: maps.SymbolPath.CIRCLE, scale: 11, fillColor: "#1B2A5C", fillOpacity: 1, strokeColor: "#fff", strokeWeight: 2 } });
-        const price = c.soldPrice ? "$" + Number(c.soldPrice).toLocaleString("en-US") : "";
-        const facts = [
-          c.beds != null ? `${c.beds} ${lang === "es" ? "rec" : "bd"}` : null,
-          c.baths != null ? `${c.baths} ${lang === "es" ? "baños" : "ba"}` : null,
-          c.sqft ? `${Number(c.sqft).toLocaleString("en-US")} ${lang === "es" ? "pie²" : "sqft"}` : null,
-        ].filter(Boolean).join(" · ");
-        const html = `<div style="font-family:Inter,sans-serif;min-width:180px;max-width:210px">`
-          + `<img src="/api/streetview?lat=${c.latitude}&lng=${c.longitude}" alt="" style="width:100%;height:104px;object-fit:cover;border-radius:8px;margin-bottom:6px;display:block;background:#eef1f7" onerror="this.style.display='none'">`
-          + `<div style="font-weight:800;color:#15244C;font-size:13px">${c.address || ""}</div>`
-          + `<div style="color:#1B2A5C;font-weight:800;font-size:15px;margin-top:2px">${price}</div>`
-          + (facts ? `<div style="color:#6E7891;font-size:11px;margin-top:2px">${facts}</div>` : "")
-          + (subjectLL ? `<button id="qc-dir-${i}" style="margin-top:8px;background:#15244C;color:#fff;border:none;border-radius:8px;padding:7px 12px;font-weight:700;font-size:12px;cursor:pointer">${lang === "es" ? "Cómo llegar" : "Directions"}</button>` : "")
-          + `</div>`;
-        mk.addListener("click", () => {
-          s.info.setContent(html); s.info.open(map, mk); map.panTo(pos);
-          if (subjectLL) maps.event.addListenerOnce(s.info, "domready", () => {
-            const b = document.getElementById(`qc-dir-${i}`);
-            if (b) b.onclick = () => s.dirSvc.route({ origin: subjectLL, destination: pos, travelMode: maps.TravelMode.DRIVING },
-              (res, status) => { if (status === "OK") s.dirRend.setDirections(res); });
-          });
-        });
-        s.markers[i] = mk;
-        bounds.extend(pos);
-      });
-      if (!bounds.isEmpty()) map.fitBounds(bounds, 48);
-    }).catch(() => { if (!cancelled) setFailed(true); });
-    return () => { cancelled = true; };
-  }, []); // initialize once
-
-  useEffect(() => {
-    const s = st.current;
-    if (s.map && s.maps) s.map.setMapTypeId(satellite ? "hybrid" : "roadmap");
-  }, [satellite]);
-
-  useEffect(() => {
-    const s = st.current;
-    if (!focus || !s.map || !s.maps) return;
-    const mk = s.markers[focus.i];
-    if (mk) { s.map.panTo(mk.getPosition()); s.map.setZoom(Math.max(s.map.getZoom() || 0, 17)); s.maps.event.trigger(mk, "click"); }
-  }, [focus]);
-
-  if (failed) {
-    return <img src={fallbackSrc} alt="" className="absolute inset-0 w-full h-full" style={{ objectFit: "cover" }} onError={(e) => { e.currentTarget.style.display = "none"; }} />;
-  }
-  return <div ref={elRef} className="absolute inset-0 w-full h-full" />;
-}
+const CONDITIONS = [
+  ["light", "🌿", "Ligera", "Light", "Casa bien mantenida", "Well kept"],
+  ["normal", "🏠", "Normal", "Normal", "Uso diario normal", "Everyday use"],
+  ["heavy", "🧼", "Pesada", "Heavy", "Mucha acumulación", "Lots of buildup"],
+  ["very_heavy", "⚠️", "Muy pesada", "Very heavy", "Requiere cotización personalizada", "Custom quote recommended"],
+];
+const PETS = [
+  ["none", "🚫", "Sin mascotas", "No pets"],
+  ["light", "🐾", "Poco pelo", "Light hair"],
+  ["heavy", "🐕", "Mucho pelo", "Heavy hair"],
+  ["stains", "💧", "Manchas / olor", "Stains / smell"],
+];
+const FREQUENCIES = [
+  ["one_time", "Una vez", "One-time", ""],
+  ["weekly", "Semanal", "Weekly", "−20%"],
+  ["biweekly", "Quincenal", "Biweekly", "−15%"],
+  ["monthly", "Mensual", "Monthly", "−10%"],
+];
+const FURNISHED = [
+  ["empty", "Vacía", "Empty"],
+  ["partial", "Parcial", "Partial"],
+  ["full", "Amueblada", "Furnished"],
+];
+const ADDONS = [
+  ["fridge", "🧊", "Refrigerador", "Fridge"],
+  ["oven", "🔥", "Horno", "Oven"],
+  ["cabinets", "🚪", "Gabinetes por dentro", "Inside cabinets"],
+  ["windows", "🪟", "Ventanas", "Windows"],
+  ["blinds", "🎚️", "Persianas", "Blinds"],
+  ["baseboards", "📏", "Zócalos", "Baseboards"],
+  ["laundry", "🧺", "Lavar ropa", "Laundry"],
+  ["dishes", "🍽️", "Lavar trastes", "Dishes"],
+  ["garage", "🚗", "Garaje", "Garage"],
+  ["patio", "🪴", "Patio", "Patio"],
+  ["trash", "🗑️", "Sacar basura", "Trash haul-out"],
+  ["organization", "🗂️", "Organización", "Organization"],
+];
 
 /* ─── Translations ─── */
 const TR = {
   es: {
-    accepted: "Aceptado",
-    estimateSt: "Estimado", inProgress: "En Progreso",
-    done: "Terminado", paid: "Pagado",
     demoBanner: "🧪 Modo demo — tus datos no se guardan en la nube. ¿Cliente? Entra con tu link de WhatsApp.",
-    demoLimit: "El modo demo incluye 6 valuaciones de prueba y ya las usaste. Los clientes de Quick Comp valúan sin límite.",
-    measuring1: "Buscando la propiedad…", measuring2: "Analizando ventas comparables…", measuring3: "Calculando el valor…",
-    beds: "Recámaras", baths: "Baños", builtIn: "Construida",
+    demoLimit: "El modo demo incluye 6 búsquedas de prueba y ya las usaste. Las limpiadoras de Maid Flow cotizan sin límite.",
+    nav: { quote: "Cotizar", clients: "Clientes", prices: "Mis precios", account: "Cuenta" },
+    measuring1: "Buscando la propiedad…", measuring2: "Midiendo el trabajo…", measuring3: "Calculando tu cotización…",
+    beds: "Recámaras", baths: "Baños", sqft: "pies²", builtIn: "Construida",
     useMyLocation: "Usar mi ubicación", myLocation: "Mi ubicación", locating: "Buscando tu ubicación…",
-    cmpValue: "Valor estimado de mercado", cmpDone: "Valor listo",
-    cmpConfStrong: "Confianza alta", cmpConfGood: "Confianza buena", cmpConfLimited: "Confianza limitada", cmpConfLow: "Confianza baja",
-    cmpSubject: "Propiedad evaluada", cmpComps: "Ventas comparables", cmpSold: "Vendida", cmpPerSqft: "/pie²",
-    cmpMatch: "coincidencia", cmpMap: "Mapa de comparables",
-    cmpDisc: "Estimado basado en ventas recientes comparables — no es un avalúo.",
-    cmpNone: "No se encontraron ventas comparables cerca. Prueba otra dirección.",
-    cmpNew: "Nueva búsqueda", cmpExcluded: "Atípico", cmpSqft: "pie²",
-    cmpStart: "Empieza con una dirección. Buscaremos ventas cercanas y te daremos un valor de mercado.",
     locErr: "No pude obtener tu ubicación. Activa el GPS y permite el acceso.",
-    fenceDrawn: "Cerca medida",
-    noParcel: "Sin línea de propiedad para esta dirección — dibuja la cerca en la foto",
+    next: "Siguiente", back: "Atrás", skip: "Omitir", optional: "opcional",
   },
   en: {
-    accepted: "Accepted",
-    estimateSt: "Estimate", inProgress: "In Progress",
-    done: "Done", paid: "Paid",
     demoBanner: "🧪 Demo mode — your data isn't saved to the cloud. Client? Enter with your WhatsApp link.",
-    demoLimit: "The demo includes 6 trial valuations and you've used them. Quick Comp clients value with no limits.",
-    measuring1: "Finding the property…", measuring2: "Analyzing comparable sales…", measuring3: "Calculating the value…",
-    beds: "Bedrooms", baths: "Baths", builtIn: "Built",
+    demoLimit: "The demo includes 6 trial lookups and you've used them. Maid Flow cleaners quote with no limits.",
+    nav: { quote: "Quote", clients: "Clients", prices: "My prices", account: "Account" },
+    measuring1: "Finding the property…", measuring2: "Sizing the job…", measuring3: "Calculating your quote…",
+    beds: "Bedrooms", baths: "Baths", sqft: "sq ft", builtIn: "Built",
     useMyLocation: "Use my location", myLocation: "My location", locating: "Finding your location…",
-    cmpValue: "Estimated Market Value", cmpDone: "Value ready",
-    cmpConfStrong: "High confidence", cmpConfGood: "Good confidence", cmpConfLimited: "Limited confidence", cmpConfLow: "Low confidence",
-    cmpSubject: "Subject Property", cmpComps: "Sold Comparables", cmpSold: "Sold", cmpPerSqft: "/sq ft",
-    cmpMatch: "match", cmpMap: "Comparable Map",
-    cmpDisc: "Estimate based on recent comparable sales — not an appraisal.",
-    cmpNone: "No comparable sales found nearby. Try another address.",
-    cmpNew: "New search", cmpExcluded: "Outlier", cmpSqft: "sq ft",
-    cmpStart: "Start with a property address. We'll find nearby sales and shape a market value.",
     locErr: "Couldn't get your location. Turn on GPS and allow access.",
-    fenceDrawn: "Fence measured",
-    noParcel: "No property line for this address — draw the fence on the photo",
+    next: "Next", back: "Back", skip: "Skip", optional: "optional",
   },
 };
 
@@ -201,183 +111,90 @@ const seedCustomers = [
   { id: 2, name: "José Pérez", phone: "(956) 555-0188", addr: "210 Mesquite Ln, Roma, TX" },
   { id: 3, name: "Ana Ríos", phone: "(956) 555-0102", addr: "88 Palma St, La Grulla, TX" },
 ];
-const seedJobs = [];
 
-const fmt = (n) => "$" + Number(n).toLocaleString("en-US", { maximumFractionDigits: 0 });
-
-/* ─── Property lookup (DEMO — simulated data; swap for a property data API) ─── */
-const MAT_PRICES = { three: 95, arch: 110, metal: 250, tile: 350 };
-const FENCE_PRICES = { cedar: 28, vinyl: 38, chain: 18, alum: 45, custom: 30 };
-
-// Address pool for the built-in suggestion list (only `addr` is consumed by the live screens).
 const MOCK_PROPERTIES = [
-  { addr: "456 Oak Dr, Rio Grande City, TX", beds: 3, baths: 2, sqft: 1850, year: 2004 },
-  { addr: "210 Mesquite Ln, Roma, TX", beds: 4, baths: 2, sqft: 2400, year: 1998 },
-  { addr: "88 Palma St, La Grulla, TX", beds: 2, baths: 1, sqft: 1240, year: 1987 },
-  { addr: "1204 Cenizo Ct, Rio Grande City, TX", beds: 4, baths: 3, sqft: 2980, year: 2019 },
-  { addr: "35 Rancho Viejo Rd, Garciasville, TX", noData: true },
+  { addr: "456 Oak Dr, Rio Grande City, TX", beds: 3, baths: 2, sqft: 1850 },
+  { addr: "210 Mesquite Ln, Roma, TX", beds: 4, baths: 2, sqft: 2400 },
+  { addr: "88 Palma St, La Grulla, TX", beds: 2, baths: 1, sqft: 1240 },
+  { addr: "1204 Cenizo Ct, Rio Grande City, TX", beds: 4, baths: 3, sqft: 2980 },
 ];
-
 const hashAddr = (s) => { let h = 7; for (const ch of s) h = (h * 31 + ch.charCodeAt(0)) % 99991; return h; };
-
-/* ─── Trace geometry ───
- * The trace image is a 640×400 static map at scale 2 (1280×800 natural px).
- * Traced points are stored as [lat, lng] so they survive zooming and panning;
- * they're projected to image pixels for display via Web Mercator. */
-const TRACE_W = 1280, TRACE_H = 800;
-const mercY = (lat) => Math.log(Math.tan(Math.PI / 4 + (lat * Math.PI) / 360));
-const llToPx = ([lat, lng], v) => {
-  const worldN = 256 * Math.pow(2, v.zoom) * 2; // natural px per 360°
-  return [
-    ((lng - v.lng) / 360) * worldN + TRACE_W / 2,
-    ((mercY(v.lat) - mercY(lat)) / (2 * Math.PI)) * worldN + TRACE_H / 2,
-  ];
-};
-const pxToLl = (x, y, v) => {
-  const worldN = 256 * Math.pow(2, v.zoom) * 2;
-  const lng = v.lng + ((x - TRACE_W / 2) * 360) / worldN;
-  const my = mercY(v.lat) - ((y - TRACE_H / 2) * 2 * Math.PI) / worldN;
-  const lat = ((2 * Math.atan(Math.exp(my)) - Math.PI / 2) * 180) / Math.PI;
-  return [lat, lng];
-};
-const traceAreaSqft = (pts) => {
-  if (pts.length < 3) return 0;
-  const R = 6378137, k = Math.PI / 180;
-  const [lat0, lng0] = pts[0];
-  const xy = pts.map(([la, ln]) => [(ln - lng0) * k * R * Math.cos(lat0 * k), (la - lat0) * k * R]);
-  let a = 0;
-  for (let i = 0; i < xy.length; i++) {
-    const [x1, y1] = xy[i], [x2, y2] = xy[(i + 1) % xy.length];
-    a += x1 * y2 - x2 * y1;
-  }
-  return (Math.abs(a) / 2) * 10.7639;
-};
-const distFt = (a, b) => {
-  const k = Math.PI / 180, R = 6378137;
-  return Math.hypot((b[1] - a[1]) * k * R * Math.cos(a[0] * k), (b[0] - a[0]) * k * R) * 3.28084;
-};
-const zoomForBbox = (b) => {
-  const [s, w, n, e] = b;
-  const ctr = (s + n) / 2;
-  const span = Math.max(n - s, (e - w) * Math.cos((ctr * Math.PI) / 180), 0.00005) * 2.2;
-  return Math.min(Math.max(Math.floor(Math.log2((360 * (640 / 256)) / span)), 17), 21);
-};
-
-// Offline/demo comps: a believable subject + ranked sold comps and a weighted
-// value, shaped exactly like the live /api/lookup comp response.
+// Offline/demo property lookup, shaped like the live /api/lookup response.
 const mockLookup = (addr) => new Promise((resolve) => {
   setTimeout(() => {
+    const known = MOCK_PROPERTIES.find((p) => p.addr.toLowerCase() === addr.toLowerCase());
+    if (known) { resolve({ found: true, source: "demo", addr, sqft: known.sqft, beds: known.beds, baths: known.baths }); return; }
     const h = hashAddr(addr.toLowerCase());
-    const baseLat = 26.21 + ((h % 200) / 10000), baseLng = -98.23 - ((h % 200) / 10000);
-    const subjSqft = 1400 + (h % 1600);
-    const subjYear = 1985 + (h % 38);
-    const beds = 3 + (h % 3), baths = 2 + (h % 2);
-    const psf = 150 + (h % 90); // market $/sq ft
-    const comps = Array.from({ length: 6 }, (_, i) => {
-      const g = (h >> (i + 1)) % 100;
-      const sqft = subjSqft + (g - 50) * 6;
-      const ppsf = psf + (g % 25) - 12;
-      const soldPrice = Math.round((sqft * ppsf) / 1000) * 1000;
-      const dt = new Date(2026, 0, 1); dt.setDate(dt.getDate() - (20 + g * 2));
-      return {
-        address: `${100 + g} ${["Oak", "Pecan", "Cenizo", "Mesquite", "Palm", "Sabal"][i]} ${["Dr", "Ln", "Ct", "Blvd"][g % 4]}, TX`,
-        soldPrice, sqft, beds: beds + ((g % 3) - 1), baths,
-        soldDate: dt.toISOString().slice(0, 10), yearBuilt: subjYear + ((g % 20) - 10),
-        distance: +((0.2 + (g % 18) / 10)).toFixed(2),
-        latitude: +(baseLat + (g - 50) / 4000).toFixed(5), longitude: +(baseLng + (g - 50) / 4000).toFixed(5),
-        matchScore: Math.max(45, 98 - i * 6), ppsf: Math.round(ppsf),
-      };
-    });
-    const value = Math.round((subjSqft * psf) / 1000) * 1000;
-    resolve({
-      found: true, source: "demo", addr, lat: baseLat, lng: baseLng,
-      value, low: Math.round(value * 0.94 / 1000) * 1000, high: Math.round(value * 1.06 / 1000) * 1000,
-      confidence: "good", method: "weighted_sold_price_per_sqft", avgPpsf: psf,
-      compsUsed: comps.length, radius: 2, lookbackLabel: "6 months",
-      subject: { address: addr, beds, baths, sqft: subjSqft, yearBuilt: subjYear, latitude: baseLat, longitude: baseLng },
-      comps,
-    });
-  }, 2600);
+    resolve({ found: true, source: "demo", addr, sqft: 1400 + (h % 1600), beds: 2 + (h % 3), baths: 1 + (h % 3) });
+  }, 1800);
 });
 
+const fmt = (n) => "$" + Number(n || 0).toLocaleString("en-US", { maximumFractionDigits: 0 });
+const num = (n) => Number(n || 0).toLocaleString("en-US");
+
 /* ─── Shared UI ─── */
-const Btn = ({ children, onClick, color = C.orange, textColor = "#fff", style = {}, disabled }) => (
-  <button onClick={onClick} disabled={disabled} className="w-full rounded-xl font-bold text-base tracking-wide active:scale-95 transition-transform"
-    style={{ background: disabled ? C.line : color, color: disabled ? C.slate : textColor, padding: "16px", fontFamily: "'Inter', sans-serif", fontSize: 19, letterSpacing: "0.04em", border: "none", ...style }}>
+const Card = ({ children, style = {} }) => (
+  <div className="rounded-2xl p-4 mb-3" style={{ background: "#fff", border: `1px solid ${M.line}`, boxShadow: "0 2px 8px rgba(10,92,76,0.06)", ...style }}>{children}</div>
+);
+
+const PrimaryBtn = ({ children, onClick, disabled, style = {} }) => (
+  <button onClick={onClick} disabled={disabled} className="w-full active:translate-y-px transition-transform"
+    style={{ background: disabled ? M.line : M.teal, color: disabled ? M.muted : "#fff", border: "none", borderRadius: 12, padding: 15, fontSize: 16, fontWeight: 800, letterSpacing: "0.01em", boxShadow: disabled ? "none" : "0 4px 14px rgba(14,140,114,0.3)", ...style }}>
     {children}
   </button>
 );
 
-const Field = ({ label, value, onChange, type = "text", suffix, placeholder }) => (
-  <label className="block mb-3">
-    <span className="block text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: C.slate }}>{label}</span>
-    <div className="flex items-center rounded-xl px-4" style={{ background: "#fff", border: `1.5px solid ${C.line}` }}>
-      <input type={type} inputMode={type === "number" ? "decimal" : undefined} value={value} placeholder={placeholder}
-        onChange={(e) => onChange(e.target.value)}
-        className="flex-1 py-3 text-lg font-semibold outline-none bg-transparent" style={{ color: C.navy }} />
-      {suffix && <span className="text-sm font-semibold" style={{ color: C.slate }}>{suffix}</span>}
-    </div>
-  </label>
+const TextInput = ({ value, onChange, placeholder, type = "text", inputMode }) => (
+  <input value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} type={type} inputMode={inputMode}
+    className="w-full rounded-xl px-3.5 py-3 mb-2 font-semibold outline-none" style={{ background: M.bg, border: `1.5px solid ${M.line}`, color: M.navy, fontSize: 15 }} />
 );
 
-const Sel = ({ label, value, onChange, options }) => (
-  <label className="block mb-3">
-    <span className="block text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: C.slate }}>{label}</span>
-    <select value={value} onChange={(e) => onChange(e.target.value)}
-      className="w-full py-3 px-4 text-lg font-semibold rounded-xl outline-none"
-      style={{ color: C.navy, background: "#fff", border: `1.5px solid ${C.line}`, WebkitAppearance: "none" }}>
-      {options.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-    </select>
-  </label>
+const OptionGrid = ({ options, value, onChange, cols = 2 }) => (
+  <div className="grid gap-2" style={{ gridTemplateColumns: `repeat(${cols}, minmax(0,1fr))` }}>
+    {options.map((o) => {
+      const on = value === o.key;
+      return (
+        <button key={o.key} onClick={() => onChange(o.key)} className="text-left active:scale-[0.98] transition-transform"
+          style={{ background: on ? M.teal : "#fff", color: on ? "#fff" : M.navy, border: `1.5px solid ${on ? M.teal : M.line}`, borderRadius: 14, padding: "13px 14px" }}>
+          <div style={{ fontSize: 20, marginBottom: 4 }}>{o.icon}</div>
+          <div className="font-extrabold" style={{ fontSize: 14, lineHeight: 1.2 }}>{o.title}</div>
+          {o.sub && <div style={{ fontSize: 11, fontWeight: 600, marginTop: 2, color: on ? "rgba(255,255,255,0.82)" : M.muted2 }}>{o.sub}</div>}
+        </button>
+      );
+    })}
+  </div>
 );
 
-const StatusPill = ({ status, t }) => {
-  const map = {
-    estimate: [C.yellowSoft, C.yellow, t.estimateSt],
-    accepted: [C.orangeSoft, C.orange, t.accepted],
-    inprogress: [C.orangeSoft, C.orange, t.inProgress],
-    done: [C.yellowSoft, C.yellow, t.done],
-    paid: [C.greenSoft, C.green, t.paid],
-  };
-  const [bg, fg, label] = map[status] || map.estimate;
-  return <span className="text-xs font-bold px-2.5 py-1 rounded-full" style={{ background: bg, color: fg }}>{label}</span>;
-};
-
-/* Saved contractor profile — survives closing the app */
+/* Saved cleaner profile — survives closing the app */
 const savedProfile = (() => {
-  try { return JSON.parse(localStorage.getItem("ttp_profile") || "null") || {}; } catch { return {}; }
+  try { return JSON.parse(localStorage.getItem("maidflow_profile") || "null") || {}; } catch { return {}; }
 })();
 
-/* Demo entrance for the sales deck (/?demo=roof): open straight on the
- * quote screen with an ephemeral demo profile — nothing is saved, and a
- * real signed-in user's data is never touched. */
-const WANT_ROOF = /[?&]demo=(roof|app|qc)/.test(window.location.search);
-const DEMO_ROOF = WANT_ROOF && !savedProfile.biz;
+/* Demo entrance for the sales deck (/?demo=...): open straight into the quote
+ * flow with an ephemeral demo profile — nothing is saved. */
+const WANT_DEMO = /[?&]demo=/.test(window.location.search);
+const DEMO_ON = WANT_DEMO && !savedProfile.biz;
 
 /* ─── Main App ─── */
 export default function TradeTechPro() {
   const [lang, setLang] = useState(savedProfile.lang || "es");
   const t = TR[lang];
-  const welcomedInit = (() => { try { return !!localStorage.getItem("qc_welcomed"); } catch { return false; } })();
-  const [screen, setScreen] = useState(WANT_ROOF ? "comps" : (welcomedInit ? "comps" : "welcome"));
-  const [trade, setTrade] = useState(savedProfile.trade || "roofing");
-  const [userName, setUserName] = useState(savedProfile.name || (DEMO_ROOF ? "María" : ""));
-  const [bizName, setBizName] = useState(savedProfile.biz || (DEMO_ROOF ? "Casa Bella Realty (Demo)" : ""));
+  const welcomedInit = (() => { try { return !!localStorage.getItem("maidflow_welcomed"); } catch { return false; } })();
+  const [screen, setScreen] = useState(WANT_DEMO ? "quote" : (welcomedInit ? "quote" : "welcome"));
+
+  const [userName, setUserName] = useState(savedProfile.name || (DEMO_ON ? "María" : ""));
+  const [bizName, setBizName] = useState(savedProfile.biz || (DEMO_ON ? "Brillo Cleaning (Demo)" : ""));
   const [userPhone, setUserPhone] = useState(savedProfile.phone || "");
   const [logo, setLogo] = useState(savedProfile.logo || null);
   const [bizEmail, setBizEmail] = useState(savedProfile.email || "");
-  const [license, setLicense] = useState(savedProfile.license || "");
   const [zelle, setZelle] = useState(savedProfile.zelle || "");
-  const [myPrices, setMyPrices] = useState(savedProfile.prices || {});
-  const logoIdRef = useRef(null); // server id for the currently uploaded logo
-
-  // contractor's saved price beats the default
-  const priceOf = (k) => (myPrices[k] != null && myPrices[k] !== "" ? Number(myPrices[k]) : MAT_PRICES[k]);
+  const [myRates, setMyRates] = useState(savedProfile.rates || {});
+  const logoIdRef = useRef(null);
 
   const saveProfile = (patch) => {
     try {
-      const cur = JSON.parse(localStorage.getItem("ttp_profile") || "{}");
-      localStorage.setItem("ttp_profile", JSON.stringify({ ...cur, ...patch }));
+      const cur = JSON.parse(localStorage.getItem("maidflow_profile") || "{}");
+      localStorage.setItem("maidflow_profile", JSON.stringify({ ...cur, ...patch }));
     } catch { /* private mode */ }
   };
 
@@ -400,38 +217,26 @@ export default function TradeTechPro() {
     img.src = URL.createObjectURL(file);
   };
 
-  // Upload the logo (by content) so shared invoice pages can show it.
-  // Re-uploads transparently if the server has restarted since last time.
-  const ensureLogoId = async () => {
-    if (!logo) return null;
-    if (logoIdRef.current) return logoIdRef.current;
-    try {
-      const r = await fetch("/api/logo", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ data: logo }),
-      });
-      if (r.ok) { const j = await r.json(); logoIdRef.current = j.id; return j.id; }
-    } catch { /* backend unreachable — share without logo */ }
-    return null;
-  };
   const [customers, setCustomers] = useState(seedCustomers);
-  const [jobs, setJobs] = useState(seedJobs);
+  const [savedQuotes, setSavedQuotes] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("maidflow_quotes") || "[]"); } catch { return []; }
+  });
   const [toast, setToast] = useState(null);
+  const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(null), 2400); };
 
   /* ── Cloud account (invite link → everything saved on the server) ── */
   const [session, setSession] = useState(() => {
     const m = /[#&]session=([^&]+)/.exec(window.location.hash || "");
     if (m) {
-      try { localStorage.setItem("alto_session", m[1]); } catch { /* private mode */ }
+      try { localStorage.setItem("maidflow_session", m[1]); } catch { /* private mode */ }
       window.history.replaceState(null, "", window.location.pathname);
       return m[1];
     }
-    try { return localStorage.getItem("alto_session"); } catch { return null; }
+    try { return localStorage.getItem("maidflow_session"); } catch { return null; }
   });
   const [cloudReady, setCloudReady] = useState(false);
   const [hideInstall, setHideInstall] = useState(() => {
-    try { return !!localStorage.getItem("alto_inst"); } catch { return true; }
+    try { return !!localStorage.getItem("maidflow_inst"); } catch { return true; }
   });
   const showInstallHint = !hideInstall
     && /iphone|ipad/i.test(navigator.userAgent || "")
@@ -446,13 +251,13 @@ export default function TradeTechPro() {
     },
   });
 
-  // On startup with a session: load my account and my saved data
+  // On startup with a session: load my account + saved data
   useEffect(() => {
     if (!session) return;
     (async () => {
       try {
         const r = await api("/api/me");
-        if (r.status === 401) { try { localStorage.removeItem("alto_session"); } catch { /* ignore */ } setSession(null); return; }
+        if (r.status === 401) { try { localStorage.removeItem("maidflow_session"); } catch { /* ignore */ } setSession(null); return; }
         if (!r.ok) return;
         const j = await r.json();
         const p = j.contractor?.data?.profile || {};
@@ -461,101 +266,49 @@ export default function TradeTechPro() {
         setUserPhone(p.phone || j.contractor.phone || "");
         if (p.logo) setLogo(p.logo);
         if (p.lang) setLang(p.lang);
-        if (p.trade) setTrade(p.trade);
         if (p.email) setBizEmail(p.email);
-        if (p.license) setLicense(p.license);
         if (p.zelle) setZelle(p.zelle);
-        if (p.prices) setMyPrices(p.prices);
-        // Real accounts start clean — no demo data
+        if (p.rates) setMyRates(p.rates);
         setCustomers(j.state?.customers || []);
-        setJobs(j.state?.jobs || []);
-        if (!WANT_ROOF && welcomedInit) setScreen("comps");
+        setSavedQuotes(j.state?.quotes || []);
+        if (!WANT_DEMO && welcomedInit) setScreen("quote");
         setCloudReady(true);
       } catch { /* offline — local data keeps working */ }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session]);
 
-  // Save to the cloud shortly after anything changes
+  // Save to the cloud shortly after anything changes. Profile (incl. rates) is
+  // nested under data.profile so the same shape round-trips with the server.
   useEffect(() => {
     if (!session || !cloudReady) return;
     const id = setTimeout(() => {
       api("/api/state", {
         method: "PUT",
         body: JSON.stringify({
-          state: { customers, jobs },
-          profile: { profile: { name: userName, biz: bizName, phone: userPhone, logo, lang, trade, email: bizEmail, license, zelle, prices: myPrices } },
+          state: { customers, quotes: savedQuotes },
+          profile: { profile: { name: userName, biz: bizName, phone: userPhone, logo, lang, email: bizEmail, zelle, rates: myRates } },
         }),
       }).catch(() => { /* offline — retried on next change */ });
     }, 1500);
     return () => clearTimeout(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session, cloudReady, customers, jobs, userName, bizName, userPhone, logo, lang, trade, bizEmail, license, zelle, myPrices]);
+  }, [session, cloudReady, customers, savedQuotes, userName, bizName, userPhone, logo, lang, bizEmail, zelle, myRates]);
 
-  // address lookup state (demo data for now)
+  /* ── Questionnaire state ── */
+  const blankQ = { name: "", phone: "", address: "", placeId: null, sqft: "", beds: "", baths: "", propertyType: "", cleaningType: "regular", condition: "normal", pets: "none", addOns: [], frequency: "one_time", furnished: "partial", photos: [] };
+  const [q, setQ] = useState(blankQ);
+  const setField = (k, v) => setQ((prev) => ({ ...prev, [k]: v }));
+  const [step, setStep] = useState(0);
+  const [result, setResult] = useState(null);
+
   const [addrQ, setAddrQ] = useState("");
+  const [placeSugs, setPlaceSugs] = useState(null);
+  const placesSeq = useRef(0);
   const [measuring, setMeasuring] = useState(false);
   const [measurePhase, setMeasurePhase] = useState(0);
-  const [lookup, setLookup] = useState(null);
-  const [placeSugs, setPlaceSugs] = useState(null); // null = use built-in list
-  const placesSeq = useRef(0);
 
-  const [taxLookup, setTaxLookup] = useState(null); // Tax tab has its own independent search
-  const [mapSat, setMapSat] = useState(true); // comparables map: satellite vs roadmap
-  const [mapFocus, setMapFocus] = useState(null); // {i, t} — focus a comp on the in-app map
-  const focusCompOnMap = (i) => {
-    setMapFocus({ i, t: Date.now() });
-    document.getElementById("qc-compmap")?.scrollIntoView({ behavior: "smooth", block: "center" });
-  };
-
-  /* Quick Comp tabs: lending calculator inputs + saved-work history */
-  const [lendPrice, setLendPrice] = useState(null); // null = follow the comp value
-  const [lendDownPct, setLendDownPct] = useState(20);
-  const [lendRate, setLendRate] = useState(7.0);
-  const [lendTerm, setLendTerm] = useState(30);
-  const [lendTaxPct, setLendTaxPct] = useState(1.1);
-  const [lendInsYr, setLendInsYr] = useState(1500);
-  const [savedWork, setSavedWork] = useState(() => {
-    try { return JSON.parse(localStorage.getItem("qc_saved") || "[]"); } catch { return []; }
-  });
-  const recordWork = (res) => {
-    if (!res || !res.value) return;
-    setSavedWork((prev) => {
-      const addr = (res.subject && res.subject.address) || res.addr || "";
-      const item = { ...res, addr, ts: Date.now() };
-      const next = [item, ...prev.filter((p) => p.addr !== addr)].slice(0, 12);
-      try { localStorage.setItem("qc_saved", JSON.stringify(next)); } catch {}
-      return next;
-    });
-  };
-
-  const [showDetails, setShowDetails] = useState(false); // shared with the fence estimator
-  const [dragOff, setDragOff] = useState([0, 0]);        // live pan offset (fence map drag)
-  const tracePtr = useRef(null);                          // pointer drag tracking (fence map)
-
-  // fence estimator state
-  const [fenceBase, setFenceBase] = useState(null); // {lat, lng, zoom, addr}
-  const [fRuns, setFRuns] = useState([]);           // completed fence lines (lat/lng)
-  const [fCur, setFCur] = useState([]);             // line being drawn
-  const [gWalk, setGWalk] = useState(0);
-  const [gDbl, setGDbl] = useState(0);
-  const [fType, setFType] = useState("cedar");
-  const [fLF, setFLF] = useState(String(FENCE_PRICES.cedar));
-  const [fWalkP, setFWalkP] = useState("250");
-  const [fDblP, setFDblP] = useState("450");
-  const [fMk, setFMk] = useState("0");
-  const [fNoImg, setFNoImg] = useState(false);
-  const [fExcl, setFExcl] = useState(new Set()); // excluded parcel-boundary edges
-
-  const openFence = (base) => {
-    setFenceBase(base);
-    setFRuns([]); setFCur([]); setGWalk(0); setGDbl(0); setFNoImg(false);
-    setFExcl(new Set());
-    setShowDetails(false);
-    setScreen("fenceDraw");
-  };
-
-  // voice input for the address (works on phones that support speech recognition)
+  // voice + location for the address field
   const [listening, setListening] = useState(false);
   const hasVoice = typeof window !== "undefined" && !!(window.SpeechRecognition || window.webkitSpeechRecognition);
   const startVoice = (onResult) => {
@@ -570,945 +323,666 @@ export default function TradeTechPro() {
     r.start();
   };
 
+  const onAddrInput = (v) => {
+    setAddrQ(v);
+    setField("address", v);
+    const query = v.trim();
+    placesSeq.current += 1;
+    const seq = placesSeq.current;
+    if (!query) { setPlaceSugs(null); return; }
+    fetch(`/api/places?q=${encodeURIComponent(query)}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => { if (seq === placesSeq.current && j && Array.isArray(j.suggestions)) setPlaceSugs(j.suggestions); })
+      .catch(() => {});
+  };
+
+  // Look up the home's details (sqft/beds/baths) to pre-fill the confirm step.
+  const lookupProperty = async (addr, placeId = null, gps = null) => {
+    if (!session) {
+      let used = 0;
+      try { used = parseInt(localStorage.getItem("maidflow_demo_meas") || "0", 10) || 0; } catch { /* private mode */ }
+      if (used >= 6) { showToast("🔒 " + t.demoLimit); return; }
+    }
+    setField("address", addr);
+    setMeasuring(true);
+    setMeasurePhase(0);
+    const t0 = Date.now();
+    const p1 = setTimeout(() => setMeasurePhase(1), 800);
+    const p2 = setTimeout(() => setMeasurePhase(2), 1600);
+    let res = null, answered = false;
+    try {
+      const r = await fetch("/api/lookup", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...(session ? { Authorization: `Bearer ${session}` } : {}) },
+        body: JSON.stringify(gps ? { lat: gps.lat, lng: gps.lng } : { address: addr, placeId }),
+      });
+      if (r.status === 429) { clearTimeout(p1); clearTimeout(p2); setMeasuring(false); showToast("🔒 " + t.demoLimit); return; }
+      if (r.ok) {
+        const j = await r.json();
+        answered = true;
+        if (!session && j.found) {
+          try { localStorage.setItem("maidflow_demo_meas", String((parseInt(localStorage.getItem("maidflow_demo_meas") || "0", 10) || 0) + 1)); } catch { /* private mode */ }
+        }
+        res = j.found ? { addr: j.addr || addr, sqft: j.sqft ?? null, beds: j.beds ?? null, baths: j.baths ?? null, propertyType: j.propertyType || "" } : null;
+      }
+    } catch { /* backend unreachable */ }
+    if (!answered) res = await mockLookup(addr);
+    await new Promise((rs) => setTimeout(rs, Math.max(0, 1700 - (Date.now() - t0))));
+    clearTimeout(p1); clearTimeout(p2);
+    setMeasuring(false);
+    if (res) {
+      setQ((prev) => ({
+        ...prev,
+        address: res.addr || addr,
+        sqft: res.sqft != null ? String(res.sqft) : prev.sqft,
+        beds: res.beds != null ? String(res.beds) : prev.beds,
+        baths: res.baths != null ? String(res.baths) : prev.baths,
+        propertyType: res.propertyType || prev.propertyType,
+      }));
+    }
+    setStep(1); // → confirm home details
+  };
+
   const useMyLocation = () => {
     if (!navigator.geolocation) { showToast("⚠️ " + t.locErr); return; }
     showToast("📍 " + t.locating);
     navigator.geolocation.getCurrentPosition(
-      (pos) => startLookup(t.myLocation, null, { lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      (pos) => lookupProperty(t.myLocation, null, { lat: pos.coords.latitude, lng: pos.coords.longitude }),
       () => showToast("⚠️ " + t.locErr),
       { enableHighAccuracy: true, timeout: 10000, maximumAge: 30000 }
     );
   };
 
-  const onAddrInput = (v) => {
-    setAddrQ(v);
-    const q = v.trim();
-    placesSeq.current += 1;
-    const seq = placesSeq.current;
-    if (!q) { setPlaceSugs(null); return; }
-    fetch(`/api/places?q=${encodeURIComponent(q)}`)
-      .then(r => (r.ok ? r.json() : null))
-      .then(j => {
-        if (seq === placesSeq.current && j && Array.isArray(j.suggestions)) setPlaceSugs(j.suggestions);
-      })
-      .catch(() => {}); // backend not running — keep the built-in list
+  // Compute the quote with the cleaner's saved rates (same engine as the widget).
+  const computeQuote = () => {
+    const rates = mergeRates(myRates);
+    const out = priceQuote({
+      sqft: Number(q.sqft) || 0, beds: Number(q.beds) || 0, baths: Number(q.baths) || 0,
+      cleaningType: q.cleaningType, condition: q.condition, pets: q.pets,
+      furnished: q.furnished, frequency: q.frequency, addOns: q.addOns,
+    }, rates);
+    setResult(out);
+    setScreen("result");
+    // remember the quote
+    const item = { id: Date.now(), name: q.name, phone: q.phone, address: q.address, sqft: q.sqft, beds: q.beds, baths: q.baths, cleaningType: q.cleaningType, recommended: out.recommended, ts: Date.now() };
+    setSavedQuotes((prev) => {
+      const next = [item, ...prev].slice(0, 30);
+      try { localStorage.setItem("maidflow_quotes", JSON.stringify(next)); } catch { /* ignore */ }
+      return next;
+    });
   };
 
-  const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(null), 2400); };
+  const resetQuote = () => { setQ(blankQ); setAddrQ(""); setPlaceSugs(null); setStep(0); setResult(null); setScreen("quote"); };
 
-  const startLookup = async (addr, placeId = null, gps = null, target = "comps") => {
-    // Demo mode gets 6 measurements TOTAL (not per day) — a taste, not a tool.
-    // The counter lives next to the demo data itself, so wiping it to cheat
-    // also wipes everything the freeloader saved.
-    if (!session) {
-      let used = 0;
-      try { used = parseInt(localStorage.getItem("alto_demo_meas") || "0", 10) || 0; } catch { /* private mode */ }
-      if (used >= 6) { showToast("🔒 " + t.demoLimit); return; }
+  const toggleAddon = (key) => setQ((prev) => ({ ...prev, addOns: prev.addOns.includes(key) ? prev.addOns.filter((a) => a !== key) : [...prev.addOns, key] }));
+
+  /* WhatsApp quote message (Spanish-first), per the handoff template. */
+  const quoteMessage = (out) => {
+    const name = q.name || (lang === "es" ? "cliente" : "there");
+    const business = bizName || (lang === "es" ? "su limpiadora" : "your cleaner");
+    const sqft = q.sqft || "—", beds = q.beds || "—", baths = q.baths || "—";
+    const low = out.range[0], high = out.range[1];
+    const ti = out.time;
+    if (lang === "es") {
+      const ct = TYPE_ES[out.cleaningType] || "regular";
+      return `Hola ${name} 👋 Le saluda ${business}. Según su casa de ${sqft} pies² (${beds} rec / ${baths} baños) y la limpieza ${ct} solicitada, el precio estimado es $${out.recommended} (rango $${low}–$${high}). Incluye cocina, baños, pisos, sacudido y los detalles de una limpieza ${ct}. Tiempo estimado: ${ti.cleaners} persona(s), ${ti.low}–${ti.high} hrs. El precio final puede cambiar si hay mucha acumulación, pelo de mascota o extras no mostrados en fotos. ¿Le aparto su cita?`;
     }
-    setAddrQ(addr);
-    setMeasuring(true);
-    setMeasurePhase(0);
-    const t0 = Date.now();
-    const p1 = setTimeout(() => setMeasurePhase(1), 1000);
-    const p2 = setTimeout(() => setMeasurePhase(2), 1900);
-    // Ask the backend first (real APIs or server-side demo); if it's not
-    // running, fall back to the in-app simulated lookup.
-    let res = null;
-    let answered = false;
-    let noDataCoords = null;
-    try {
-      const r = await fetch("/api/lookup", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(session ? { Authorization: `Bearer ${session}` } : {}),
-        },
-        body: JSON.stringify(gps
-          ? { lat: gps.lat, lng: gps.lng, parcel: trade === "fence" }
-          : { address: addr, placeId, parcel: trade === "fence" }),
-      });
-      if (r.status === 429) {
-        clearTimeout(p1); clearTimeout(p2);
-        setMeasuring(false);
-        showToast("🔒 " + t.demoLimit);
-        return;
-      }
-      if (r.ok) {
-        const j = await r.json();
-        answered = true;
-        if (!session && j.found) {
-          try { localStorage.setItem("alto_demo_meas", String((parseInt(localStorage.getItem("alto_demo_meas") || "0", 10) || 0) + 1)); } catch { /* private mode */ }
-        }
-        if (!j.found && j.lat != null) noDataCoords = { lat: j.lat, lng: j.lng, addr: j.addr || addr };
-        res = j.found ? {
-          addr: j.addr || addr, lat: j.lat ?? null, lng: j.lng ?? null,
-          parcel: j.parcel || null, // fence flow still uses the parcel boundary
-          value: j.value ?? null,
-          low: j.valueRange?.low ?? null, high: j.valueRange?.high ?? null,
-          confidence: j.confidence || null, method: j.method || null,
-          avgPpsf: j.avgPpsf ?? null, compsUsed: j.compsUsed ?? null,
-          radius: j.radius ?? null, lookbackLabel: j.lookbackLabel || null,
-          subject: j.subject ? {
-            address: j.subject.address || j.addr || addr,
-            beds: j.subject.bedrooms ?? null, baths: j.subject.bathrooms ?? null,
-            sqft: j.subject.squareFootage ?? null, yearBuilt: j.subject.yearBuilt ?? null,
-            latitude: j.subject.latitude ?? null, longitude: j.subject.longitude ?? null,
-            owner: j.subject.owner ?? null, assessedValue: j.subject.assessedValue ?? null,
-            annualTax: j.subject.annualTax ?? null, taxYear: j.subject.taxYear ?? null,
-          } : null,
-          comps: Array.isArray(j.comps) ? j.comps : [],
-          source: j.source || "live",
-        } : null;
-      }
-    } catch { /* backend unreachable */ }
-    if (!answered) res = await mockLookup(addr);
-    // Keep the measuring animation on screen long enough to read
-    await new Promise(rs => setTimeout(rs, Math.max(0, 2400 - (Date.now() - t0))));
-    clearTimeout(p1); clearTimeout(p2);
-    setMeasuring(false);
-    if (trade === "fence") {
-      // Fences only need the location — go straight to drawing
-      const j = answered && res ? res : null;
-      const base = (j && j.lat != null && { lat: j.lat, lng: j.lng, addr: j.addr, parcel: j.parcel || null })
-        || noDataCoords
-        || { lat: 26.3827418, lng: -98.8196915, addr }; // demo fallback
-      if (base.parcel && base.parcel.length >= 3) {
-        // frame the whole property
-        let s = 90, w = 180, nn = -90, e = -180;
-        base.parcel.forEach(([la, ln]) => { s = Math.min(s, la); nn = Math.max(nn, la); w = Math.min(w, ln); e = Math.max(e, ln); });
-        const ctrLat = (s + nn) / 2, ctrLng = (w + e) / 2;
-        const span = Math.max(nn - s, (e - w) * Math.cos(ctrLat * Math.PI / 180), 0.0001) * 1.6;
-        const z = Math.min(Math.max(Math.floor(Math.log2((360 * (640 / 256)) / span)), 15), 20);
-        openFence({ lat: ctrLat, lng: ctrLng, zoom: z, addr: base.addr, parcel: base.parcel });
-      } else {
-        openFence({ lat: base.lat, lng: base.lng, addr: base.addr, zoom: 19, parcel: null });
-      }
-      showToast(base.parcel && base.parcel.length >= 3 ? "🛰️ " + t.fenceDrawn : "✏️ " + t.noParcel);
-      return;
-    }
-    if (target === "tax") {
-      // Tax only needs the property record (facts + assessment), not a comp value.
-      if (!res || !(res.subject || res.value)) {
-        setTaxLookup(null);
-        showToast("🏠 " + t.cmpNone);
-        return;
-      }
-      setTaxLookup(res);
-      setScreen("tax");
-      showToast("🧾 " + (lang === "es" ? "Datos fiscales listos ✓" : "Tax record ready ✓"));
-      return;
-    }
-    if (!res || !res.value) {
-      // Found the place but the market was too thin to value, or nothing found.
-      setLookup(null);
-      setScreen("comps");
-      showToast("🏠 " + t.cmpNone);
-      return;
-    }
-    setLookup(res);
-    setLendPrice(null); // lending follows the new comp value until the user overrides
-    recordWork(res);
-    setScreen("comps");
-    showToast("🏠 " + t.cmpDone + " ✓");
+    const ct = TYPE_EN[out.cleaningType] || "regular";
+    return `Hi ${name} 👋 This is ${business}. Based on your ${sqft} sqft home (${beds} bed / ${baths} bath) and the ${ct} cleaning requested, your estimated price is $${out.recommended} (range $${low}–$${high}). It includes kitchen, bathrooms, floors, dusting and standard ${ct} details. Estimated time: ${ti.cleaners} cleaner(s), ${ti.low}–${ti.high} hrs. Final price may change if there's heavy buildup, pet hair, or extras not shown in photos. Want me to book you in?`;
   };
 
   /* ── Shell pieces ── */
   const LangToggle = ({ onDark = false }) => (
-    <div className="flex rounded-full overflow-hidden" style={{ border: `1.5px solid ${onDark ? "rgba(255,255,255,.28)" : C.line}` }}>
-      {["es", "en"].map(l => (
-        <button key={l} onClick={() => setLang(l)} className="px-3 py-1 text-xs font-bold uppercase"
-          style={{
-            background: lang === l ? (onDark ? C.orange : C.navy) : (onDark ? "transparent" : "#fff"),
-            color: lang === l ? (onDark ? C.navy : "#fff") : (onDark ? "rgba(255,255,255,.8)" : C.slate),
-            border: "none",
-          }}>{l}</button>
+    <div className="flex rounded-full overflow-hidden" style={{ border: `1.5px solid ${onDark ? "rgba(255,255,255,.28)" : M.line}` }}>
+      {["es", "en"].map((l) => (
+        <button key={l} onClick={() => { setLang(l); saveProfile({ lang: l }); }} className="px-3 py-1 text-xs font-bold uppercase"
+          style={{ background: lang === l ? (onDark ? M.goldHi : M.teal) : (onDark ? "transparent" : "#fff"), color: lang === l ? (onDark ? M.tealDeep : "#fff") : (onDark ? "rgba(255,255,255,.8)" : M.muted2), border: "none" }}>{l}</button>
       ))}
     </div>
   );
 
-  const Header = ({ title, back }) => (
-    <div className="flex items-center gap-3 px-5 pt-4 pb-3" style={{ background: C.navy }}>
-      {back && <button onClick={back} className="text-2xl font-bold" style={{ color: "#fff", background: "none", border: "none" }}>‹</button>}
-      <Logo size={28} color="#fff" />
-      <span className="flex-1 font-bold text-lg truncate" style={{ color: "#fff", fontWeight: 800, letterSpacing: 0.3 }}>{title}</span>
-      <LangToggle onDark />
-    </div>
+  const Wordmark = ({ color = "#fff", size = 20 }) => (
+    <span style={{ fontWeight: 900, fontSize: size, letterSpacing: "-0.01em", color }}>
+      Maid<span style={{ color: M.goldHi }}>Flow</span>
+    </span>
   );
 
-  /* Quick Comp brand bar shown atop the primary tab screens */
   const BrandHeader = () => (
-    <div className="relative flex items-center justify-center px-5 pt-4 pb-3" style={{ background: C.navy }}>
-      <img src="/quick-comp-lockup-white.png" alt="Quick Comp" draggable={false} style={{ height: 46, objectFit: "contain", display: "block" }} />
+    <div className="relative flex items-center justify-center px-5 pt-4 pb-3" style={{ background: M.teal }}>
+      <Wordmark size={22} />
       <div className="absolute" style={{ right: 16, top: "50%", transform: "translateY(-50%)" }}><LangToggle onDark /></div>
     </div>
   );
 
-  const BottomNav = () => {
-    const items = [
-      ["comps", lang === "es" ? "Comps" : "Comps"],
-      ["lending", lang === "es" ? "Crédito" : "Lending"],
-      ["tax", lang === "es" ? "Impuestos" : "Tax"],
-      ["workspace", lang === "es" ? "Trabajo" : "Workspace"],
-    ];
-    return (
-      <div className="flex justify-around items-center gap-1.5 px-2 py-2" style={{ background: "#fff", borderTop: `1px solid ${C.line}` }}>
-        {items.map(([s, label], i) => {
-          const on = screen === s;
-          return (
-            <button key={s} onClick={() => setScreen(s)}
-              className="flex-1 flex flex-col items-center gap-0.5 py-1.5 rounded-2xl"
-              style={{ background: on ? C.navy : "transparent", border: "none" }}>
-              <span className="text-xs font-extrabold" style={{ color: on ? C.orange : C.slate, letterSpacing: 0.5 }}>{`0${i + 1}`}</span>
-              <span className="text-[11px] font-bold uppercase truncate" style={{ color: on ? "#fff" : C.slate, letterSpacing: 0.5 }}>{label}</span>
-            </button>
-          );
-        })}
+  const TopBar = ({ title, back }) => (
+    <div className="flex items-center gap-3 px-5 pt-4 pb-3" style={{ background: M.teal }}>
+      {back && <button onClick={back} className="text-2xl font-bold" style={{ color: "#fff", background: "none", border: "none" }}>‹</button>}
+      <span className="flex-1 font-extrabold text-lg truncate" style={{ color: "#fff" }}>{title}</span>
+      <LangToggle onDark />
+    </div>
+  );
+
+  const navItems = [
+    ["quote", "🧹", t.nav.quote],
+    ["clients", "👥", t.nav.clients],
+    ["prices", "💲", t.nav.prices],
+    ["account", "⚙️", t.nav.account],
+  ];
+  const BottomNav = () => (
+    <div className="flex justify-around items-center gap-1.5 px-2 py-2" style={{ background: "#fff", borderTop: `1px solid ${M.line}` }}>
+      {navItems.map(([s, icon, label]) => {
+        const on = screen === s;
+        return (
+          <button key={s} onClick={() => { if (s === "quote") resetQuote(); else setScreen(s); }}
+            className="flex-1 flex flex-col items-center gap-0.5 py-1.5 rounded-2xl" style={{ background: on ? M.teal : "transparent", border: "none" }}>
+            <span style={{ fontSize: 17 }}>{icon}</span>
+            <span className="text-[11px] font-bold uppercase truncate" style={{ color: on ? "#fff" : M.muted2, letterSpacing: 0.5 }}>{label}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+
+  /* ── Questionnaire steps ── */
+  const STEPS = [
+    "customer", "confirm", "type", "condition", "pets", "addons", "frequency", "furnished", "photos",
+  ];
+  // Furnished step only matters for move-in/move-out.
+  const visibleSteps = STEPS.filter((s) => s !== "furnished" || ["move_in", "move_out"].includes(q.cleaningType));
+  const curStepKey = visibleSteps[Math.min(step, visibleSteps.length - 1)];
+  const goNext = () => { if (step < visibleSteps.length - 1) setStep(step + 1); else computeQuote(); };
+  const goBack = () => { if (step > 0) setStep(step - 1); };
+
+  const StepFrame = ({ kicker, title, children, canNext = true, nextLabel }) => (
+    <div className="flex-1 overflow-y-auto pb-6" style={{ background: M.bg }}>
+      <div className="px-5 pt-3">
+        {/* progress */}
+        <div className="flex gap-1 mb-4">
+          {visibleSteps.map((s, i) => (
+            <div key={s} className="flex-1 rounded-full" style={{ height: 4, background: i <= step ? M.teal : M.line }} />
+          ))}
+        </div>
+        <p style={{ color: M.gold, fontSize: 11, fontWeight: 900, letterSpacing: "0.16em", textTransform: "uppercase" }}>{kicker}</p>
+        <p className="font-extrabold mb-3" style={{ color: M.tealDeep, fontSize: 20, lineHeight: 1.2 }}>{title}</p>
+        {children}
       </div>
-    );
-  };
+      <div className="px-5 pt-2 flex gap-2">
+        {step > 0 && <button onClick={goBack} className="active:translate-y-px" style={{ background: "#fff", color: M.teal, border: `1.5px solid ${M.line}`, borderRadius: 12, padding: "14px 20px", fontSize: 15, fontWeight: 800 }}>‹ {t.back}</button>}
+        <PrimaryBtn onClick={goNext} disabled={!canNext}>{nextLabel || t.next + " →"}</PrimaryBtn>
+      </div>
+    </div>
+  );
 
-  /* ── Screens ── */
-  // Quick Comp visual language — scoped to the comps screens (search + result) only.
-  const QC = {
-    navy: "#1B2A5C", navyDeep: "#111B42",
-    cardGrad: "linear-gradient(135deg,#162655,#223B72)",
-    headGrad: "linear-gradient(135deg,#07162D 0%,#111B42 62%,#1D2F5A 100%)",
-    gold: "#D7B665", goldHi: "#E6BF6A", goldLine: "#FFD700",
-    bg: "#F0F4FA", line: "#dde4f0", line2: "#D9E1EF",
-    muted: "#9aaac8", muted2: "#6b7db3", body: "#4a5a7a",
-    green: "#1E9E5A", red: "#E8442E",
-  };
-
-  const CompsSearch = () => {
+  const QuoteFlow = () => {
     if (measuring) {
       const phases = [t.measuring1, t.measuring2, t.measuring3];
       return (
-        <div className="flex-1 flex flex-col items-center justify-center px-7 text-center" style={{ background: QC.bg }}>
-          <span className="text-5xl mb-4" style={{ animation: "ttpPulse 1.2s ease-in-out infinite" }}>🏠</span>
-          <p className="font-extrabold mb-1" style={{ color: QC.navyDeep, fontSize: 20 }}>{addrQ}</p>
-          <p className="mb-6" style={{ color: QC.gold, fontSize: 11, fontWeight: 900, letterSpacing: "0.18em", textTransform: "uppercase" }}>{lang === "es" ? "Analizando comparables" : "Analyzing comparables"}</p>
+        <div className="flex-1 flex flex-col items-center justify-center px-7 text-center" style={{ background: M.bg }}>
+          <span className="text-5xl mb-4" style={{ animation: "ttpPulse 1.2s ease-in-out infinite" }}>🧽</span>
+          <p className="font-extrabold mb-1" style={{ color: M.tealDeep, fontSize: 20 }}>{q.address}</p>
+          <p className="mb-6" style={{ color: M.gold, fontSize: 11, fontWeight: 900, letterSpacing: "0.18em", textTransform: "uppercase" }}>{lang === "es" ? "Preparando tu cotización" : "Preparing your quote"}</p>
           <div className="text-left">
             {phases.map((ph, i) => (
-              <p key={ph} className="py-1 font-semibold" style={{ color: i < measurePhase ? QC.green : i === measurePhase ? QC.navy : QC.line }}>
-                {i < measurePhase ? "✓ " : i === measurePhase ? "● " : "○ "}{ph}
-              </p>
-            ))}
-          </div>
-        </div>
-      );
-    }
-    const q = addrQ.trim().toLowerCase();
-    const localPool = [...new Set([...MOCK_PROPERTIES.map(p => p.addr), ...customers.map(c => c.addr).filter(Boolean)])];
-    // Live suggestions are already filtered/ranked by Google — don't re-filter them
-    const matches = placeSugs !== null
-      ? placeSugs
-      : localPool.filter(a => !q || a.toLowerCase().includes(q)).map(a => ({ text: a, placeId: null }));
-    const custom = addrQ.trim() && !matches.some(m => m.text.toLowerCase() === q) ? addrQ.trim() : null;
-    const go = () => { if (custom) startLookup(custom); else if (matches[0]) startLookup(matches[0].text, matches[0].placeId); };
-    return (
-      <div className="flex-1" style={{ background: QC.bg }}>
-        <div className="px-5 py-4" style={{ background: QC.headGrad, borderBottom: `2px solid ${QC.gold}` }}>
-          <p className="text-center" style={{ color: QC.goldHi, fontSize: 11, fontWeight: 900, letterSpacing: "0.18em", textTransform: "uppercase" }}>{lang === "es" ? "Valuación de propiedad" : "Property Valuation"}</p>
-          <p className="text-center font-extrabold text-white mt-0.5" style={{ fontSize: 18 }}>{lang === "es" ? "Pon precio con confianza" : "Price the property with confidence"}</p>
-        </div>
-        <div className="px-5 pt-3">
-          <div className="rounded-2xl p-4 mb-3" style={{ background: "#fff", border: `1px solid ${QC.line}`, boxShadow: "0 2px 8px rgba(27,42,92,0.06)" }}>
-            <p className="mb-2" style={{ color: QC.muted2, fontSize: 10, fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase" }}>{lang === "es" ? "Dirección de la propiedad" : "Property Address"}</p>
-            <div className="flex gap-2">
-              <button onClick={useMyLocation} title={t.useMyLocation} className="flex items-center justify-center shrink-0 active:scale-95 transition-transform"
-                style={{ width: 48, height: 48, background: QC.bg, border: `1.5px solid ${QC.line}`, borderRadius: 12, color: QC.navy, fontSize: 18 }}>🧭</button>
-              <div className="flex-1 flex items-center gap-2 rounded-xl px-3" style={{ background: QC.bg, border: `1.5px solid ${QC.line}` }}>
-                <input value={addrQ} onChange={(e) => onAddrInput(e.target.value)} placeholder={lang === "es" ? "Escribe una dirección…" : "Enter a property address…"} autoFocus
-                  onKeyDown={(e) => e.key === "Enter" && go()}
-                  className="flex-1 py-3 text-base font-semibold outline-none bg-transparent" style={{ color: QC.navy }} />
-                {hasVoice && (
-                  <button onClick={() => startVoice(onAddrInput)} className="text-xl active:scale-90 transition-transform"
-                    style={{ background: "none", border: "none", opacity: listening ? 1 : 0.6 }}>{listening ? "🔴" : "🎤"}</button>
-                )}
-              </div>
-            </div>
-            {(custom || matches.length > 0) && (
-              <div className="rounded-xl mt-2 overflow-hidden" style={{ border: `1.5px solid ${QC.line}` }}>
-                {custom && (
-                  <button onClick={() => startLookup(custom)} className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-left active:opacity-80"
-                    style={{ background: "#fff", borderBottom: matches.length ? `1px solid ${QC.bg}` : "none" }}>
-                    <span style={{ color: QC.navy }}>📍</span>
-                    <span className="font-bold truncate" style={{ color: QC.navy, fontSize: 13 }}>{custom}</span>
-                  </button>
-                )}
-                {matches.map((m, i) => (
-                  <button key={m.text} onClick={() => startLookup(m.text, m.placeId)} className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-left active:opacity-80"
-                    style={{ background: "#fff", borderBottom: i < matches.length - 1 ? `1px solid ${QC.bg}` : "none" }}>
-                    <span style={{ color: QC.navy }}>📍</span>
-                    <span className="font-semibold truncate" style={{ color: QC.navy, fontSize: 13 }}>{m.text}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-          <button onClick={go} className="w-full active:translate-y-px transition-transform"
-            style={{ background: QC.navy, color: "#fff", border: "none", borderRadius: 12, padding: 15, fontSize: 16, fontWeight: 700, letterSpacing: "0.02em", boxShadow: "0 4px 14px rgba(27,42,92,0.3)" }}>
-            {lang === "es" ? "Ver valor de mercado" : "Get Market Value"}
-          </button>
-          <p className="text-center mt-3" style={{ color: QC.muted, fontSize: 11, fontWeight: 600 }}>{lang === "es" ? "Ventas comparables cercanas · 100% gratis" : "Nearby comparable sales · 100% free"} · DEMO</p>
-        </div>
-      </div>
-    );
-  };
-
-  const CompsResult = () => {
-    const R = lookup;
-    if (!R || !R.value) {
-      return (
-        <div className="flex-1 px-5 pt-4" style={{ background: QC.bg }}>
-          <div className="rounded-2xl text-center" style={{ background: "#fff", border: "1px dashed #CAD5E7", padding: "34px 22px" }}>
-            <span className="text-5xl block mb-3">🏘️</span>
-            <p className="font-extrabold mb-2" style={{ color: QC.navyDeep, fontSize: 18 }}>{lang === "es" ? "Listo para tu informe de valor" : "Ready to build a clear value story"}</p>
-            <p className="mx-auto" style={{ color: "#66759D", fontSize: 13, lineHeight: 1.6, maxWidth: 320 }}>{t.cmpStart}</p>
-            <button onClick={() => { setAddrQ(""); setPlaceSugs(null); setLookup(null); setScreen("comps"); }} className="mt-4 active:translate-y-px transition-transform"
-              style={{ background: QC.navy, color: "#fff", border: "none", borderRadius: 12, padding: "13px 22px", fontSize: 15, fontWeight: 700 }}>
-              {lang === "es" ? "Ver valor de mercado" : "Get Market Value"}
-            </button>
-          </div>
-        </div>
-      );
-    }
-    const subj = R.subject || {};
-    const conf = {
-      strong: { txt: t.cmpConfStrong, bg: "rgba(30,158,90,0.20)", fg: "#9be8bf" },
-      good: { txt: t.cmpConfGood, bg: "rgba(231,191,106,0.18)", fg: QC.goldHi },
-      limited: { txt: t.cmpConfLimited, bg: "rgba(231,191,106,0.16)", fg: "#f0d49a" },
-      low: { txt: t.cmpConfLow, bg: "rgba(232,68,46,0.20)", fg: "#ffb3a6" },
-    }[R.confidence] || null;
-    const comps = Array.isArray(R.comps) ? R.comps : [];
-    const num = (n) => Number(n).toLocaleString("en-US");
-    const soldDate = (d) => { if (!d) return "—"; const dt = new Date(d); return Number.isNaN(dt.getTime()) ? "—" : dt.toLocaleDateString(lang === "es" ? "es-MX" : "en-US", { month: "short", day: "numeric", year: "numeric" }); };
-    const reasons = lang === "es"
-      ? ["Señal más cercana", "Apoyo fuerte", "Apoyo secundario", "Evidencia de mercado"]
-      : ["Closest signal", "Strong support", "Secondary support", "Market evidence"];
-    // Map: subject (S) + numbered comps over a satellite tile, framed to fit every point.
-    const pts = [];
-    const sLat = subj.latitude ?? R.lat, sLng = subj.longitude ?? R.lng;
-    if (sLat != null && sLng != null) pts.push([sLat, sLng]);
-    comps.forEach((c) => { if (c.latitude != null && c.longitude != null) pts.push([c.latitude, c.longitude]); });
-    let mapView = null;
-    if (pts.length >= 1) {
-      let s = 90, w = 180, n = -90, e = -180;
-      pts.forEach(([la, ln]) => { s = Math.min(s, la); n = Math.max(n, la); w = Math.min(w, ln); e = Math.max(e, ln); });
-      if (pts.length === 1) { s -= 0.004; n += 0.004; w -= 0.004; e += 0.004; }
-      mapView = { lat: (s + n) / 2, lng: (w + e) / 2, zoom: zoomForBbox([s, w, n, e]) };
-    }
-    return (
-      <div className="flex-1 overflow-y-auto pb-6" style={{ background: QC.bg }}>
-        <div className="px-5 pt-4">
-          {/* Hero value card */}
-          <div className="rounded-2xl p-5 mb-3" style={{ background: QC.cardGrad, boxShadow: "0 18px 38px rgba(17,27,66,0.18)" }}>
-            <div className="flex items-start justify-between gap-2">
-              <p style={{ color: QC.goldHi, fontSize: 11, fontWeight: 900, letterSpacing: "0.11em", textTransform: "uppercase" }}>{t.cmpValue}</p>
-              {conf && <span className="shrink-0" style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", padding: "3px 10px", borderRadius: 20, background: conf.bg, color: conf.fg, border: `1px solid ${conf.fg}55` }}>{conf.txt}</span>}
-            </div>
-            <p className="text-white" style={{ fontSize: 42, lineHeight: 1, fontWeight: 900, margin: "8px 0" }}>{fmt(R.value)}</p>
-            {(R.low != null && R.high != null) && (
-              <div className="rounded-xl mt-1 mb-2.5" style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.10)", padding: "10px 14px" }}>
-                <p style={{ color: QC.goldHi, fontSize: 9, fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", marginBottom: 3 }}>{lang === "es" ? "Rango estimado de mercado" : "Estimated Market Range"}</p>
-                <p className="text-white" style={{ fontSize: 20, fontWeight: 800 }}>{fmt(R.low)} – {fmt(R.high)}</p>
-              </div>
-            )}
-            <p style={{ color: "rgba(255,255,255,0.76)", fontSize: 13, lineHeight: 1.55, fontWeight: 600 }}>
-              {lang === "es"
-                ? `Basado en ${(R.compsUsed || comps.length)} ventas comparables cercanas dentro de ${R.radius || 2} mi`
-                : `Based on ${(R.compsUsed || comps.length)} nearby comparable sales within ${R.radius || 2} mi`}
-              {R.lookbackLabel ? ` · ${R.lookbackLabel}` : ""}{R.avgPpsf ? ` · ${fmt(R.avgPpsf)}${t.cmpPerSqft}` : ""}.
-            </p>
-          </div>
-
-          {/* Subject card */}
-          <div className="rounded-2xl overflow-hidden mb-3" style={{ background: "#fff", border: `1px solid ${QC.line}`, boxShadow: "0 2px 8px rgba(27,42,92,0.06)" }}>
-            {sLat != null && sLng != null && (
-              <img
-                src={`/api/streetview?lat=${sLat}&lng=${sLng}`}
-                alt={subj.address || R.addr}
-                onError={(e) => { e.currentTarget.style.display = "none"; }}
-                style={{ width: "100%", height: 170, objectFit: "cover", display: "block", background: QC.bg }}
-              />
-            )}
-            <div className="p-4">
-              <p style={{ color: QC.muted2, fontSize: 9, fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", marginBottom: 5 }}>{t.cmpSubject}</p>
-              <p className="font-extrabold mb-3" style={{ color: QC.navyDeep, fontSize: 16, lineHeight: 1.3 }}>{subj.address || R.addr}</p>
-              <div className="grid grid-cols-4 gap-2">
-                {[["🛏️", subj.beds ?? "—", t.beds], ["🛁", subj.baths ?? "—", t.baths], ["📐", subj.sqft ? num(subj.sqft) : "—", t.cmpSqft], ["📅", subj.yearBuilt ?? "—", t.builtIn]].map(([icon, v, label]) => (
-                  <div key={label} style={{ background: QC.bg, border: `1px solid ${QC.line}`, borderRadius: 10, padding: "10px 6px", textAlign: "center" }}>
-                    <p className="font-extrabold" style={{ color: QC.navy, fontSize: 15 }}>{v}</p>
-                    <p style={{ color: QC.muted, fontSize: 8, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", marginTop: 3 }}>{icon} {label}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Comps */}
-          <div className="flex items-center justify-between mb-2">
-            <p style={{ color: QC.navy, fontSize: 15, fontWeight: 800 }}>{t.cmpComps}</p>
-            <span style={{ color: QC.muted, fontSize: 11, fontWeight: 700 }}>{comps.length} {lang === "es" ? "propiedades" : "properties"}</span>
-          </div>
-          {comps.map((c, i) => {
-            const ppsf = c.ppsf || (c.soldPrice && c.sqft ? Math.round(c.soldPrice / c.sqft) : null);
-            const out = !!c.excludedAsOutlier;
-            const rankBg = i === 0 ? "linear-gradient(135deg,#FFD700,#FFA500)" : i === 1 ? "linear-gradient(135deg,#C0C0C0,#A0A0A0)" : i === 2 ? "linear-gradient(135deg,#CD7F32,#8B5A00)" : QC.bg;
-            const rankTxt = i <= 2 ? QC.navy : QC.muted;
-            const barColor = i === 0 ? QC.goldLine : i <= 2 ? QC.navy : QC.line;
-            const belowMkt = c.soldPrice && c.soldPrice < R.value * 0.95;
-            return (
-              <div key={i} className="rounded-2xl p-4 mb-2.5" style={{ background: "#fff", border: i === 0 ? `2px solid ${QC.goldLine}` : `1px solid ${QC.line}`, boxShadow: "0 2px 8px rgba(27,42,92,0.06)", opacity: out ? 0.55 : 1 }}>
-                <div className="flex items-start gap-3 mb-2.5">
-                  {c.latitude != null && c.longitude != null && (
-                    <button onClick={() => focusCompOnMap(i)} title={lang === "es" ? "Ver en el mapa" : "View on map"}
-                      className="relative shrink-0 active:scale-95 transition-transform" style={{ padding: 0, border: "none", background: "none", lineHeight: 0 }}>
-                      <img
-                        src={`/api/streetview?lat=${c.latitude}&lng=${c.longitude}`}
-                        alt={c.address}
-                        onError={(e) => { e.currentTarget.style.display = "none"; }}
-                        style={{ width: 56, height: 56, objectFit: "cover", borderRadius: 12, display: "block", background: QC.bg }}
-                      />
-                      <span className="absolute flex items-center justify-center" style={{ right: -5, bottom: -5, width: 20, height: 20, borderRadius: 10, background: QC.navy, color: "#fff", fontSize: 10, border: "2px solid #fff" }}>📍</span>
-                    </button>
-                  )}
-                  <div className="flex items-start justify-between gap-2 flex-1 min-w-0">
-                    <div className="flex items-start gap-2 min-w-0">
-                      <span className="flex items-center justify-center shrink-0" style={{ width: 26, height: 26, borderRadius: 8, fontSize: 11, fontWeight: 800, background: rankBg, color: rankTxt }}>{i + 1}</span>
-                      <div className="min-w-0">
-                        <p className="font-bold" style={{ color: QC.navy, fontSize: 13, lineHeight: 1.4 }}>{c.address}</p>
-                        <p style={{ color: QC.muted, fontSize: 10, fontWeight: 500, marginTop: 2 }}>{reasons[Math.min(i, 3)]} · {t.cmpSold} {soldDate(c.soldDate)}{c.distance != null ? ` · ${Number(c.distance).toFixed(2)} mi` : ""}</p>
-                      </div>
-                    </div>
-                    <div className="text-right shrink-0">
-                      <p style={{ color: i === 0 ? "#8A6A00" : QC.navyDeep, fontSize: 20, fontWeight: 800 }}>{fmt(c.soldPrice)}</p>
-                      {ppsf && <p style={{ color: QC.muted, fontSize: 10, fontWeight: 500 }}>{fmt(ppsf)}{t.cmpPerSqft}</p>}
-                    </div>
-                  </div>
-                </div>
-                <div className="flex flex-wrap gap-1.5 mb-2.5">
-                  {[c.sqft ? `${num(c.sqft)} ${t.cmpSqft}` : null, c.beds != null ? `${c.beds} ${t.beds}` : null, c.baths != null ? `${c.baths} ${t.baths}` : null, c.yearBuilt ? `${t.builtIn} ${c.yearBuilt}` : null].filter(Boolean).map((tag, k) => (
-                    <span key={k} style={{ background: QC.bg, border: `1px solid ${QC.line}`, borderRadius: 8, padding: "4px 10px", fontSize: 11, fontWeight: 700, color: QC.body }}>{tag}</span>
-                  ))}
-                  {out
-                    ? <span style={{ background: "#FBEAEA", border: "1px solid #f3c7c2", borderRadius: 6, padding: "3px 8px", fontSize: 9, fontWeight: 700, color: QC.red }}>{t.cmpExcluded}</span>
-                    : i === 0
-                      ? <span style={{ background: "#FFFBEA", border: "1px solid #ffe08a", borderRadius: 6, padding: "3px 8px", fontSize: 9, fontWeight: 700, color: "#8A6A00" }}>{lang === "es" ? "Comp más cercana" : "Closest Comp"}</span>
-                      : belowMkt
-                        ? <span style={{ background: "#EEF6FF", border: "1px solid #c0d4f0", borderRadius: 6, padding: "3px 8px", fontSize: 9, fontWeight: 700, color: QC.navy }}>{lang === "es" ? "Bajo el mercado" : "Below Market"}</span>
-                        : null}
-                </div>
-                {c.matchScore != null && !out && (
-                  <div className="flex items-center gap-2">
-                    <div className="flex-1 overflow-hidden" style={{ height: 6, borderRadius: 20, background: QC.bg }}>
-                      <div style={{ width: `${c.matchScore}%`, height: "100%", borderRadius: 20, background: barColor }} />
-                    </div>
-                    <span style={{ color: QC.muted, fontSize: 10, fontWeight: 700, whiteSpace: "nowrap" }}>{c.matchScore}% {t.cmpMatch}</span>
-                  </div>
-                )}
-              </div>
-            );
-          })}
-
-          {/* Map */}
-          {mapView && (() => {
-            const markerPts = [];
-            if (sLat != null && sLng != null) markerPts.push(`${sLat},${sLng},S`);
-            comps.forEach((c, i) => {
-              if (c.latitude == null || c.longitude == null) return;
-              markerPts.push(`${c.latitude},${c.longitude},${i + 1 <= 9 ? i + 1 : ""}`);
-            });
-            const ptsParam = encodeURIComponent(markerPts.join(";"));
-            return (
-              <div className="rounded-2xl p-3.5 mb-3" style={{ background: "#fff", border: `1px solid ${QC.line2}` }}>
-                <div className="flex items-center justify-between mb-2.5">
-                  <p style={{ color: QC.navyDeep, fontSize: 14, fontWeight: 900 }}>{t.cmpMap}</p>
-                  <div className="flex rounded-full overflow-hidden" style={{ border: `1.5px solid ${QC.line2}` }}>
-                    {[["sat", lang === "es" ? "Satélite" : "Satellite"], ["map", lang === "es" ? "Mapa" : "Map"]].map(([k, lbl]) => {
-                      const on = (k === "sat") === mapSat;
-                      return <button key={k} onClick={() => setMapSat(k === "sat")} className="px-3 py-1 text-xs font-bold"
-                        style={{ background: on ? QC.navy : "#fff", color: on ? "#fff" : QC.muted2, border: "none" }}>{lbl}</button>;
-                    })}
-                  </div>
-                </div>
-                <div id="qc-compmap" className="relative w-full overflow-hidden" style={{ aspectRatio: "640/360", background: QC.bg, borderRadius: 10, border: `1px solid ${QC.line2}` }}>
-                  <CompMap
-                    subjectLL={sLat != null && sLng != null ? { lat: sLat, lng: sLng } : null}
-                    comps={comps}
-                    satellite={mapSat}
-                    focus={mapFocus}
-                    lang={lang}
-                    fallbackSrc={`/api/compmap?maptype=${mapSat ? "satellite" : "roadmap"}&pts=${ptsParam}`}
-                  />
-                </div>
-                <p className="text-center mt-2" style={{ color: QC.muted, fontSize: 10, fontWeight: 600 }}>{lang === "es" ? "Toca un pin (o una comparable) para ver detalles y cómo llegar" : "Tap a pin (or a comparable) for details and directions"}</p>
-              </div>
-            );
-          })()}
-
-          <p className="mb-3" style={{ color: "#66759D", fontSize: 11, fontWeight: 600, lineHeight: 1.5 }}>⚠️ {t.cmpDisc}</p>
-          <button onClick={() => setScreen("report")} className="w-full active:translate-y-px transition-transform mb-2.5"
-            style={{ background: `linear-gradient(135deg,${QC.gold},#BD8426)`, color: QC.navyDeep, border: "none", borderRadius: 12, padding: 15, fontSize: 16, fontWeight: 800, letterSpacing: "0.01em", boxShadow: "0 4px 14px rgba(189,132,38,0.35)" }}>
-            📄 {lang === "es" ? "Crear informe para el cliente" : "Create client report"}
-          </button>
-          <button onClick={() => { setAddrQ(""); setPlaceSugs(null); setLookup(null); setScreen("comps"); }} className="w-full active:translate-y-px transition-transform"
-            style={{ background: QC.navy, color: "#fff", border: "none", borderRadius: 12, padding: 15, fontSize: 16, fontWeight: 700, boxShadow: "0 4px 14px rgba(27,42,92,0.3)" }}>
-            {t.cmpNew}
-          </button>
-        </div>
-      </div>
-    );
-  };
-
-  /* Shared empty-state for tabs that need a searched property first */
-  const NeedProperty = ({ title, sub }) => (
-    <div className="flex-1 px-5 pt-4" style={{ background: QC.bg }}>
-      <div className="rounded-2xl text-center" style={{ background: "#fff", border: "1px dashed #CAD5E7", padding: "34px 22px" }}>
-        <span className="text-5xl block mb-3">🏠</span>
-        <p className="font-extrabold mb-2" style={{ color: QC.navyDeep, fontSize: 18 }}>{title}</p>
-        <p className="mx-auto mb-4" style={{ color: "#66759D", fontSize: 13, lineHeight: 1.6, maxWidth: 320 }}>{sub}</p>
-        <button onClick={() => { setAddrQ(""); setPlaceSugs(null); setLookup(null); setScreen("comps"); }}
-          style={{ background: QC.navy, color: "#fff", border: "none", borderRadius: 12, padding: "13px 22px", fontSize: 15, fontWeight: 700 }}>
-          {lang === "es" ? "Buscar una dirección" : "Search an address"}
-        </button>
-      </div>
-    </div>
-  );
-
-  const Slider = ({ label, value, display, min, max, step, onChange }) => (
-    <div className="mb-3.5">
-      <div className="flex justify-between items-baseline mb-1.5">
-        <span style={{ color: QC.muted2, fontSize: 11, fontWeight: 700, letterSpacing: "0.04em", textTransform: "uppercase" }}>{label}</span>
-        <span className="font-extrabold" style={{ color: QC.navy, fontSize: 15 }}>{display}</span>
-      </div>
-      <input type="range" min={min} max={max} step={step} value={value}
-        onChange={(e) => onChange(parseFloat(e.target.value))}
-        className="w-full" style={{ accentColor: QC.gold, height: 4 }} />
-    </div>
-  );
-
-  /* ── 02 · LENDING — monthly payment estimate ── */
-  const Lending = () => {
-    const m = (v) => "$" + Math.round(v).toLocaleString("en-US");
-    const price = lendPrice != null ? lendPrice : (lookup?.value || 350000);
-    const down = Math.round(price * lendDownPct / 100);
-    const principal = Math.max(price - down, 0);
-    const r = lendRate / 100 / 12;
-    const n = lendTerm * 12;
-    const pi = r > 0 ? principal * r / (1 - Math.pow(1 + r, -n)) : principal / n;
-    const taxMo = price * (lendTaxPct / 100) / 12;
-    const insMo = lendInsYr / 12;
-    const monthly = pi + taxMo + insMo;
-    return (
-      <div className="flex-1 overflow-y-auto pb-6" style={{ background: QC.bg }}>
-        <div className="px-5 pt-4">
-          <div className="rounded-2xl p-5 mb-3" style={{ background: QC.cardGrad, boxShadow: "0 18px 38px rgba(17,27,66,0.18)" }}>
-            <p style={{ color: QC.goldHi, fontSize: 11, fontWeight: 900, letterSpacing: "0.16em", textTransform: "uppercase" }}>{lang === "es" ? "Pago mensual estimado" : "Monthly payment estimate"}</p>
-            <p className="text-white" style={{ fontSize: 42, lineHeight: 1, fontWeight: 900, margin: "8px 0" }}>{m(monthly)}<span style={{ fontSize: 18, fontWeight: 700, color: "rgba(255,255,255,.7)" }}>/{lang === "es" ? "mes" : "mo"}</span></p>
-            <p style={{ color: "rgba(255,255,255,0.76)", fontSize: 13, fontWeight: 600, lineHeight: 1.5 }}>
-              {lang === "es" ? "Ajusta precio, enganche, tasa, impuestos y seguro para responder al instante." : "Slide price, down payment, rate, taxes, and insurance to answer buyer questions fast."}
-            </p>
-            <div className="flex gap-2 mt-3">
-              {[["P&I", m(pi)], [lang === "es" ? "Impuesto" : "Tax", m(taxMo)], [lang === "es" ? "Seguro" : "Insurance", m(insMo)]].map(([l, v]) => (
-                <div key={l} className="flex-1 rounded-xl text-center" style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.10)", padding: "8px 4px" }}>
-                  <p className="text-white font-extrabold" style={{ fontSize: 13 }}>{v}</p>
-                  <p style={{ color: QC.goldHi, fontSize: 8, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", marginTop: 2 }}>{l}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-          <div className="rounded-2xl p-4" style={{ background: "#fff", border: `1px solid ${QC.line}`, boxShadow: "0 2px 8px rgba(27,42,92,0.06)" }}>
-            <p style={{ color: QC.gold, fontSize: 10, fontWeight: 900, letterSpacing: "0.18em", textTransform: "uppercase", marginBottom: 14 }}>{lang === "es" ? "Calculadora de financiamiento" : "Lending calculator"}</p>
-            <Slider label={lang === "es" ? "Precio" : "Home price"} value={price} display={m(price)} min={50000} max={2000000} step={5000} onChange={setLendPrice} />
-            <Slider label={lang === "es" ? "Enganche" : "Down payment"} value={lendDownPct} display={`${lendDownPct}% · ${m(down)}`} min={0} max={50} step={1} onChange={setLendDownPct} />
-            <Slider label={lang === "es" ? "Tasa de interés" : "Interest rate"} value={lendRate} display={`${lendRate.toFixed(2)}%`} min={2} max={12} step={0.05} onChange={setLendRate} />
-            <Slider label={lang === "es" ? "Plazo" : "Loan term"} value={lendTerm} display={`${lendTerm} ${lang === "es" ? "años" : "yr"}`} min={10} max={30} step={5} onChange={setLendTerm} />
-            <Slider label={lang === "es" ? "Impuesto predial / año" : "Property tax / yr"} value={lendTaxPct} display={`${lendTaxPct.toFixed(2)}%`} min={0} max={3} step={0.05} onChange={setLendTaxPct} />
-            <Slider label={lang === "es" ? "Seguro / año" : "Insurance / yr"} value={lendInsYr} display={m(lendInsYr)} min={0} max={6000} step={100} onChange={setLendInsYr} />
-            {lookup?.value
-              ? <p className="mt-1" style={{ color: QC.muted, fontSize: 11, fontWeight: 600 }}>{lang === "es" ? "Precio inicial tomado del valor de mercado estimado." : "Starting price taken from the estimated market value."}</p>
-              : <p className="mt-1" style={{ color: QC.muted, fontSize: 11, fontWeight: 600 }}>{lang === "es" ? "Busca una propiedad para empezar con su valor de mercado." : "Search a property to start from its market value."}</p>}
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  /* ── 03 · TAX — independent tax lookup (its own search) ── */
-  const Tax = () => {
-    const num = (n) => Number(n).toLocaleString("en-US");
-
-    // A tax search is running
-    if (measuring && !taxLookup) {
-      const phases = [t.measuring1, lang === "es" ? "Buscando registro fiscal…" : "Pulling tax record…", lang === "es" ? "Preparando resumen…" : "Preparing summary…"];
-      return (
-        <div className="flex-1 flex flex-col items-center justify-center px-7 text-center" style={{ background: QC.bg }}>
-          <span className="text-5xl mb-4" style={{ animation: "ttpPulse 1.2s ease-in-out infinite" }}>🧾</span>
-          <p className="font-extrabold mb-1" style={{ color: QC.navyDeep, fontSize: 20 }}>{addrQ}</p>
-          <p className="mb-6" style={{ color: QC.gold, fontSize: 11, fontWeight: 900, letterSpacing: "0.18em", textTransform: "uppercase" }}>{lang === "es" ? "Buscando impuestos" : "Looking up tax"}</p>
-          <div className="text-left">
-            {phases.map((ph, i) => (
-              <p key={ph} className="py-1 font-semibold" style={{ color: i < measurePhase ? QC.green : i === measurePhase ? QC.navy : QC.line }}>{i < measurePhase ? "✓ " : i === measurePhase ? "● " : "○ "}{ph}</p>
+              <p key={ph} className="py-1 font-semibold" style={{ color: i < measurePhase ? M.green : i === measurePhase ? M.teal : M.line }}>{i < measurePhase ? "✓ " : i === measurePhase ? "● " : "○ "}{ph}</p>
             ))}
           </div>
         </div>
       );
     }
 
-    // No tax record yet → the Tax tab's own address search
-    if (!taxLookup) {
-      const q = addrQ.trim().toLowerCase();
-      const localPool = [...new Set([...MOCK_PROPERTIES.map(p => p.addr), ...customers.map(c => c.addr).filter(Boolean)])];
-      const matches = placeSugs !== null ? placeSugs : localPool.filter(a => !q || a.toLowerCase().includes(q)).map(a => ({ text: a, placeId: null }));
-      const custom = addrQ.trim() && !matches.some(m => m.text.toLowerCase() === q) ? addrQ.trim() : null;
-      const go = () => { if (custom) startLookup(custom, null, null, "tax"); else if (matches[0]) startLookup(matches[0].text, matches[0].placeId, null, "tax"); };
+    if (curStepKey === "customer") {
+      const query = addrQ.trim().toLowerCase();
+      const localPool = [...new Set([...MOCK_PROPERTIES.map((p) => p.addr), ...customers.map((c) => c.addr).filter(Boolean)])];
+      const matches = placeSugs !== null ? placeSugs : localPool.filter((a) => !query || a.toLowerCase().includes(query)).map((a) => ({ text: a, placeId: null }));
+      const custom = addrQ.trim() && !matches.some((m) => m.text.toLowerCase() === query) ? addrQ.trim() : null;
+      const canGo = !!(addrQ.trim());
+      const go = () => { if (!canGo) return; if (custom) lookupProperty(custom); else if (matches[0]) lookupProperty(matches[0].text, matches[0].placeId); };
       return (
-        <div className="flex-1" style={{ background: QC.bg }}>
-          <div className="px-5 py-4" style={{ background: QC.headGrad, borderBottom: `2px solid ${QC.gold}` }}>
-            <p className="text-center" style={{ color: QC.goldHi, fontSize: 11, fontWeight: 900, letterSpacing: "0.18em", textTransform: "uppercase" }}>{lang === "es" ? "Impuestos de propiedad" : "Property Tax"}</p>
-            <p className="text-center font-extrabold text-white mt-0.5" style={{ fontSize: 18 }}>{lang === "es" ? "Busca impuestos por dirección" : "Look up property tax by address"}</p>
+        <div className="flex-1 overflow-y-auto pb-6" style={{ background: M.bg }}>
+          <div className="px-5 py-4" style={{ background: M.headGrad, borderBottom: `2px solid ${M.gold}` }}>
+            <p className="text-center" style={{ color: M.goldHi, fontSize: 11, fontWeight: 900, letterSpacing: "0.18em", textTransform: "uppercase" }}>{lang === "es" ? "Cotización de limpieza" : "Cleaning quote"}</p>
+            <p className="text-center font-extrabold text-white mt-0.5" style={{ fontSize: 18 }}>{lang === "es" ? "Cotiza un trabajo en segundos" : "Quote a job in seconds"}</p>
           </div>
           <div className="px-5 pt-3">
-            <div className="rounded-2xl p-4 mb-3" style={{ background: "#fff", border: `1px solid ${QC.line}`, boxShadow: "0 2px 8px rgba(27,42,92,0.06)" }}>
-              <p className="mb-2" style={{ color: QC.muted2, fontSize: 10, fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase" }}>{lang === "es" ? "Dirección de la propiedad" : "Property Address"}</p>
+            <Card>
+              <p style={{ color: M.muted2, fontSize: 10, fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", marginBottom: 8 }}>{lang === "es" ? "Datos del cliente" : "Customer details"}</p>
+              <TextInput value={q.name} onChange={(v) => setField("name", v)} placeholder={lang === "es" ? "Nombre del cliente" : "Customer name"} />
+              <TextInput value={q.phone} onChange={(v) => setField("phone", v)} placeholder={lang === "es" ? "Teléfono (WhatsApp)" : "Phone (WhatsApp)"} inputMode="tel" />
+              <p style={{ color: M.muted2, fontSize: 10, fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", margin: "6px 0 8px" }}>{lang === "es" ? "Dirección de la casa" : "Home address"}</p>
               <div className="flex gap-2">
-                <button onClick={useMyLocation} title={t.useMyLocation} className="flex items-center justify-center shrink-0 active:scale-95 transition-transform"
-                  style={{ width: 48, height: 48, background: QC.bg, border: `1.5px solid ${QC.line}`, borderRadius: 12, color: QC.navy, fontSize: 18 }}>🧭</button>
-                <div className="flex-1 flex items-center gap-2 rounded-xl px-3" style={{ background: QC.bg, border: `1.5px solid ${QC.line}` }}>
-                  <input value={addrQ} onChange={(e) => onAddrInput(e.target.value)} placeholder={lang === "es" ? "Escribe una dirección…" : "Enter a property address…"} autoFocus
-                    onKeyDown={(e) => e.key === "Enter" && go()}
-                    className="flex-1 py-3 text-base font-semibold outline-none bg-transparent" style={{ color: QC.navy }} />
-                  {hasVoice && (
-                    <button onClick={() => startVoice(onAddrInput)} className="text-xl active:scale-90 transition-transform" style={{ background: "none", border: "none", opacity: listening ? 1 : 0.6 }}>{listening ? "🔴" : "🎤"}</button>
-                  )}
+                <button onClick={useMyLocation} title={t.useMyLocation} className="flex items-center justify-center shrink-0 active:scale-95 transition-transform" style={{ width: 48, height: 48, background: M.bg, border: `1.5px solid ${M.line}`, borderRadius: 12, color: M.teal, fontSize: 18 }}>🧭</button>
+                <div className="flex-1 flex items-center gap-2 rounded-xl px-3" style={{ background: M.bg, border: `1.5px solid ${M.line}` }}>
+                  <input value={addrQ} onChange={(e) => onAddrInput(e.target.value)} placeholder={lang === "es" ? "Escribe una dirección…" : "Enter an address…"} onKeyDown={(e) => e.key === "Enter" && go()}
+                    className="flex-1 py-3 text-base font-semibold outline-none bg-transparent" style={{ color: M.navy }} />
+                  {hasVoice && <button onClick={() => startVoice(onAddrInput)} className="text-xl active:scale-90 transition-transform" style={{ background: "none", border: "none", opacity: listening ? 1 : 0.6 }}>{listening ? "🔴" : "🎤"}</button>}
                 </div>
               </div>
               {(custom || matches.length > 0) && (
-                <div className="rounded-xl mt-2 overflow-hidden" style={{ border: `1.5px solid ${QC.line}` }}>
+                <div className="rounded-xl mt-2 overflow-hidden" style={{ border: `1.5px solid ${M.line}` }}>
                   {custom && (
-                    <button onClick={() => startLookup(custom, null, null, "tax")} className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-left active:opacity-80" style={{ background: "#fff", borderBottom: matches.length ? `1px solid ${QC.bg}` : "none" }}>
-                      <span style={{ color: QC.navy }}>📍</span><span className="font-bold truncate" style={{ color: QC.navy, fontSize: 13 }}>{custom}</span>
+                    <button onClick={() => lookupProperty(custom)} className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-left active:opacity-80" style={{ background: "#fff", borderBottom: matches.length ? `1px solid ${M.bg}` : "none" }}>
+                      <span style={{ color: M.teal }}>📍</span><span className="font-bold truncate" style={{ color: M.navy, fontSize: 13 }}>{custom}</span>
                     </button>
                   )}
-                  {matches.map((mm, i) => (
-                    <button key={mm.text} onClick={() => startLookup(mm.text, mm.placeId, null, "tax")} className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-left active:opacity-80" style={{ background: "#fff", borderBottom: i < matches.length - 1 ? `1px solid ${QC.bg}` : "none" }}>
-                      <span style={{ color: QC.navy }}>📍</span><span className="font-semibold truncate" style={{ color: QC.navy, fontSize: 13 }}>{mm.text}</span>
+                  {matches.map((m, i) => (
+                    <button key={m.text} onClick={() => lookupProperty(m.text, m.placeId)} className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-left active:opacity-80" style={{ background: "#fff", borderBottom: i < matches.length - 1 ? `1px solid ${M.bg}` : "none" }}>
+                      <span style={{ color: M.teal }}>📍</span><span className="font-semibold truncate" style={{ color: M.navy, fontSize: 13 }}>{m.text}</span>
                     </button>
                   ))}
                 </div>
               )}
-            </div>
-            <button onClick={go} className="w-full active:translate-y-px transition-transform"
-              style={{ background: QC.navy, color: "#fff", border: "none", borderRadius: 12, padding: 15, fontSize: 16, fontWeight: 700, boxShadow: "0 4px 14px rgba(27,42,92,0.3)" }}>
-              {lang === "es" ? "Ver impuestos" : "Get Tax Info"}
-            </button>
-            <p className="text-center mt-3" style={{ color: QC.muted, fontSize: 11, fontWeight: 600 }}>{lang === "es" ? "Solo impuestos — no necesitas correr comparables" : "Tax only — no need to run comps"} · DEMO</p>
+            </Card>
+            <PrimaryBtn onClick={go} disabled={!canGo}>{lang === "es" ? "Buscar la casa →" : "Find the home →"}</PrimaryBtn>
+            <p className="text-center mt-3" style={{ color: M.muted, fontSize: 11, fontWeight: 600 }}>{lang === "es" ? "Buscamos el tamaño de la casa automáticamente" : "We auto-find the home size"}</p>
           </div>
         </div>
       );
     }
 
-    // We have a tax record
-    const R = taxLookup;
-    const subj = R.subject || {};
-    const hasRealAssess = subj.assessedValue != null;
-    const assessed = hasRealAssess ? subj.assessedValue : (R.value ? Math.round(R.value * 0.86) : null);
-    const hasRealTax = subj.annualTax != null;
-    const annualTax = hasRealTax ? subj.annualTax : (assessed ? Math.round(assessed * 0.011) : null);
-    const taxYear = subj.taxYear || new Date().getFullYear();
-    const estimated = !hasRealAssess || !hasRealTax;
-    const facts = [["🛏️", subj.beds ?? "—", t.beds], ["🛁", subj.baths ?? "—", t.baths], ["📐", subj.sqft ? num(subj.sqft) : "—", t.cmpSqft], ["📅", subj.yearBuilt ?? "—", t.builtIn]];
-    const rows = [
-      [lang === "es" ? "Dueño registrado" : "Owner of record", subj.owner || (lang === "es" ? "Según registro público" : "Per public record")],
-      [lang === "es" ? "Valor catastral" : "Assessed value", assessed ? "$" + num(assessed) + (hasRealAssess ? "" : (lang === "es" ? " (est.)" : " (est.)")) : "—"],
-      [lang === "es" ? (hasRealTax ? "Impuesto anual" : "Impuesto anual estimado") : (hasRealTax ? "Annual tax" : "Est. annual tax"), annualTax ? "$" + num(annualTax) : "—"],
-      [lang === "es" ? "Año fiscal" : "Tax year", String(taxYear)],
-    ];
+    if (curStepKey === "confirm") {
+      const canNext = Number(q.sqft) > 0;
+      return (
+        <StepFrame kicker={lang === "es" ? "Paso 2 · Confirma la casa" : "Step 2 · Confirm the home"} title={lang === "es" ? "¿Estos datos están bien?" : "Does this look right?"} canNext={canNext}>
+          <Card>
+            <p className="font-bold mb-3" style={{ color: M.tealDeep, fontSize: 14 }}>{q.address}</p>
+            <label className="block mb-2"><span style={{ color: M.muted2, fontSize: 11, fontWeight: 700 }}>{t.sqft}</span>
+              <TextInput value={q.sqft} onChange={(v) => setField("sqft", v.replace(/[^0-9]/g, ""))} placeholder="1500" inputMode="numeric" /></label>
+            <div className="grid grid-cols-2 gap-2">
+              <label className="block"><span style={{ color: M.muted2, fontSize: 11, fontWeight: 700 }}>{t.beds}</span>
+                <TextInput value={q.beds} onChange={(v) => setField("beds", v.replace(/[^0-9]/g, ""))} placeholder="3" inputMode="numeric" /></label>
+              <label className="block"><span style={{ color: M.muted2, fontSize: 11, fontWeight: 700 }}>{t.baths}</span>
+                <TextInput value={q.baths} onChange={(v) => setField("baths", v.replace(/[^0-9.]/g, ""))} placeholder="2" inputMode="decimal" /></label>
+            </div>
+          </Card>
+          {!canNext && <p style={{ color: M.red, fontSize: 12, fontWeight: 600 }}>{lang === "es" ? "Pon los pies cuadrados para continuar." : "Enter the square footage to continue."}</p>}
+        </StepFrame>
+      );
+    }
+
+    if (curStepKey === "type") {
+      const opts = CLEANING_TYPES.map(([key, icon, es, en]) => ({ key, icon, title: lang === "es" ? es : en }));
+      return (
+        <StepFrame kicker={lang === "es" ? "Paso 3 · Tipo de limpieza" : "Step 3 · Cleaning type"} title={lang === "es" ? "¿Qué limpieza necesita?" : "What cleaning is needed?"}>
+          <OptionGrid options={opts} value={q.cleaningType} onChange={(v) => setField("cleaningType", v)} />
+        </StepFrame>
+      );
+    }
+
+    if (curStepKey === "condition") {
+      const opts = CONDITIONS.map(([key, icon, es, en, esS, enS]) => ({ key, icon, title: lang === "es" ? es : en, sub: lang === "es" ? esS : enS }));
+      return (
+        <StepFrame kicker={lang === "es" ? "Paso 4 · Condición" : "Step 4 · Condition"} title={lang === "es" ? "¿Cómo está la casa?" : "What condition is it in?"}>
+          <OptionGrid options={opts} value={q.condition} onChange={(v) => setField("condition", v)} />
+          {q.condition === "very_heavy" && <p className="mt-3" style={{ color: "#8A6A00", fontSize: 12, fontWeight: 700, background: "#FFF8E6", border: "1px solid #ffe08a", borderRadius: 10, padding: "10px 12px" }}>⚠️ {lang === "es" ? "Recomendamos cotización personalizada después de ver fotos o la casa." : "We recommend a custom quote after seeing photos or the home."}</p>}
+        </StepFrame>
+      );
+    }
+
+    if (curStepKey === "pets") {
+      const opts = PETS.map(([key, icon, es, en]) => ({ key, icon, title: lang === "es" ? es : en }));
+      return (
+        <StepFrame kicker={lang === "es" ? "Paso 5 · Mascotas" : "Step 5 · Pets"} title={lang === "es" ? "¿Hay mascotas?" : "Any pets?"}>
+          <OptionGrid options={opts} value={q.pets} onChange={(v) => setField("pets", v)} />
+        </StepFrame>
+      );
+    }
+
+    if (curStepKey === "addons") {
+      return (
+        <StepFrame kicker={lang === "es" ? "Paso 6 · Extras" : "Step 6 · Add-ons"} title={lang === "es" ? "¿Algún extra?" : "Any add-ons?"} nextLabel={t.next + " →"}>
+          <div className="grid grid-cols-2 gap-2">
+            {ADDONS.map(([key, icon, es, en]) => {
+              const on = q.addOns.includes(key);
+              return (
+                <button key={key} onClick={() => toggleAddon(key)} className="flex items-center gap-2 text-left active:scale-[0.98] transition-transform"
+                  style={{ background: on ? M.teal : "#fff", color: on ? "#fff" : M.navy, border: `1.5px solid ${on ? M.teal : M.line}`, borderRadius: 12, padding: "12px 12px" }}>
+                  <span style={{ fontSize: 18 }}>{icon}</span>
+                  <span className="font-bold" style={{ fontSize: 13 }}>{lang === "es" ? es : en}</span>
+                  {on && <span className="ml-auto">✓</span>}
+                </button>
+              );
+            })}
+          </div>
+        </StepFrame>
+      );
+    }
+
+    if (curStepKey === "frequency") {
+      return (
+        <StepFrame kicker={lang === "es" ? "Paso 7 · Frecuencia" : "Step 7 · Frequency"} title={lang === "es" ? "¿Cada cuánto?" : "How often?"}>
+          <div className="grid grid-cols-2 gap-2">
+            {FREQUENCIES.map(([key, es, en, badge]) => {
+              const on = q.frequency === key;
+              return (
+                <button key={key} onClick={() => setField("frequency", key)} className="text-left active:scale-[0.98] transition-transform"
+                  style={{ background: on ? M.teal : "#fff", color: on ? "#fff" : M.navy, border: `1.5px solid ${on ? M.teal : M.line}`, borderRadius: 14, padding: "14px 14px" }}>
+                  <div className="font-extrabold" style={{ fontSize: 15 }}>{lang === "es" ? es : en}</div>
+                  {badge && <div style={{ fontSize: 12, fontWeight: 800, marginTop: 3, color: on ? M.goldHi : M.green }}>{badge}</div>}
+                </button>
+              );
+            })}
+          </div>
+        </StepFrame>
+      );
+    }
+
+    if (curStepKey === "furnished") {
+      const opts = FURNISHED.map(([key, es, en]) => ({ key, icon: key === "empty" ? "📭" : key === "full" ? "🛋️" : "🪑", title: lang === "es" ? es : en }));
+      return (
+        <StepFrame kicker={lang === "es" ? "Paso 8 · Mobiliario" : "Step 8 · Furnishing"} title={lang === "es" ? "¿Vacía o amueblada?" : "Empty or furnished?"}>
+          <OptionGrid options={opts} value={q.furnished} onChange={(v) => setField("furnished", v)} cols={3} />
+        </StepFrame>
+      );
+    }
+
+    if (curStepKey === "photos") {
+      return (
+        <StepFrame kicker={lang === "es" ? `Paso ${visibleSteps.length} · Fotos` : `Step ${visibleSteps.length} · Photos`} title={lang === "es" ? "Fotos (opcional)" : "Photos (optional)"} nextLabel={lang === "es" ? "Ver cotización →" : "See quote →"}>
+          <Card>
+            <p style={{ color: M.body, fontSize: 13, fontWeight: 600, lineHeight: 1.5 }}>{lang === "es" ? "Sube fotos del trabajo. Te protegen si el precio cambia después." : "Add photos of the job. They protect you if the price changes later."}</p>
+            <div className="flex flex-wrap gap-2 mt-3">
+              {q.photos.map((p, i) => (
+                <div key={i} className="relative">
+                  <img src={p} alt="" style={{ width: 72, height: 72, objectFit: "cover", borderRadius: 10, border: `1px solid ${M.line}` }} />
+                  <button onClick={() => setField("photos", q.photos.filter((_, k) => k !== i))} className="absolute" style={{ top: -6, right: -6, width: 22, height: 22, borderRadius: 11, background: M.red, color: "#fff", border: "2px solid #fff", fontSize: 12 }}>×</button>
+                </div>
+              ))}
+              <label className="flex items-center justify-center cursor-pointer" style={{ width: 72, height: 72, borderRadius: 10, background: M.bg, border: `1.5px dashed ${M.line}`, color: M.muted2, fontSize: 24 }}>
+                ＋
+                <input type="file" accept="image/*" multiple style={{ display: "none" }} onChange={(e) => {
+                  const files = Array.from(e.target.files || []).slice(0, 6);
+                  files.forEach((f) => { const rd = new FileReader(); rd.onload = () => setQ((prev) => ({ ...prev, photos: [...prev.photos, rd.result].slice(0, 6) })); rd.readAsDataURL(f); });
+                }} />
+              </label>
+            </div>
+          </Card>
+        </StepFrame>
+      );
+    }
+    return null;
+  };
+
+  /* ── Result: branded quote + WhatsApp ── */
+  const ResultScreen = () => {
+    const out = result;
+    if (!out) return null;
+    const msg = quoteMessage(out);
+    const waPhone = String(q.phone || "").replace(/\D/g, "");
+    const waHref = `https://wa.me/${waPhone.length >= 10 ? (waPhone.length === 10 ? "1" + waPhone : waPhone) : ""}?text=${encodeURIComponent(msg)}`;
+    const sendWhatsApp = () => {
+      // Save the customer if new
+      if (q.name && q.phone && !customers.some((c) => c.phone === q.phone)) {
+        setCustomers((prev) => [{ id: Date.now(), name: q.name, phone: q.phone, addr: q.address }, ...prev]);
+      }
+      // Drop a lead on the server too (so it shows in the cleaner's leads / webhook)
+      if (session) api("/api/widget/lead", { method: "POST", body: JSON.stringify({ slug: "", name: q.name, phone: q.phone, address: q.address }) }).catch(() => {});
+      window.open(waHref, "_blank");
+    };
+    const copyMsg = async () => { try { await navigator.clipboard.writeText(msg); showToast(lang === "es" ? "Mensaje copiado ✓" : "Message copied ✓"); } catch { /* ignore */ } };
+    const ct = CLEANING_TYPES.find((c) => c[0] === out.cleaningType);
     return (
-      <div className="flex-1 overflow-y-auto pb-6" style={{ background: QC.bg }}>
+      <div className="flex-1 overflow-y-auto pb-6" style={{ background: M.bg }}>
         <div className="px-5 pt-4">
-          <div className="rounded-2xl p-4 mb-3" style={{ background: "#fff", border: `1px solid ${QC.line}`, boxShadow: "0 2px 8px rgba(27,42,92,0.06)" }}>
-            <p style={{ color: QC.gold, fontSize: 10, fontWeight: 900, letterSpacing: "0.18em", textTransform: "uppercase", marginBottom: 6 }}>{lang === "es" ? "Resumen de impuestos" : "Tax snapshot"}</p>
-            <p className="font-extrabold mb-3" style={{ color: QC.navyDeep, fontSize: 16, lineHeight: 1.3 }}>{subj.address || R.addr}</p>
-            {rows.map(([k, v], i) => (
-              <div key={k} className="flex justify-between py-2" style={{ borderTop: i ? `1px solid ${QC.line}` : "none" }}>
-                <span style={{ color: QC.muted2, fontSize: 13, fontWeight: 600 }}>{k}</span>
-                <span className="font-extrabold" style={{ color: QC.navy, fontSize: 13 }}>{v}</span>
+          {/* Branded hero quote card */}
+          <div className="rounded-2xl p-5 mb-3" style={{ background: M.cardGrad, boxShadow: "0 18px 38px rgba(10,69,55,0.20)" }}>
+            <div className="flex items-center gap-2 mb-2">
+              {logo && <img src={logo} alt="" style={{ height: 30, maxWidth: 90, objectFit: "contain", background: "#fff", borderRadius: 6, padding: 3 }} />}
+              <div className="min-w-0">
+                <p style={{ color: M.goldHi, fontSize: 8, fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase" }}>{lang === "es" ? "Cotización de" : "Quote from"}</p>
+                <p className="text-white font-extrabold truncate" style={{ fontSize: 14 }}>{bizName || (lang === "es" ? "Tu negocio" : "Your business")}</p>
+              </div>
+            </div>
+            <p style={{ color: M.goldHi, fontSize: 11, fontWeight: 900, letterSpacing: "0.11em", textTransform: "uppercase" }}>{lang === "es" ? "Precio recomendado" : "Recommended price"}</p>
+            <p className="text-white" style={{ fontSize: 46, lineHeight: 1, fontWeight: 900, margin: "8px 0" }}>{fmt(out.recommended)}</p>
+            <div className="rounded-xl mt-1 mb-2.5" style={{ background: "rgba(255,255,255,0.10)", border: "1px solid rgba(255,255,255,0.12)", padding: "10px 14px" }}>
+              <p style={{ color: M.goldHi, fontSize: 9, fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", marginBottom: 3 }}>{lang === "es" ? "Rango estimado" : "Estimated range"}</p>
+              <p className="text-white" style={{ fontSize: 22, fontWeight: 800 }}>{fmt(out.range[0])} – {fmt(out.range[1])}</p>
+            </div>
+            {out.recurring != null && (
+              <p style={{ color: "#fff", fontSize: 13, fontWeight: 700 }}>{lang === "es" ? "Precio recurrente:" : "Recurring price:"} {fmt(out.recurring)} <span style={{ color: M.goldHi }}>/{FREQUENCIES.find((f) => f[0] === out.frequency)?.[lang === "es" ? 1 : 2]?.toLowerCase()}</span></p>
+            )}
+            <p style={{ color: "rgba(255,255,255,0.82)", fontSize: 13, lineHeight: 1.5, fontWeight: 600, marginTop: 6 }}>
+              {ct?.[1]} {lang === "es" ? `Limpieza ${TYPE_ES[out.cleaningType]}` : `${TYPE_EN[out.cleaningType]} cleaning`} · {out.time.cleaners} {lang === "es" ? "persona(s)" : "cleaner(s)"}, {out.time.low}–{out.time.high} {lang === "es" ? "hrs" : "hrs"}
+            </p>
+          </div>
+
+          {out.customQuote && <p className="mb-3" style={{ color: "#8A6A00", fontSize: 12, fontWeight: 700, background: "#FFF8E6", border: "1px solid #ffe08a", borderRadius: 10, padding: "10px 12px" }}>⚠️ {lang === "es" ? "Casa muy pesada — confirma el precio después de ver la casa." : "Very heavy home — confirm the price after seeing it in person."}</p>}
+
+          {/* Job summary */}
+          <Card>
+            <p style={{ color: M.muted2, fontSize: 9, fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", marginBottom: 8 }}>{lang === "es" ? "Resumen del trabajo" : "Job summary"}</p>
+            <div className="grid grid-cols-3 gap-2">
+              {[["📐", q.sqft ? num(q.sqft) : "—", t.sqft], ["🛏️", q.beds || "—", t.beds], ["🛁", q.baths || "—", t.baths]].map(([icon, v, label]) => (
+                <div key={label} style={{ background: M.bg, border: `1px solid ${M.line}`, borderRadius: 10, padding: "10px 6px", textAlign: "center" }}>
+                  <p className="font-extrabold" style={{ color: M.teal, fontSize: 15 }}>{v}</p>
+                  <p style={{ color: M.muted, fontSize: 8, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", marginTop: 3 }}>{icon} {label}</p>
+                </div>
+              ))}
+            </div>
+            {q.addOns.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mt-3">
+                {q.addOns.map((a) => { const ad = ADDONS.find((x) => x[0] === a); return <span key={a} style={{ background: M.bg, border: `1px solid ${M.line}`, borderRadius: 8, padding: "4px 10px", fontSize: 11, fontWeight: 700, color: M.body }}>{ad?.[1]} {lang === "es" ? ad?.[2] : ad?.[3]}</span>; })}
+              </div>
+            )}
+          </Card>
+
+          {/* WhatsApp message preview */}
+          <Card>
+            <p style={{ color: M.gold, fontSize: 10, fontWeight: 900, letterSpacing: "0.16em", textTransform: "uppercase", marginBottom: 8 }}>{lang === "es" ? "Mensaje para el cliente" : "Message for the customer"}</p>
+            <p style={{ color: M.body, fontSize: 13, lineHeight: 1.55, whiteSpace: "pre-wrap" }}>{msg}</p>
+          </Card>
+
+          <p className="mb-3" style={{ color: M.muted2, fontSize: 11, fontWeight: 600, lineHeight: 1.5 }}>⚠️ {lang === "es" ? "El precio final puede cambiar después de ver fotos o la casa si está más sucia de lo descrito." : "Final price may change after photos/walkthrough if the home is heavier than described."}</p>
+
+          <button onClick={sendWhatsApp} className="w-full active:translate-y-px transition-transform mb-2.5" style={{ background: "#25D366", color: "#fff", border: "none", borderRadius: 12, padding: 15, fontSize: 16, fontWeight: 800, boxShadow: "0 4px 14px rgba(37,211,102,0.35)" }}>
+            🟢 {lang === "es" ? "Enviar por WhatsApp" : "Send on WhatsApp"}
+          </button>
+          <div className="flex gap-2">
+            <button onClick={copyMsg} className="flex-1 active:translate-y-px transition-transform" style={{ background: "#fff", color: M.teal, border: `1.5px solid ${M.line}`, borderRadius: 12, padding: 14, fontSize: 14, fontWeight: 800 }}>📋 {lang === "es" ? "Copiar" : "Copy"}</button>
+            <button onClick={resetQuote} className="flex-1 active:translate-y-px transition-transform" style={{ background: M.teal, color: "#fff", border: "none", borderRadius: 12, padding: 14, fontSize: 14, fontWeight: 800 }}>{lang === "es" ? "Nueva cotización" : "New quote"}</button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  /* ── Clients ── */
+  const Clients = () => (
+    <div className="flex-1 overflow-y-auto pb-6" style={{ background: M.bg }}>
+      <div className="px-5 pt-4">
+        <div className="rounded-2xl p-5 mb-3" style={{ background: M.cardGrad, boxShadow: "0 18px 38px rgba(10,69,55,0.18)" }}>
+          <p style={{ color: M.goldHi, fontSize: 11, fontWeight: 900, letterSpacing: "0.16em", textTransform: "uppercase" }}>{lang === "es" ? "Tus clientes" : "Your customers"}</p>
+          <p className="text-white font-extrabold" style={{ fontSize: 26, margin: "4px 0 0" }}>{customers.length}</p>
+        </div>
+        {savedQuotes.length > 0 && (
+          <>
+            <p className="mb-2" style={{ color: M.tealDeep, fontSize: 14, fontWeight: 800 }}>{lang === "es" ? "Cotizaciones recientes" : "Recent quotes"}</p>
+            {savedQuotes.slice(0, 8).map((sq) => (
+              <Card key={sq.id} style={{ marginBottom: 8 }}>
+                <div className="flex items-center justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="font-bold truncate" style={{ color: M.navy, fontSize: 14 }}>{sq.name || sq.address || "—"}</p>
+                    <p className="truncate" style={{ color: M.muted2, fontSize: 11, fontWeight: 600 }}>{sq.address}</p>
+                  </div>
+                  <p className="shrink-0 font-extrabold" style={{ color: M.teal, fontSize: 18 }}>{fmt(sq.recommended)}</p>
+                </div>
+              </Card>
+            ))}
+          </>
+        )}
+        <p className="mb-2 mt-3" style={{ color: M.tealDeep, fontSize: 14, fontWeight: 800 }}>{lang === "es" ? "Directorio" : "Directory"}</p>
+        {customers.map((c) => (
+          <Card key={c.id} style={{ marginBottom: 8 }}>
+            <p className="font-bold" style={{ color: M.navy, fontSize: 14 }}>{c.name}</p>
+            <p style={{ color: M.muted2, fontSize: 12, fontWeight: 600 }}>{c.phone}{c.addr ? ` · ${c.addr}` : ""}</p>
+          </Card>
+        ))}
+      </div>
+    </div>
+  );
+
+  /* ── My prices (rate editor) ── */
+  const Prices = () => {
+    const rates = mergeRates(myRates);
+    const setRate = (type, field, val) => {
+      setMyRates((prev) => {
+        const next = { ...prev, RATE: { ...(prev.RATE || {}) } };
+        next.RATE[type] = { ...(next.RATE[type] || {}), [field]: val === "" ? undefined : Number(val) };
+        return next;
+      });
+    };
+    const setAddon = (key, val) => setMyRates((prev) => ({ ...prev, ADDON: { ...(prev.ADDON || {}), [key]: val === "" ? undefined : Number(val) } }));
+    const resetRates = () => { setMyRates({}); showToast(lang === "es" ? "Precios restablecidos ✓" : "Prices reset ✓"); };
+    return (
+      <div className="flex-1 overflow-y-auto pb-6" style={{ background: M.bg }}>
+        <div className="px-5 pt-4">
+          <div className="rounded-2xl p-5 mb-3" style={{ background: M.cardGrad }}>
+            <p style={{ color: M.goldHi, fontSize: 11, fontWeight: 900, letterSpacing: "0.16em", textTransform: "uppercase" }}>{lang === "es" ? "Mis precios" : "My prices"}</p>
+            <p style={{ color: "rgba(255,255,255,0.82)", fontSize: 13, fontWeight: 600, lineHeight: 1.5, marginTop: 4 }}>{lang === "es" ? "Ajusta tus tarifas. Cada cotización usa las tuyas." : "Set your rates. Every quote uses yours."}</p>
+          </div>
+          <Card>
+            <p style={{ color: M.gold, fontSize: 10, fontWeight: 900, letterSpacing: "0.16em", textTransform: "uppercase", marginBottom: 10 }}>{lang === "es" ? "Tarifas por tipo de limpieza" : "Rates by cleaning type"}</p>
+            <div className="flex items-center gap-2 mb-1" style={{ paddingLeft: 110 }}>
+              <span className="flex-1 text-center" style={{ color: M.muted2, fontSize: 9, fontWeight: 700, textTransform: "uppercase" }}>$/{t.sqft}</span>
+              <span className="flex-1 text-center" style={{ color: M.muted2, fontSize: 9, fontWeight: 700, textTransform: "uppercase" }}>{lang === "es" ? "Mínimo" : "Minimum"}</span>
+            </div>
+            {CLEANING_TYPES.map(([key, icon, es, en]) => (
+              <div key={key} className="flex items-center gap-2 mb-2">
+                <span className="shrink-0 font-bold" style={{ width: 102, fontSize: 12, color: M.navy }}>{icon} {lang === "es" ? es : en}</span>
+                <input value={myRates.RATE?.[key]?.perSqft ?? ""} onChange={(e) => setRate(key, "perSqft", e.target.value)} placeholder={String(rates.RATE[key].perSqft)} inputMode="decimal"
+                  className="flex-1 min-w-0 rounded-lg px-2 py-2 font-semibold outline-none text-center" style={{ background: M.bg, border: `1.5px solid ${M.line}`, color: M.navy, fontSize: 13 }} />
+                <input value={myRates.RATE?.[key]?.min ?? ""} onChange={(e) => setRate(key, "min", e.target.value)} placeholder={String(rates.RATE[key].min)} inputMode="numeric"
+                  className="flex-1 min-w-0 rounded-lg px-2 py-2 font-semibold outline-none text-center" style={{ background: M.bg, border: `1.5px solid ${M.line}`, color: M.navy, fontSize: 13 }} />
               </div>
             ))}
-          </div>
-          <div className="rounded-2xl p-4 mb-3" style={{ background: "#fff", border: `1px solid ${QC.line}`, boxShadow: "0 2px 8px rgba(27,42,92,0.06)" }}>
-            <p style={{ color: QC.muted2, fontSize: 9, fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", marginBottom: 8 }}>{lang === "es" ? "Datos clave de la propiedad" : "Key property facts"}</p>
-            <div className="grid grid-cols-4 gap-2">
-              {facts.map(([icon, v, label]) => (
-                <div key={label} style={{ background: QC.bg, border: `1px solid ${QC.line}`, borderRadius: 10, padding: "10px 6px", textAlign: "center" }}>
-                  <p className="font-extrabold" style={{ color: QC.navy, fontSize: 15 }}>{v}</p>
-                  <p style={{ color: QC.muted, fontSize: 8, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", marginTop: 3 }}>{icon} {label}</p>
+          </Card>
+          <Card>
+            <p style={{ color: M.gold, fontSize: 10, fontWeight: 900, letterSpacing: "0.16em", textTransform: "uppercase", marginBottom: 10 }}>{lang === "es" ? "Precio de extras" : "Add-on prices"}</p>
+            <div className="grid grid-cols-2 gap-2">
+              {ADDONS.map(([key, icon, es, en]) => (
+                <div key={key} className="flex items-center gap-1.5">
+                  <span className="shrink-0" style={{ fontSize: 13, color: M.navy, width: 92 }}>{icon} {lang === "es" ? es : en}</span>
+                  <input value={myRates.ADDON?.[key] ?? ""} onChange={(e) => setAddon(key, e.target.value)} placeholder={String(rates.ADDON[key])} inputMode="numeric"
+                    className="flex-1 min-w-0 rounded-lg px-2 py-2 font-semibold outline-none text-center" style={{ background: M.bg, border: `1.5px solid ${M.line}`, color: M.navy, fontSize: 12 }} />
                 </div>
               ))}
             </div>
-          </div>
-          <div className="flex items-center gap-2 rounded-xl px-3 py-2.5 mb-3" style={{ background: QC.bg, border: `1px solid ${QC.line}` }}>
-            <span style={{ color: QC.green }}>✓</span>
-            <span style={{ color: QC.body, fontSize: 12, fontWeight: 600 }}>{lang === "es" ? "Resumen fiscal listo para el cliente" : "Client-ready tax summary available"}</span>
-          </div>
-          <button onClick={() => { setAddrQ(""); setPlaceSugs(null); setTaxLookup(null); }} className="w-full active:translate-y-px transition-transform"
-            style={{ background: QC.navy, color: "#fff", border: "none", borderRadius: 12, padding: 15, fontSize: 16, fontWeight: 700, boxShadow: "0 4px 14px rgba(27,42,92,0.3)" }}>
-            {lang === "es" ? "Nueva búsqueda" : "New search"}
-          </button>
-          {estimated && <p className="mt-3" style={{ color: "#66759D", fontSize: 11, fontWeight: 600, lineHeight: 1.5 }}>⚠️ {lang === "es" ? "Valores catastrales estimados — confirma con el condado." : "Assessed values are estimates — confirm with the county."}</p>}
+          </Card>
+          <button onClick={resetRates} className="w-full active:translate-y-px transition-transform" style={{ background: "#fff", color: M.red, border: `1.5px solid ${M.line}`, borderRadius: 12, padding: 13, fontSize: 14, fontWeight: 800 }}>{lang === "es" ? "Restablecer a precios por defecto" : "Reset to default prices"}</button>
         </div>
       </div>
     );
   };
 
-  /* ── 04 · WORKSPACE — saved work + Realtor branding ── */
-  const Workspace = () => {
-    const reopen = (it) => {
-      setLookup(it);
-      setLendPrice(null);
-      setScreen("comps");
-    };
-    return (
-      <div className="flex-1 overflow-y-auto pb-6" style={{ background: QC.bg }}>
-        <div className="px-5 pt-4">
-          <div className="rounded-2xl p-5 mb-3" style={{ background: QC.cardGrad, boxShadow: "0 18px 38px rgba(17,27,66,0.18)" }}>
-            <p style={{ color: QC.goldHi, fontSize: 11, fontWeight: 900, letterSpacing: "0.16em", textTransform: "uppercase" }}>{lang === "es" ? "Trabajo guardado" : "Saved work"}</p>
-            <p className="text-white font-extrabold" style={{ fontSize: 26, margin: "4px 0 6px" }}>{savedWork.length} {lang === "es" ? (savedWork.length === 1 ? "elemento reciente" : "elementos recientes") : (savedWork.length === 1 ? "recent item" : "recent items")}</p>
-            <p style={{ color: "rgba(255,255,255,0.76)", fontSize: 13, fontWeight: 600, lineHeight: 1.5 }}>{lang === "es" ? "Reabre comps, estimados de financiamiento e impuestos sin empezar de cero." : "Reopen past comps, lending estimates, and tax snapshots without starting over."}</p>
-          </div>
-
-          {savedWork.length === 0 ? (
-            <div className="rounded-2xl text-center mb-3" style={{ background: "#fff", border: "1px dashed #CAD5E7", padding: "26px 22px" }}>
-              <p style={{ color: "#66759D", fontSize: 13, fontWeight: 600 }}>{lang === "es" ? "Tus búsquedas de propiedades aparecerán aquí." : "Your property searches will show up here."}</p>
-            </div>
-          ) : (
-            <div className="mb-3">
-              {savedWork.map((it, i) => (
-                <button key={it.addr + i} onClick={() => reopen(it)} className="w-full flex items-center gap-3 rounded-2xl p-3.5 mb-2 text-left active:scale-[0.99] transition-transform"
-                  style={{ background: "#fff", border: `1px solid ${QC.line}`, boxShadow: "0 2px 8px rgba(27,42,92,0.06)" }}>
-                  <span className="shrink-0 flex items-center justify-center rounded-xl font-extrabold" style={{ width: 40, height: 40, background: QC.bg, border: `1px solid ${QC.line}`, color: QC.navy, fontSize: 13 }}>{`0${i + 1}`.slice(-2)}</span>
-                  <span className="flex-1 min-w-0">
-                    <span className="block font-bold truncate" style={{ color: QC.navyDeep, fontSize: 14 }}>{it.addr || "—"}</span>
-                    <span className="block" style={{ color: QC.muted2, fontSize: 11, fontWeight: 600 }}>{lang === "es" ? "Comp · valor" : "Comp · value"} {it.value ? "$" + Number(it.value).toLocaleString("en-US") : "—"}</span>
-                  </span>
-                  <span style={{ color: QC.gold, fontSize: 18 }}>›</span>
-                </button>
-              ))}
-            </div>
-          )}
-
-          <div className="rounded-2xl p-4" style={{ background: "#fff", border: `1px solid ${QC.line}`, boxShadow: "0 2px 8px rgba(27,42,92,0.06)" }}>
-            <p style={{ color: QC.gold, fontSize: 10, fontWeight: 900, letterSpacing: "0.18em", textTransform: "uppercase", marginBottom: 4 }}>{lang === "es" ? "Perfil del agente" : "Realtor profile"}</p>
-            <p className="font-extrabold mb-3" style={{ color: QC.navyDeep, fontSize: 17 }}>{lang === "es" ? "Marca de tus informes" : "Client report branding"}</p>
-            <div className="flex items-center gap-2 rounded-xl px-3 py-2.5 mb-3" style={{ background: QC.bg, border: `1px solid ${QC.line}` }}>
-              <span style={{ color: QC.gold }}>✦</span>
-              <span style={{ color: QC.body, fontSize: 12, fontWeight: 600 }}>{lang === "es" ? "Marca personal activa — tus informes la usan." : "Personal branding is active — reports use it."}</span>
-            </div>
-            <div className="rounded-2xl p-3.5 mb-3 flex items-center gap-3" style={{ background: QC.headGrad }}>
-              <span className="shrink-0 flex items-center justify-center rounded-xl font-extrabold" style={{ width: 40, height: 40, background: "rgba(255,255,255,0.10)", border: "1px solid rgba(255,255,255,0.18)", color: QC.goldHi, fontSize: 17 }}>{(userName || "R")[0].toUpperCase()}</span>
-              <span className="min-w-0">
-                <span className="block" style={{ color: QC.goldHi, fontSize: 8, fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase" }}>{lang === "es" ? "Presentado por" : "Presented by"}</span>
-                <span className="block font-extrabold text-white truncate" style={{ fontSize: 15 }}>{userName || (lang === "es" ? "Tu nombre" : "Your name")}{bizName ? ` · ${bizName}` : ""}</span>
-                {bizEmail && <span className="block truncate" style={{ color: "rgba(255,255,255,0.7)", fontSize: 11 }}>{bizEmail}</span>}
-              </span>
-            </div>
-            <input value={userName} onChange={(e) => { setUserName(e.target.value); saveProfile({ name: e.target.value }); }} placeholder={lang === "es" ? "Nombre del agente" : "Realtor name"}
-              className="w-full rounded-xl px-3.5 py-3 mb-2 font-semibold outline-none" style={{ background: QC.bg, border: `1.5px solid ${QC.line}`, color: QC.navy, fontSize: 14 }} />
-            <input value={bizName} onChange={(e) => { setBizName(e.target.value); saveProfile({ biz: e.target.value }); }} placeholder={lang === "es" ? "Inmobiliaria / Brokerage" : "Brokerage"}
-              className="w-full rounded-xl px-3.5 py-3 mb-2 font-semibold outline-none" style={{ background: QC.bg, border: `1.5px solid ${QC.line}`, color: QC.navy, fontSize: 14 }} />
-            <input value={userPhone} onChange={(e) => { setUserPhone(e.target.value); saveProfile({ phone: e.target.value }); }} placeholder={lang === "es" ? "Teléfono" : "Phone"} inputMode="tel"
-              className="w-full rounded-xl px-3.5 py-3 mb-2 font-semibold outline-none" style={{ background: QC.bg, border: `1.5px solid ${QC.line}`, color: QC.navy, fontSize: 14 }} />
-            <input value={bizEmail} onChange={(e) => { setBizEmail(e.target.value); saveProfile({ email: e.target.value }); }} placeholder={lang === "es" ? "Email" : "Email"} inputMode="email"
-              className="w-full rounded-xl px-3.5 py-3 mb-2 font-semibold outline-none" style={{ background: QC.bg, border: `1.5px solid ${QC.line}`, color: QC.navy, fontSize: 14 }} />
-            <input value={license} onChange={(e) => { setLicense(e.target.value); saveProfile({ license: e.target.value }); }} placeholder={lang === "es" ? "Licencia # (opcional)" : "License # (optional)"}
-              className="w-full rounded-xl px-3.5 py-3 mb-3 font-semibold outline-none" style={{ background: QC.bg, border: `1.5px solid ${QC.line}`, color: QC.navy, fontSize: 14 }} />
-            <p style={{ color: QC.muted2, fontSize: 11, fontWeight: 700, marginBottom: 6 }}>{lang === "es" ? "Logo o foto (opcional)" : "Logo or headshot (optional)"}</p>
-            {logo
-              ? (<div className="flex items-center gap-3">
-                  <img src={logo} alt="" style={{ height: 44, maxWidth: 120, objectFit: "contain", borderRadius: 8, background: "#fff", border: `1px solid ${QC.line}`, padding: 4 }} />
-                  <button onClick={() => { setLogo(null); logoIdRef.current = null; saveProfile({ logo: null }); }}
-                    style={{ background: "#fff", color: QC.navy, border: `1.5px solid ${QC.line}`, borderRadius: 10, padding: "8px 14px", fontWeight: 700, fontSize: 13 }}>{lang === "es" ? "Quitar" : "Remove"}</button>
-                </div>)
-              : (<label className="block rounded-xl px-3.5 py-3 text-center cursor-pointer font-semibold" style={{ background: QC.bg, border: `1.5px dashed ${QC.line}`, color: QC.muted2, fontSize: 13 }}>
-                  {lang === "es" ? "＋ Subir imagen" : "＋ Upload image"}
-                  <input type="file" accept="image/*" onChange={(e) => onLogoFile(e.target.files?.[0])} style={{ display: "none" }} />
-                </label>)}
-          </div>
+  /* ── Account / branding ── */
+  const Account = () => (
+    <div className="flex-1 overflow-y-auto pb-6" style={{ background: M.bg }}>
+      <div className="px-5 pt-4">
+        <div className="rounded-2xl p-3.5 mb-3 flex items-center gap-3" style={{ background: M.headGrad }}>
+          <span className="shrink-0 flex items-center justify-center rounded-xl font-extrabold" style={{ width: 44, height: 44, background: "rgba(255,255,255,0.10)", border: "1px solid rgba(255,255,255,0.18)", color: M.goldHi, fontSize: 18 }}>{(bizName || userName || "M")[0].toUpperCase()}</span>
+          <span className="min-w-0">
+            <span className="block" style={{ color: M.goldHi, fontSize: 8, fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase" }}>{lang === "es" ? "Tu negocio" : "Your business"}</span>
+            <span className="block font-extrabold text-white truncate" style={{ fontSize: 16 }}>{bizName || (lang === "es" ? "Tu negocio" : "Your business")}</span>
+            {userName && <span className="block truncate" style={{ color: "rgba(255,255,255,0.7)", fontSize: 12 }}>{userName}</span>}
+          </span>
         </div>
+        <Card>
+          <p style={{ color: M.gold, fontSize: 10, fontWeight: 900, letterSpacing: "0.16em", textTransform: "uppercase", marginBottom: 4 }}>{lang === "es" ? "Marca de tus cotizaciones" : "Quote branding"}</p>
+          <p className="font-bold mb-3" style={{ color: M.tealDeep, fontSize: 14 }}>{lang === "es" ? "Aparece en cada cotización que envías." : "Shown on every quote you send."}</p>
+          <TextInput value={bizName} onChange={(v) => { setBizName(v); saveProfile({ biz: v }); }} placeholder={lang === "es" ? "Nombre del negocio" : "Business name"} />
+          <TextInput value={userName} onChange={(v) => { setUserName(v); saveProfile({ name: v }); }} placeholder={lang === "es" ? "Tu nombre" : "Your name"} />
+          <TextInput value={userPhone} onChange={(v) => { setUserPhone(v); saveProfile({ phone: v }); }} placeholder={lang === "es" ? "Teléfono (WhatsApp)" : "Phone (WhatsApp)"} inputMode="tel" />
+          <TextInput value={bizEmail} onChange={(v) => { setBizEmail(v); saveProfile({ email: v }); }} placeholder="Email" inputMode="email" />
+          <TextInput value={zelle} onChange={(v) => { setZelle(v); saveProfile({ zelle: v }); }} placeholder={lang === "es" ? "Zelle / pago (opcional)" : "Zelle / payment (optional)"} />
+          <p style={{ color: M.muted2, fontSize: 11, fontWeight: 700, margin: "6px 0" }}>{lang === "es" ? "Logo (opcional)" : "Logo (optional)"}</p>
+          {logo
+            ? (<div className="flex items-center gap-3">
+                <img src={logo} alt="" style={{ height: 44, maxWidth: 120, objectFit: "contain", borderRadius: 8, background: "#fff", border: `1px solid ${M.line}`, padding: 4 }} />
+                <button onClick={() => { setLogo(null); logoIdRef.current = null; saveProfile({ logo: null }); }} style={{ background: "#fff", color: M.teal, border: `1.5px solid ${M.line}`, borderRadius: 10, padding: "8px 14px", fontWeight: 700, fontSize: 13 }}>{lang === "es" ? "Quitar" : "Remove"}</button>
+              </div>)
+            : (<label className="block rounded-xl px-3.5 py-3 text-center cursor-pointer font-semibold" style={{ background: M.bg, border: `1.5px dashed ${M.line}`, color: M.muted2, fontSize: 13 }}>
+                {lang === "es" ? "＋ Subir imagen" : "＋ Upload image"}
+                <input type="file" accept="image/*" onChange={(e) => onLogoFile(e.target.files?.[0])} style={{ display: "none" }} />
+              </label>)}
+        </Card>
+        {!session && <p className="text-center" style={{ color: M.muted, fontSize: 11, fontWeight: 600 }}>{lang === "es" ? "Modo demo · entra con tu link para guardar en la nube" : "Demo mode · enter with your link to save to the cloud"}</p>}
       </div>
-    );
-  };
+    </div>
+  );
 
-  /* ── Client CMA report (printable / shareable PDF view) ── */
-  const Report = () => {
-    const R = lookup;
-    if (!R || !R.value) return <NeedProperty title={lang === "es" ? "Informe del cliente" : "Client report"} sub={lang === "es" ? "Busca una propiedad para generar un informe con comparables y valor de mercado." : "Search a property to generate a report with comparables and a market value."} />;
-    const subj = R.subject || {};
-    const comps = (Array.isArray(R.comps) ? R.comps : []).filter((c) => !c.excludedAsOutlier).slice(0, 6);
-    const n = R.compsUsed || comps.length;
-    const hasRange = R.low != null && R.high != null;
-    const narrative = lang === "es"
-      ? `El conjunto de comparables respalda un valor de mercado cercano a ${fmt(R.value)}${hasRange ? `, dentro de un rango de ${fmt(R.low)}–${fmt(R.high)}` : ""}. El mayor respaldo proviene de ${n} ${n === 1 ? "venta cercana" : "ventas cercanas"} de tamaño y condición similares${R.avgPpsf ? `, con un promedio de ${fmt(R.avgPpsf)} por pie²` : ""}.`
-      : `The comparable set supports an indicated market value near ${fmt(R.value)}${hasRange ? `, within a ${fmt(R.low)}–${fmt(R.high)} range` : ""}. The strongest support comes from ${n} nearby ${n === 1 ? "sale" : "sales"} of similar size and condition${R.avgPpsf ? `, averaging ${fmt(R.avgPpsf)} per square foot` : ""}.`;
-    const share = async () => {
-      const text = `${subj.address || R.addr} — ${fmt(R.value)}${hasRange ? ` (${fmt(R.low)}–${fmt(R.high)})` : ""}\n${narrative}`;
-      try {
-        if (navigator.share) await navigator.share({ title: "Quick Comp — CMA", text });
-        else { await navigator.clipboard.writeText(text); showToast(lang === "es" ? "Copiado ✓" : "Copied ✓"); }
-      } catch { /* user dismissed */ }
-    };
-    return (
-      <div className="flex-1 overflow-y-auto pb-6" style={{ background: QC.bg }}>
-        <div className="px-5 pt-4">
-          {/* The report document */}
-          <div id="qc-report" className="rounded-2xl overflow-hidden" style={{ background: "#fff", border: `1px solid ${QC.line}`, boxShadow: "0 18px 38px rgba(17,27,66,0.12)" }}>
-            {/* Branded header band */}
-            <div className="flex items-center justify-between gap-3 px-4 py-3.5" style={{ background: QC.headGrad }}>
-              <div className="flex items-center gap-3 min-w-0">
-                {logo && <img src={logo} alt="" className="shrink-0" style={{ height: 38, maxWidth: 96, objectFit: "contain", background: "#fff", borderRadius: 8, padding: 3 }} />}
-                <div className="min-w-0">
-                  <p style={{ color: QC.goldHi, fontSize: 8, fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase" }}>{lang === "es" ? "Presentado por" : "Presented by"}</p>
-                  <p className="text-white font-extrabold truncate" style={{ fontSize: 14 }}>{userName || (lang === "es" ? "Tu nombre" : "Your name")}</p>
-                  {bizName && <p className="truncate" style={{ color: "rgba(255,255,255,0.7)", fontSize: 11 }}>{bizName}</p>}
-                  {(userPhone || bizEmail) && <p className="truncate" style={{ color: "rgba(255,255,255,0.62)", fontSize: 10.5 }}>{[userPhone, bizEmail].filter(Boolean).join(" · ")}</p>}
-                  {license && <p className="truncate" style={{ color: "rgba(255,255,255,0.5)", fontSize: 9.5 }}>{lang === "es" ? "Lic. " : "Lic. "}{license}</p>}
-                </div>
-              </div>
-              <p className="text-white font-extrabold shrink-0" style={{ fontSize: 13, letterSpacing: "0.03em" }}>{lang === "es" ? "Informe CMA" : "Client CMA Report"}</p>
-            </div>
-            {/* Body */}
-            <div className="px-4 py-4">
-              <p style={{ color: QC.gold, fontSize: 10, fontWeight: 900, letterSpacing: "0.16em", textTransform: "uppercase" }}>{t.cmpValue}</p>
-              <p style={{ color: QC.navyDeep, fontSize: 36, fontWeight: 900, lineHeight: 1, margin: "6px 0" }}>{fmt(R.value)}</p>
-              {hasRange && <p style={{ color: QC.muted2, fontSize: 13, fontWeight: 600 }}>{fmt(R.low)} – {fmt(R.high)} {lang === "es" ? "rango sugerido" : "suggested range"}</p>}
-              <p className="font-bold mt-1.5" style={{ color: QC.navy, fontSize: 13 }}>{subj.address || R.addr}</p>
-
-              {/* Sold comparable support */}
-              <div className="rounded-xl mt-3 px-3.5 py-3" style={{ background: QC.bg, border: `1px solid ${QC.line}` }}>
-                <p style={{ color: QC.navy, fontSize: 12, fontWeight: 800, letterSpacing: "0.02em", marginBottom: 8 }}>{lang === "es" ? "Apoyo de ventas comparables" : "Sold Comparable Support"}</p>
-                {comps.length === 0 && <p style={{ color: QC.muted, fontSize: 12, fontWeight: 600 }}>{lang === "es" ? "Sin comparables disponibles." : "No comparables available."}</p>}
-                {comps.map((c, i) => (
-                  <div key={i} className="flex items-center justify-between gap-3 py-1.5" style={{ borderTop: i ? `1px solid ${QC.line}` : "none" }}>
-                    <span className="truncate" style={{ color: QC.body, fontSize: 12.5, fontWeight: 600 }}>{i + 1}. {c.address}</span>
-                    <span className="shrink-0 font-extrabold" style={{ color: QC.navyDeep, fontSize: 12.5 }}>{fmt(c.soldPrice)}</span>
-                  </div>
-                ))}
-              </div>
-
-              {/* AI-assisted summary */}
-              <div className="rounded-xl mt-3 px-4 py-3.5" style={{ background: QC.cardGrad, border: `1px solid ${QC.gold}55` }}>
-                <p style={{ color: QC.goldHi, fontSize: 9, fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", marginBottom: 6 }}>{lang === "es" ? "Resumen asistido por IA" : "AI-Assisted Summary"}</p>
-                <p className="text-white" style={{ fontSize: 12.5, lineHeight: 1.6, fontWeight: 500 }}>{narrative}</p>
-              </div>
-
-              <p className="mt-3" style={{ color: QC.muted, fontSize: 9.5, fontWeight: 600, lineHeight: 1.5 }}>⚠️ {t.cmpDisc}</p>
-            </div>
-          </div>
-
-          {/* Actions (not printed) */}
-          <div className="no-print flex gap-2 mt-3">
-            <button onClick={() => window.print()} className="flex-1 active:translate-y-px transition-transform"
-              style={{ background: QC.navy, color: "#fff", border: "none", borderRadius: 12, padding: 14, fontSize: 14, fontWeight: 700 }}>🖨️ {lang === "es" ? "Imprimir" : "Print"}</button>
-            <button onClick={share} className="flex-1 active:translate-y-px transition-transform"
-              style={{ background: "#fff", color: QC.navy, border: `1.5px solid ${QC.line}`, borderRadius: 12, padding: 14, fontSize: 14, fontWeight: 700 }}>📤 {lang === "es" ? "Compartir" : "Share"}</button>
-          </div>
-          <p className="no-print text-center mt-3" style={{ color: "#66759D", fontSize: 12, fontWeight: 600 }}>{lang === "es" ? "Comparte, imprime o guarda para después." : "Share, print, or save for later."}</p>
-        </div>
-      </div>
-    );
-  };
-
-  /* ── First-login welcome (captures name + brokerage for report branding) ── */
+  /* ── First-login welcome (captures name + business for branding) ── */
   const Welcome = () => {
     const finish = () => {
       saveProfile({ name: userName, biz: bizName });
-      try { localStorage.setItem("qc_welcomed", "1"); } catch { /* private mode */ }
-      setScreen("comps");
+      try { localStorage.setItem("maidflow_welcomed", "1"); } catch { /* private mode */ }
+      resetQuote();
     };
-    const tabs = [
-      ["01", lang === "es" ? "Comps" : "Comps", lang === "es" ? "Valor + ventas comparables" : "Value + sold comparables"],
-      ["02", lang === "es" ? "Crédito" : "Lending", lang === "es" ? "Pago mensual estimado" : "Monthly payment estimate"],
-      ["03", lang === "es" ? "Impuestos" : "Tax", lang === "es" ? "Resumen fiscal de la propiedad" : "Property tax snapshot"],
-      ["04", lang === "es" ? "Trabajo" : "Workspace", lang === "es" ? "Guarda y reabre tu trabajo" : "Save & reopen your work"],
+    const feats = [
+      ["🧹", lang === "es" ? "Cotiza en segundos" : "Quote in seconds", lang === "es" ? "Una dirección y unas preguntas" : "An address and a few questions"],
+      ["💲", lang === "es" ? "Tus precios" : "Your prices", lang === "es" ? "Ajusta tus tarifas y mínimos" : "Set your rates and minimums"],
+      ["🟢", lang === "es" ? "Envía por WhatsApp" : "Send on WhatsApp", lang === "es" ? "Mensaje listo con tu marca" : "Branded message, ready to send"],
     ];
     return (
-      <div className="flex-1 overflow-y-auto" style={{ background: QC.bg }}>
-        <div className="px-6 pt-8 pb-6 text-center" style={{ background: QC.headGrad }}>
-          <img src="/quick-comp-lockup-white.png" alt="Quick Comp" style={{ height: 64, objectFit: "contain", margin: "0 auto 14px" }} />
-          <p className="text-white font-extrabold" style={{ fontSize: 22, lineHeight: 1.2 }}>{lang === "es" ? "Bienvenido a Quick Comp" : "Welcome to Quick Comp"}</p>
-          <p style={{ color: "rgba(255,255,255,0.78)", fontSize: 13, fontWeight: 600, marginTop: 6 }}>{lang === "es" ? "Valúa cualquier propiedad en minutos." : "Value any property in minutes."}</p>
+      <div className="flex-1 overflow-y-auto" style={{ background: M.bg }}>
+        <div className="px-6 pt-8 pb-6 text-center" style={{ background: M.headGrad }}>
+          <div className="mb-3"><Wordmark size={34} /></div>
+          <p className="text-white font-extrabold" style={{ fontSize: 22, lineHeight: 1.2 }}>{lang === "es" ? "Bienvenida a Maid Flow" : "Welcome to Maid Flow"}</p>
+          <p style={{ color: "rgba(255,255,255,0.82)", fontSize: 13, fontWeight: 600, marginTop: 6 }}>{lang === "es" ? "Cotiza cualquier limpieza en minutos." : "Quote any cleaning in minutes."}</p>
         </div>
         <div className="px-5 pt-5">
-          <div className="rounded-2xl p-4 mb-4" style={{ background: "#fff", border: `1px solid ${QC.line}`, boxShadow: "0 2px 8px rgba(27,42,92,0.06)" }}>
-            <p style={{ color: QC.gold, fontSize: 10, fontWeight: 900, letterSpacing: "0.18em", textTransform: "uppercase", marginBottom: 4 }}>{lang === "es" ? "Tu perfil" : "Your profile"}</p>
-            <p className="font-bold mb-3" style={{ color: QC.navyDeep, fontSize: 14 }}>{lang === "es" ? "Aparece como “Presentado por” en tus informes." : "Shown as “Presented by” on your client reports."}</p>
-            <input value={userName} onChange={(e) => setUserName(e.target.value)} placeholder={lang === "es" ? "Tu nombre" : "Your name"}
-              className="w-full rounded-xl px-3.5 py-3 mb-2 font-semibold outline-none" style={{ background: QC.bg, border: `1.5px solid ${QC.line}`, color: QC.navy, fontSize: 14 }} />
-            <input value={bizName} onChange={(e) => setBizName(e.target.value)} placeholder={lang === "es" ? "Inmobiliaria / Brokerage" : "Brokerage"}
-              className="w-full rounded-xl px-3.5 py-3 font-semibold outline-none" style={{ background: QC.bg, border: `1.5px solid ${QC.line}`, color: QC.navy, fontSize: 14 }} />
-          </div>
-          <div className="rounded-2xl p-4 mb-4" style={{ background: "#fff", border: `1px solid ${QC.line}`, boxShadow: "0 2px 8px rgba(27,42,92,0.06)" }}>
-            <p style={{ color: QC.muted2, fontSize: 9, fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", marginBottom: 10 }}>{lang === "es" ? "Tus 4 herramientas" : "Your 4 tools"}</p>
-            {tabs.map(([n, name, desc]) => (
-              <div key={n} className="flex items-center gap-3 py-2" style={{ borderTop: n !== "01" ? `1px solid ${QC.line}` : "none" }}>
-                <span className="flex items-center justify-center shrink-0 font-extrabold" style={{ width: 34, height: 34, borderRadius: 10, background: QC.bg, color: QC.navy, fontSize: 12 }}>{n}</span>
-                <span className="min-w-0"><span className="block font-bold" style={{ color: QC.navyDeep, fontSize: 14 }}>{name}</span><span className="block" style={{ color: QC.muted2, fontSize: 11, fontWeight: 600 }}>{desc}</span></span>
+          <Card>
+            <p style={{ color: M.gold, fontSize: 10, fontWeight: 900, letterSpacing: "0.18em", textTransform: "uppercase", marginBottom: 4 }}>{lang === "es" ? "Tu negocio" : "Your business"}</p>
+            <p className="font-bold mb-3" style={{ color: M.tealDeep, fontSize: 14 }}>{lang === "es" ? "Aparece en las cotizaciones que envías." : "Shown on the quotes you send."}</p>
+            <TextInput value={bizName} onChange={(v) => setBizName(v)} placeholder={lang === "es" ? "Nombre del negocio (ej. Brillo Cleaning)" : "Business name (e.g. Sparkle Maids)"} />
+            <TextInput value={userName} onChange={(v) => setUserName(v)} placeholder={lang === "es" ? "Tu nombre" : "Your name"} />
+          </Card>
+          <Card>
+            <p style={{ color: M.muted2, fontSize: 9, fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", marginBottom: 8 }}>{lang === "es" ? "Cómo funciona" : "How it works"}</p>
+            {feats.map(([icon, name, desc], i) => (
+              <div key={name} className="flex items-center gap-3 py-2" style={{ borderTop: i ? `1px solid ${M.line}` : "none" }}>
+                <span className="flex items-center justify-center shrink-0" style={{ width: 34, height: 34, borderRadius: 10, background: M.bg, fontSize: 16 }}>{icon}</span>
+                <span className="min-w-0"><span className="block font-bold" style={{ color: M.tealDeep, fontSize: 14 }}>{name}</span><span className="block" style={{ color: M.muted2, fontSize: 11, fontWeight: 600 }}>{desc}</span></span>
               </div>
             ))}
-          </div>
-          <button onClick={finish} className="w-full active:translate-y-px transition-transform mb-6"
-            style={{ background: QC.navy, color: "#fff", border: "none", borderRadius: 12, padding: 16, fontSize: 16, fontWeight: 800, boxShadow: "0 4px 14px rgba(27,42,92,0.3)" }}>
-            {lang === "es" ? "Empezar →" : "Get started →"}
-          </button>
+          </Card>
+          <PrimaryBtn onClick={finish} style={{ marginBottom: 24 }}>{lang === "es" ? "Empezar →" : "Get started →"}</PrimaryBtn>
         </div>
       </div>
     );
   };
 
   /* ── Router ── */
-  const titles = {
-    report: "📄 " + (lang === "es" ? "Informe del cliente" : "Client report"),
-  };
-  const backMap = {
-    report: "comps",
-  };
-  const tabScreens = ["comps", "lending", "tax", "workspace"];
-  const withNav = tabScreens;
+  const tabScreens = ["quote", "clients", "prices", "account"];
+  const titles = { result: lang === "es" ? "📄 Cotización" : "📄 Quote" };
 
   return (
-    <div className="min-h-screen flex justify-center" style={{ background: C.navyDeep }}>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:ital,wght@0,600;0,700;0,800;1,800&family=Inter:wght@400;500;600;700;800&display=swap');
+    <div className="min-h-screen flex justify-center" style={{ background: M.tealDeep }}>
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
         * { font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
-        input::placeholder { color: #A7AEBE; }
+        input::placeholder { color: #9DB0A8; }
         @keyframes ttpPulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.18); opacity: .65; } }
-        @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
-        @media print {
-          body { background: #fff !important; }
-          .no-print { display: none !important; }
-          #qc-report { box-shadow: none !important; border: 1px solid #d9e1ef !important; }
-        }`}</style>
-      <div className="w-full max-w-md flex flex-col relative" style={{ background: C.bg, minHeight: "100vh" }}>
-        {!session && (
-          <div className="no-print px-4 py-2 text-center" style={{ background: C.orangeSoft, borderBottom: `1.5px solid ${C.orange}` }}>
+        @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }`}</style>
+      <div className="w-full max-w-md flex flex-col relative" style={{ background: M.bg, minHeight: "100vh" }}>
+        {!session && screen !== "welcome" && (
+          <div className="px-4 py-2 text-center" style={{ background: M.goldSoft, borderBottom: `1.5px solid ${M.gold}` }}>
             <span className="text-xs font-bold" style={{ color: "#7A5A00" }}>{t.demoBanner}</span>
           </div>
         )}
-        {tabScreens.includes(screen) && <BrandHeader />}
-        {screen !== "welcome" && !tabScreens.includes(screen) && (
-          <div className="no-print"><Header title={titles[screen] || ""} back={() => setScreen(backMap[screen] || "comps")} /></div>
-        )}
+        {tabScreens.includes(screen) && screen !== "quote" && <BrandHeader />}
+        {screen === "quote" && step === 0 && !measuring && <BrandHeader />}
+        {screen === "result" && <div><TopBar title={titles.result} back={resetQuote} /></div>}
+
         {screen === "welcome" && Welcome()}
-        {screen === "comps" && (lookup ? CompsResult() : CompsSearch())}
-        {screen === "lending" && Lending()}
-        {screen === "tax" && Tax()}
-        {screen === "workspace" && Workspace()}
-        {screen === "report" && Report()}
-        {withNav.includes(screen) && <BottomNav />}
+        {screen === "quote" && QuoteFlow()}
+        {screen === "result" && ResultScreen()}
+        {screen === "clients" && Clients()}
+        {screen === "prices" && Prices()}
+        {screen === "account" && Account()}
+
+        {tabScreens.includes(screen) && <BottomNav />}
         {toast && (
           <div className="absolute left-0 right-0 flex justify-center" style={{ bottom: 80, pointerEvents: "none" }}>
-            <span className="rounded-full px-5 py-2.5 font-bold text-sm text-white" style={{ background: C.navyDeep, boxShadow: "0 8px 20px rgba(0,0,0,.3)" }}>{toast}</span>
+            <span className="rounded-full px-5 py-2.5 font-bold text-sm text-white" style={{ background: M.tealDeep, boxShadow: "0 8px 20px rgba(0,0,0,.3)" }}>{toast}</span>
           </div>
         )}
       </div>

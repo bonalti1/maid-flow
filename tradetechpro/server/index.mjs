@@ -2062,7 +2062,7 @@ app.post("/api/quote", async (req, res) => {
   const c = await auth(req);
   if (!c) return res.status(401).json({ error: "no session" });
   const b = req.body || {};
-  const rates = mergeRates(c.data?.rates);
+  const rates = mergeRates(c.data?.profile?.rates);
   const q = priceQuote({
     sqft: b.sqft, beds: b.beds, baths: b.baths,
     cleaningType: b.cleaningType, condition: b.condition,
@@ -2122,7 +2122,7 @@ app.post("/api/widget/quote", async (req, res) => {
 
   // Price the job with the cleaner's saved rates. Homeowner-supplied sqft/beds/
   // baths (if any) override the looked-up record; otherwise we use the record.
-  const rates = mergeRates(c.data?.rates);
+  const rates = mergeRates(c.data?.profile?.rates);
   const sqft = sqftIn ?? m?.sqft ?? 0;
   const beds = bedsIn ?? m?.beds ?? 0;
   const baths = bathsIn ?? m?.baths ?? 0;
