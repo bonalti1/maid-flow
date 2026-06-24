@@ -5,28 +5,28 @@ import { quote as priceQuote, mergeRates, DEFAULTS } from "../server/pricing.mjs
 
 /* ─── Brand tokens (Maid Flow: fresh teal + warm gold) ─── */
 const C = {
-  teal: "#0E8C72",       // primary — header bar, dark cards, headings
-  tealDeep: "#0A5C4C",   // deepest — gradients, deep panels
-  gold: "#E4A862", // warm accent
-  goldSoft: "#FBF1DC",
-  bg: "#F1F7F4",
+  teal: "#0C5A8A",       // primary — header bar, dark cards, headings
+  tealDeep: "#084563",   // deepest — gradients, deep panels
+  gold: "#3FB6E8", // warm accent
+  goldSoft: "#E9F6FD",
+  bg: "#EFF7FC",
   card: "#FFFFFF",
-  line: "#E2EAE6",
-  slate: "#5F7068",
+  line: "#DBEAF4",
+  slate: "#5A7488",
   green: "#1E9E5A",
   greenSoft: "#E6F5EC",
   red: "#D64545",
   redSoft: "#FBEAEA",
-  navy: "#13332B",       // dark text
+  navy: "#0C2A43",       // dark text
 };
 // Scoped visual language for the quote screens.
 const M = {
-  teal: "#0E8C72", tealDeep: "#0A5C4C",
-  cardGrad: "linear-gradient(135deg,#0E8C72,#0A5C4C)",
-  headGrad: "linear-gradient(135deg,#062B22 0%,#0A4537 62%,#0E8C72 100%)",
-  gold: "#D9A44E", goldHi: "#E9BE6A", goldSoft: "#FBF1DC",
-  bg: "#EFF6F2", line: "#DCE7E2", line2: "#D2E0DA",
-  muted: "#93A89F", muted2: "#5F7B70", body: "#3F564D",
+  teal: "#0C5A8A", tealDeep: "#084563",
+  cardGrad: "linear-gradient(135deg,#0C5A8A,#084563)",
+  headGrad: "linear-gradient(135deg,#062B22 0%,#0A4537 62%,#0C5A8A 100%)",
+  gold: "#3FB6E8", goldHi: "#69C8EE", goldSoft: "#E9F6FD",
+  bg: "#EFF7FC", line: "#DBEAF4", line2: "#CFE3F1",
+  muted: "#8FA6B6", muted2: "#5A7488", body: "#324A5C",
   green: "#1E9E5A", red: "#E8442E",
 };
 

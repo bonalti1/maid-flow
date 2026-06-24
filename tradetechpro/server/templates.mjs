@@ -42,12 +42,12 @@ function headBase(d, css) {
 
 function ribbonHtml(opts) {
   if (!opts.ribbon) return "";
-  return `<div style="background:#F8B408;color:#101B30;text-align:center;font-weight:800;font-size:12.5px;padding:9px 14px;font-family:Inter,Arial,sans-serif">📋 ${esc(opts.ribbon)}</div>`;
+  return `<div style="background:#3FB6E8;color:#0C5A8A;text-align:center;font-weight:800;font-size:12.5px;padding:9px 14px;font-family:Inter,Arial,sans-serif">📋 ${esc(opts.ribbon)}</div>`;
 }
 
 function backAltoHtml(opts) {
   if (!opts.backAlto) return "";
-  return `<a style="position:fixed;bottom:18px;left:50%;transform:translateX(-50%);z-index:50;background:#15244C;color:#fff;text-decoration:none;font-weight:800;font-size:14px;padding:13px 22px;border-radius:99px;box-shadow:0 14px 36px rgba(16,27,48,.5);font-family:Inter,Arial,sans-serif;white-space:nowrap" href="/ventas#precio">← Volver a <span style="color:#C9973A">MAID FLOW</span></a>`;
+  return `<a style="position:fixed;bottom:18px;left:50%;transform:translateX(-50%);z-index:50;background:#0C5A8A;color:#fff;text-decoration:none;font-weight:800;font-size:14px;padding:13px 22px;border-radius:99px;box-shadow:0 14px 36px rgba(16,27,48,.5);font-family:Inter,Arial,sans-serif;white-space:nowrap" href="/ventas#precio">← Volver a <span style="color:#1F9BD2">MAID FLOW</span></a>`;
 }
 
 function footerBits(d) {
@@ -362,7 +362,7 @@ export function renderSite(data, opts = {}) {
   const d = {
     services: DEFAULT_SERVICES,
     photos: [],
-    color: "#0E8C72",
+    color: "#0C5A8A",
     ...data,
   };
   const fn = TEMPLATES[String(d.template || "1")] || t1;

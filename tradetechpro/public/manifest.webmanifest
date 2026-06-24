@@ -1,11 +1,11 @@
 {
-  "name": "Quick Comp",
-  "short_name": "Quick Comp",
-  "description": "Real estate intelligence, instantly. Search an address, review sold comparables, and prepare a client-ready value range in minutes.",
+  "name": "Maid Flow",
+  "short_name": "Maid Flow",
+  "description": "Cotizaciones de limpieza al instante. Ingresa la dirección, confirma los detalles y envía un precio profesional por WhatsApp en minutos.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#15244C",
-  "theme_color": "#15244C",
+  "background_color": "#0C5A8A",
+  "theme_color": "#0C5A8A",
   "lang": "es",
   "icons": [
     { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
