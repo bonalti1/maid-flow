@@ -7,14 +7,13 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "server": "node --env-file-if-exists=server/.env server/index.mjs"
+    "server": "node --env-file-if-exists=server/.env server/index.mjs",
+    "test": "node server/pricing.test.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.104.1",
     "express": "^5.2.1",
-    "geotiff": "^3.0.5",
     "pg": "^8.21.0",
-    "proj4": "^2.20.9",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },

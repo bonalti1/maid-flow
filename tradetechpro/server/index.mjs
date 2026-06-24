@@ -1,12 +1,12 @@
 /*
- * Trade Tech Pro backend.
+ * Maid Flow backend.
  *
- * Three endpoints, each with a demo fallback so the app works with no keys:
+ * Each endpoint has a demo fallback so the app works with no keys:
  *   GET  /api/health  — which features are live vs demo
  *   GET  /api/places  — address autocomplete (Google Places, else mock list)
- *   POST /api/lookup  — roof + property data (Google Geocoding + Solar API +
- *                       RentCast, else simulated data)
- *   POST /api/ai      — the "Pregúntale a TTP" assistant (Anthropic API)
+ *   POST /api/lookup  — home characteristics (sqft/beds/baths) from RentCast
+ *   POST /api/quote / /api/widget/quote — cleaning price from pricing.mjs
+ *   POST /api/ai      — the in-app assistant (Anthropic API)
  */
 import express from "express";
 import path from "node:path";
@@ -14,8 +14,6 @@ import fs from "node:fs";
 import crypto from "node:crypto";
 import { fileURLToPath } from "node:url";
 import Anthropic from "@anthropic-ai/sdk";
-import { fromArrayBuffer } from "geotiff";
-import proj4 from "proj4";
 import * as db from "./db.mjs";
 import { renderSite } from "./templates.mjs";
 import { quote as priceQuote, mergeRates, DEFAULTS as RATE_DEFAULTS } from "./pricing.mjs";
@@ -186,43 +184,14 @@ app.use(async (req, res, next) => {
 const dist = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "dist");
 app.use(express.static(dist));
 
-/* ── Demo data (mirrors the frontend's offline fallback) ── */
-const PITCH_FACTORS = { 3: 1.031, 4: 1.054, 5: 1.083, 6: 1.118, 7: 1.158, 8: 1.202, 9: 1.25, 10: 1.302, 12: 1.414 };
+// Demo address pool for the autocomplete fallback when no Google key is set.
 const MOCK_PROPERTIES = [
-  { addr: "456 Oak Dr, Rio Grande City, TX", roofArea: 2460, pitch: "6", stories: 1, beds: 3, baths: 2, sqft: 1850, year: 2004, segments: 4 },
-  { addr: "210 Mesquite Ln, Roma, TX", roofArea: 3120, pitch: "4", stories: 1, beds: 4, baths: 2, sqft: 2400, year: 1998, segments: 6 },
-  { addr: "88 Palma St, La Grulla, TX", roofArea: 1690, pitch: "5", stories: 1, beds: 2, baths: 1, sqft: 1240, year: 1987, segments: 2 },
-  { addr: "1204 Cenizo Ct, Rio Grande City, TX", roofArea: 3890, pitch: "8", stories: 2, beds: 4, baths: 3, sqft: 2980, year: 2019, segments: 8 },
-  { addr: "35 Rancho Viejo Rd, Garciasville, TX", noData: true },
+  { addr: "456 Oak Dr, Rio Grande City, TX" },
+  { addr: "210 Mesquite Ln, Roma, TX" },
+  { addr: "88 Palma St, La Grulla, TX" },
+  { addr: "1204 Cenizo Ct, Rio Grande City, TX" },
+  { addr: "35 Rancho Viejo Rd, Garciasville, TX" },
 ];
-
-const hashAddr = (s) => { let h = 7; for (const ch of s) h = (h * 31 + ch.charCodeAt(0)) % 99991; return h; };
-
-function mockLookup(addr) {
-  const known = MOCK_PROPERTIES.find((p) => p.addr.toLowerCase() === addr.toLowerCase());
-  if (known) return known.noData ? null : { ...known };
-  const h = hashAddr(addr.toLowerCase());
-  const stories = h % 5 === 0 ? 2 : 1;
-  const sqft = 1100 + (h % 1900);
-  const pitch = ["4", "5", "6", "8"][h % 4];
-  return {
-    addr, stories, sqft, pitch,
-    beds: 2 + (h % 3), baths: 1 + (h % 3 === 0 ? 1 : 0),
-    year: 1975 + (h % 50), segments: 2 + (h % 7),
-    roofArea: Math.round((sqft / stories) * PITCH_FACTORS[pitch] * 1.12),
-  };
-}
-
-/* Convert a roof pitch in degrees to the nearest x/12 key the app uses. */
-function pitchKeyFromDegrees(deg) {
-  const rise = Math.tan((deg * Math.PI) / 180) * 12;
-  let best = "6", bestDiff = Infinity;
-  for (const k of Object.keys(PITCH_FACTORS)) {
-    const d = Math.abs(rise - Number(k));
-    if (d < bestDiff) { bestDiff = d; best = k; }
-  }
-  return best;
-}
 
 /* ── Live lookups ── */
 async function geocode(address) {
@@ -253,239 +222,9 @@ async function placeDetails(placeId) {
   return { lat: j.location.latitude, lng: j.location.longitude, formatted: j.formattedAddress || "" };
 }
 
-async function solarLookup(lat, lng) {
-  const url = `https://solar.googleapis.com/v1/buildingInsights:findClosest?location.latitude=${lat}&location.longitude=${lng}&requiredQuality=LOW&key=${GOOGLE_KEY}`;
-  const res = await fetch(url);
-  if (!res.ok) return null; // 404 = no building data for this location
-  const j = await res.json();
-  const sp = j.solarPotential;
-  if (!sp?.wholeRoofStats?.areaMeters2) return null;
-  const segsRaw = sp.roofSegmentStats || [];
-  // Area-weighted average pitch across roof segments
-  let pitchDeg = 22, totalArea = 0, weighted = 0;
-  for (const s of segsRaw) {
-    const a = s.stats?.areaMeters2 || 0;
-    totalArea += a;
-    weighted += (s.pitchDegrees || 0) * a;
-  }
-  if (totalArea > 0) pitchDeg = weighted / totalArea;
-  // Per-section detail for the measurement overlay (largest first, capped)
-  const segs = segsRaw
-    .map((s) => ({
-      area: Math.round((s.stats?.areaMeters2 || 0) * 10.7639),
-      pitch: Math.max(0, Math.round(Math.tan(((s.pitchDegrees || 0) * Math.PI) / 180) * 12)),
-      box: s.boundingBox
-        ? [s.boundingBox.sw.latitude, s.boundingBox.sw.longitude, s.boundingBox.ne.latitude, s.boundingBox.ne.longitude]
-        : null,
-    }))
-    .filter((s) => s.area >= 25 && s.box) // skip slivers that just clutter the overlay
-    .sort((a, b) => b.area - a.area)
-    .slice(0, 8);
-  const bb = j.boundingBox;
-  return {
-    roofArea: Math.round(sp.wholeRoofStats.areaMeters2 * 10.7639),
-    pitch: pitchKeyFromDegrees(pitchDeg),
-    segments: segsRaw.length || 1,
-    segs,
-    bbox: bb ? [bb.sw.latitude, bb.sw.longitude, bb.ne.latitude, bb.ne.longitude] : null,
-    imageryDate: j.imageryDate ? `${j.imageryDate.month}/${j.imageryDate.year}` : null,
-    imageryYear: j.imageryDate?.year || null,
-    quality: j.imageryQuality || null,
-  };
-}
-
-/* ── True roof outline from the Solar API building mask ──
- * dataLayers returns a GeoTIFF where roof pixels are 1. We trace the boundary
- * of the building at the center and simplify it to a clean polygon. */
-function simplifyPoly(pts, eps) {
-  const dseg = (p, a, b) => {
-    const dx = b[0] - a[0], dy = b[1] - a[1];
-    if (!dx && !dy) return Math.hypot(p[0] - a[0], p[1] - a[1]);
-    const t = Math.max(0, Math.min(1, ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / (dx * dx + dy * dy)));
-    return Math.hypot(p[0] - (a[0] + t * dx), p[1] - (a[1] + t * dy));
-  };
-  const dp = (seg) => {
-    if (seg.length < 3) return seg;
-    let maxD = 0, idx = 0;
-    for (let i = 1; i < seg.length - 1; i++) {
-      const d = dseg(seg[i], seg[0], seg[seg.length - 1]);
-      if (d > maxD) { maxD = d; idx = i; }
-    }
-    if (maxD <= eps) return [seg[0], seg[seg.length - 1]];
-    return [...dp(seg.slice(0, idx + 1)).slice(0, -1), ...dp(seg.slice(idx))];
-  };
-  return dp(pts);
-}
-
-function traceMaskOutline(data, w, h) {
-  const at = (x, y) => x >= 0 && y >= 0 && x < w && y < h && data[y * w + x] > 0;
-  // nearest roof pixel to the image center
-  const cx = w >> 1, cy = h >> 1;
-  let sx = -1, sy = -1;
-  outer: for (let r = 0; r < Math.max(w, h); r++) {
-    for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) {
-      if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
-      if (at(cx + dx, cy + dy)) { sx = cx + dx; sy = cy + dy; break outer; }
-    }
-  }
-  if (sx < 0) return null;
-  // flood-fill the building the pixel belongs to (ignore neighbors in frame)
-  const comp = new Uint8Array(w * h);
-  const stack = [[sx, sy]];
-  comp[sy * w + sx] = 1;
-  while (stack.length) {
-    const [x, y] = stack.pop();
-    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
-      const nx = x + dx, ny = y + dy;
-      if (at(nx, ny) && !comp[ny * w + nx]) { comp[ny * w + nx] = 1; stack.push([nx, ny]); }
-    }
-  }
-  const inC = (x, y) => x >= 0 && y >= 0 && x < w && y < h && comp[y * w + x] === 1;
-  // boundary start: topmost-left pixel of the component
-  let bx = -1, by = -1;
-  scan: for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) if (comp[y * w + x]) { bx = x; by = y; break scan; }
-  // Moore-neighbor boundary tracing (clockwise from the backtrack direction)
-  const dirs = [[-1, 0], [-1, -1], [0, -1], [1, -1], [1, 0], [1, 1], [0, 1], [-1, 1]]; // W NW N NE E SE S SW
-  const pts = [];
-  let px = bx, py = by, back = 0;
-  for (let iter = 0; iter < 60000; iter++) {
-    pts.push([px, py]);
-    let found = -1;
-    for (let k = 1; k <= 8; k++) {
-      const d = (back + k) % 8;
-      if (inC(px + dirs[d][0], py + dirs[d][1])) { found = d; break; }
-    }
-    if (found < 0) break; // single-pixel component
-    px += dirs[found][0];
-    py += dirs[found][1];
-    back = (found + 6) % 8;
-    if (px === bx && py === by && pts.length > 2) break;
-  }
-  if (pts.length < 8) return null;
-  let eps = 1.5, out = simplifyPoly(pts, eps);
-  while (out.length > 60 && eps < 8) { eps += 1; out = simplifyPoly(pts, eps); }
-  return out;
-}
-
-/* Straighten a traced outline so it reads like a drawn roof diagram:
- * simplify, find the building's dominant orientation, snap near-axis edges
- * square, then merge collinear runs and slivers. Input/output [lat,lng]. */
-function regularizeOutline(ll) {
-  if (!ll || ll.length < 4) return ll;
-  const k = Math.PI / 180, R = 6378137;
-  const la0 = ll[0][0], ln0 = ll[0][1], c = Math.cos(la0 * k);
-  let pts = ll.map(([la, ln]) => [(ln - ln0) * k * R * c, (la - la0) * k * R]); // local meters
-  pts = simplifyPoly(pts, 0.6);
-  if (pts.length >= 2 && Math.hypot(pts[0][0] - pts[pts.length - 1][0], pts[0][1] - pts[pts.length - 1][1]) < 0.3) pts.pop();
-  if (pts.length < 4) return ll;
-  // dominant direction mod 90°, length-weighted (angle-quadrupling trick)
-  let sx = 0, sy = 0;
-  for (let i = 0; i < pts.length; i++) {
-    const a = pts[i], b = pts[(i + 1) % pts.length];
-    const len = Math.hypot(b[0] - a[0], b[1] - a[1]);
-    const ang = Math.atan2(b[1] - a[1], b[0] - a[0]) * 4;
-    sx += Math.cos(ang) * len; sy += Math.sin(ang) * len;
-  }
-  const theta = Math.atan2(sy, sx) / 4;
-  const rot = (p, t) => [p[0] * Math.cos(t) - p[1] * Math.sin(t), p[0] * Math.sin(t) + p[1] * Math.cos(t)];
-  const q = pts.map(p => rot(p, -theta));
-  // relax near-axis edges square; leave true diagonals (hips, angled walls) alone
-  for (let iter = 0; iter < 10; iter++) {
-    for (let i = 0; i < q.length; i++) {
-      const j = (i + 1) % q.length;
-      const dx = q[j][0] - q[i][0], dy = q[j][1] - q[i][1];
-      const a = Math.abs(Math.atan2(dy, dx)) % (Math.PI / 2);
-      if (Math.min(a, Math.PI / 2 - a) > 25 * k) continue;
-      if (Math.abs(dx) > Math.abs(dy)) { const m = (q[i][1] + q[j][1]) / 2; q[i][1] = m; q[j][1] = m; }
-      else { const m = (q[i][0] + q[j][0]) / 2; q[i][0] = m; q[j][0] = m; }
-    }
-  }
-  // drop collinear vertices
-  let r = [];
-  for (let i = 0; i < q.length; i++) {
-    const prev = q[(i - 1 + q.length) % q.length], cur = q[i], nxt = q[(i + 1) % q.length];
-    let d = Math.abs(Math.atan2(cur[1] - prev[1], cur[0] - prev[0]) - Math.atan2(nxt[1] - cur[1], nxt[0] - cur[0]));
-    if (d > Math.PI) d = 2 * Math.PI - d;
-    if (d < 6 * k) continue;
-    r.push(cur);
-  }
-  if (r.length < 4) r = q;
-  // merge sliver edges
-  const r2 = [];
-  for (let i = 0; i < r.length; i++) {
-    const nxt = r[(i + 1) % r.length];
-    if (Math.hypot(nxt[0] - r[i][0], nxt[1] - r[i][1]) < 0.9) {
-      nxt[0] = (nxt[0] + r[i][0]) / 2; nxt[1] = (nxt[1] + r[i][1]) / 2;
-      continue;
-    }
-    r2.push(r[i]);
-  }
-  if (r2.length >= 4) r = r2;
-  return r.map(p => {
-    const [X, Y] = rot(p, theta);
-    return [+(la0 + Y / (R * k)).toFixed(7), +(ln0 + X / (R * k * c)).toFixed(7)];
-  });
-}
-
-async function roofOutline(lat, lng, clipBbox) {
-  const u = `https://solar.googleapis.com/v1/dataLayers:get?location.latitude=${lat}&location.longitude=${lng}&radiusMeters=30&requiredQuality=LOW&key=${GOOGLE_KEY}`;
-  const r = await fetch(u);
-  if (!r.ok) return null;
-  const j = await r.json();
-  if (!j.maskUrl) return null;
-  const buf = await (await fetch(`${j.maskUrl}&key=${GOOGLE_KEY}`)).arrayBuffer();
-  const tiff = await fromArrayBuffer(buf);
-  const img = await tiff.getImage();
-  const w = img.getWidth(), h = img.getHeight();
-  const [minX, minY, maxX, maxY] = img.getBoundingBox();
-  // The mask arrives in the local UTM zone (projected meters) — convert to lat/lng
-  const gk = img.getGeoKeys?.() || {};
-  const code = gk.ProjectedCSTypeGeoKey || gk.GeographicTypeGeoKey || 4326;
-  let toLl, fromLl;
-  if (code === 4326) {
-    toLl = (x, y) => [y, x];
-    fromLl = (la, ln) => [ln, la];
-  } else {
-    let def = null;
-    if (code >= 32601 && code <= 32660) def = `+proj=utm +zone=${code - 32600} +datum=WGS84 +units=m +no_defs`;
-    else if (code >= 32701 && code <= 32760) def = `+proj=utm +zone=${code - 32700} +south +datum=WGS84 +units=m +no_defs`;
-    else if (code === 3857) def = "EPSG:3857";
-    if (!def) return null;
-    const conv = proj4(def, "WGS84");
-    toLl = (x, y) => { const [ln, la] = conv.forward([x, y]); return [la, ln]; };
-    fromLl = (la, ln) => conv.inverse([ln, la]);
-  }
-  const data = (await img.readRasters())[0];
-  // Clip to the target building's bounding box (padded ~3m) so the outline
-  // can't bleed into a touching neighbor's roof in the mask.
-  if (clipBbox) {
-    const [sLat, wLng, nLat, eLng] = clipBbox;
-    const [x1, y1] = fromLl(sLat, wLng), [x2, y2] = fromLl(nLat, eLng);
-    const toPx = (X, Y) => [((X - minX) / (maxX - minX)) * w, ((maxY - Y) / (maxY - minY)) * h];
-    const [pxa, pya] = toPx(x1, y1), [pxb, pyb] = toPx(x2, y2);
-    const pad = 12;
-    const xLo = Math.min(pxa, pxb) - pad, xHi = Math.max(pxa, pxb) + pad;
-    const yLo = Math.min(pya, pyb) - pad, yHi = Math.max(pya, pyb) + pad;
-    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
-      if (x < xLo || x > xHi || y < yLo || y > yHi) data[y * w + x] = 0;
-    }
-  }
-  const px = traceMaskOutline(data, w, h);
-  if (!px) return null;
-  const raw = px.map(([x, y]) => {
-    const [la, ln] = toLl(minX + ((x + 0.5) / w) * (maxX - minX), maxY - ((y + 0.5) / h) * (maxY - minY));
-    return [+la.toFixed(7), +ln.toFixed(7)];
-  });
-  return regularizeOutline(raw);
-}
-
-/* ── Property-comp engine ──
- * Ported faithfully from the Quick Comp reference (_reference/quickcomp/server.js).
- * Pulls the subject property + nearby SOLD comps from RentCast's AVM endpoint,
- * dedupes them, scores each by distance / sqft / year / beds-baths / recency,
- * trims price-per-sqft outliers, takes a WEIGHTED average ppsf, and multiplies
- * by the subject's living area. Active listings are never part of this value.
- * The weighting/outlier math below MUST match Quick Comp — do not reinvent it. */
+/* ── RentCast property data ──
+ * Cleaning needs the home's characteristics (sqft / beds / baths / type / year),
+ * pulled from RentCast's property-records endpoint. No market valuation. */
 
 async function rcFetchJson(url, options = {}) {
   const response = await fetch(url, options);
@@ -496,16 +235,6 @@ async function rcFetchJson(url, options = {}) {
     throw new Error(data.message || data.error || `Request failed with ${response.status}`);
   }
   return data;
-}
-
-async function fetchRentcastValue({ address, radius, compCount, daysOld }) {
-  const endpoint = new URL("https://api.rentcast.io/v1/avm/value");
-  endpoint.searchParams.set("address", address);
-  endpoint.searchParams.set("maxRadius", String(radius));
-  endpoint.searchParams.set("daysOld", String(daysOld));
-  endpoint.searchParams.set("compCount", String(compCount));
-  endpoint.searchParams.set("lookupSubjectAttributes", "true");
-  return rcFetchJson(endpoint, { headers: { "X-Api-Key": RENTCAST_KEY } });
 }
 
 /* Cleaning needs the home's characteristics (sqft / beds / baths / type / year)
@@ -539,190 +268,6 @@ async function propertyLookup(address) {
   };
 }
 
-function normalizeRentcastComps(data) {
-  const raw = data.comparables || data.comps || data.saleComparables || [];
-  const comps = raw.map((c) => ({
-    address: c.formattedAddress || c.address || [c.addressLine1, c.city, c.state, c.zipCode].filter(Boolean).join(", ") || "Comparable property",
-    soldPrice: c.price || c.soldPrice || c.lastSalePrice || c.salePrice || c.value || null,
-    sqft: c.squareFootage || c.livingArea || c.size || null,
-    beds: c.bedrooms ?? c.beds ?? null,
-    baths: c.bathrooms ?? c.baths ?? null,
-    soldDate: c.soldDate || c.lastSaleDate || c.saleDate || c.listedDate || null,
-    yearBuilt: c.yearBuilt || null,
-    distance: c.distance || null,
-    latitude: c.latitude || null,
-    longitude: c.longitude || null,
-  })).filter((c) => c.soldPrice);
-  return dedupeComparableProperties(comps);
-}
-
-function dedupeComparableProperties(comps) {
-  const byKey = new Map();
-  for (const comp of comps) {
-    const key = comparableIdentityKey(comp);
-    const existing = byKey.get(key);
-    if (!existing) { byKey.set(key, comp); continue; }
-    byKey.set(key, mergeComparable(existing, comp));
-  }
-  return [...byKey.values()];
-}
-
-function comparableIdentityKey(comp) {
-  const addressKey = normalizeComparableAddress(comp.address);
-  if (/\d/.test(addressKey) && /[a-z]/.test(addressKey)) return `addr:${addressKey}`;
-  const lat = Number(comp.latitude);
-  const lng = Number(comp.longitude);
-  if (Number.isFinite(lat) && Number.isFinite(lng)) {
-    return `geo:${lat.toFixed(4)},${lng.toFixed(4)}`;
-  }
-  return `addr:${addressKey}`;
-}
-
-function normalizeComparableAddress(address) {
-  return String(address || "")
-    .toLowerCase()
-    .replace(/\b(street|st|drive|dr|lane|ln|avenue|ave|road|rd|court|ct|boulevard|blvd|circle|cir|place|pl|trail|trl|north|south|east|west)\b/g, "")
-    .replace(/[^a-z0-9]+/g, " ")
-    .trim()
-    .replace(/\s+/g, " ");
-}
-
-function mergeComparable(a, b) {
-  const merged = { ...a };
-  for (const [key, value] of Object.entries(b)) {
-    if (merged[key] === null || merged[key] === undefined || merged[key] === "") merged[key] = value;
-  }
-  const aDistance = Number(a.distance);
-  const bDistance = Number(b.distance);
-  if (Number.isFinite(aDistance) && Number.isFinite(bDistance)) merged.distance = Math.min(aDistance, bDistance);
-  if (b.soldDate && (!a.soldDate || new Date(b.soldDate) > new Date(a.soldDate))) merged.soldDate = b.soldDate;
-  return merged;
-}
-
-function calculateQuickCompValue({ subject, comps, rentcastEstimate, rentcastLow, rentcastHigh }) {
-  const subjectSqft = readNumber(subject, ["squareFootage", "livingArea", "buildingArea", "livingSize"]);
-  const subjectYear = readNumber(subject, ["yearBuilt"]);
-  const subjectBeds = readNumber(subject, ["bedrooms", "beds"]);
-  const subjectBaths = readNumber(subject, ["bathrooms", "baths"]);
-  const validComps = comps
-    .map((comp, index) => {
-      const ppsf = comp.soldPrice && comp.sqft ? comp.soldPrice / comp.sqft : null;
-      return { ...comp, originalRank: index, ppsf };
-    })
-    .filter((comp) => comp.soldPrice && comp.sqft && comp.ppsf);
-
-  if (!subjectSqft || validComps.length < 3) {
-    const estimate = rentcastEstimate || null;
-    return {
-      method: estimate ? "rentcast_avm_fallback" : "insufficient_data",
-      estimate,
-      low: rentcastLow || (estimate ? Math.round(estimate * 0.95 / 1000) * 1000 : null),
-      high: rentcastHigh || (estimate ? Math.round(estimate * 1.05 / 1000) * 1000 : null),
-      avgPpsf: null,
-      lowPpsf: null,
-      highPpsf: null,
-      subjectSqft: subjectSqft || null,
-      usedCompCount: validComps.length,
-      excludedOutliers: 0,
-      confidence: validComps.length ? "limited" : "low",
-      rankedComps: comps,
-    };
-  }
-
-  const ppsfs = validComps.map((comp) => comp.ppsf).sort((a, b) => a - b);
-  const medianPpsf = median(ppsfs);
-  const filtered = validComps.length >= 5
-    ? validComps.filter((comp) => comp.ppsf >= medianPpsf * 0.75 && comp.ppsf <= medianPpsf * 1.25)
-    : validComps;
-  const used = filtered.length >= 3 ? filtered : validComps;
-  const scored = used.map((comp) => {
-    const distanceWeight = scoreCloseness(Number(comp.distance), 0, 10, 0.55, 1.4);
-    const sqftDiff = subjectSqft && comp.sqft ? Math.abs(comp.sqft - subjectSqft) / subjectSqft : null;
-    const sqftWeight = sqftDiff === null ? 0.85 : clamp(1.35 - sqftDiff * 1.6, 0.45, 1.35);
-    const yearDiff = subjectYear && comp.yearBuilt ? Math.abs(comp.yearBuilt - subjectYear) : null;
-    const yearWeight = yearDiff === null ? 0.9 : clamp(1.2 - yearDiff / 45, 0.55, 1.2);
-    const bedWeight = subjectBeds && comp.beds ? clamp(1.08 - Math.abs(comp.beds - subjectBeds) * 0.12, 0.72, 1.08) : 0.95;
-    const bathWeight = subjectBaths && comp.baths ? clamp(1.08 - Math.abs(comp.baths - subjectBaths) * 0.12, 0.72, 1.08) : 0.95;
-    const recencyWeight = scoreRecency(comp.soldDate);
-    const weight = distanceWeight * sqftWeight * yearWeight * bedWeight * bathWeight * recencyWeight;
-    const matchScore = Math.round(clamp(weight / 2.6, 0.45, 0.98) * 100);
-    return { ...comp, weight, matchScore };
-  }).sort((a, b) => b.weight - a.weight);
-
-  const totalWeight = scored.reduce((sum, comp) => sum + comp.weight, 0);
-  const avgPpsf = totalWeight
-    ? scored.reduce((sum, comp) => sum + comp.ppsf * comp.weight, 0) / totalWeight
-    : medianPpsf;
-  const confidenceSpread = scored.length >= 8 ? 0.06 : scored.length >= 5 ? 0.08 : 0.1;
-  const estimate = roundToNearest(subjectSqft * avgPpsf, 1000);
-  const lowPpsf = avgPpsf * (1 - confidenceSpread);
-  const highPpsf = avgPpsf * (1 + confidenceSpread);
-  const low = roundToNearest(subjectSqft * lowPpsf, 1000);
-  const high = roundToNearest(subjectSqft * highPpsf, 1000);
-  const excludedAddresses = new Set(validComps.filter((comp) => !used.includes(comp)).map((comp) => comp.address));
-  const rankedComps = [
-    ...scored,
-    ...comps.filter((comp) => !scored.some((ranked) => ranked.address === comp.address)),
-  ].map((comp) => ({
-    ...comp,
-    excludedAsOutlier: excludedAddresses.has(comp.address) || undefined,
-    ppsf: comp.ppsf ? Math.round(comp.ppsf) : undefined,
-  })).slice(0, 12);
-
-  return {
-    method: "weighted_sold_price_per_sqft",
-    estimate,
-    low,
-    high,
-    avgPpsf: Math.round(avgPpsf),
-    lowPpsf: Math.round(lowPpsf),
-    highPpsf: Math.round(highPpsf),
-    subjectSqft,
-    subjectYear: subjectYear || null,
-    usedCompCount: scored.length,
-    excludedOutliers: validComps.length - used.length,
-    confidence: scored.length >= 8 ? "strong" : scored.length >= 5 ? "good" : "limited",
-    rankedComps,
-  };
-}
-
-function readNumber(source, keys) {
-  if (!source) return null;
-  for (const key of keys) {
-    const value = Number(source[key]);
-    if (Number.isFinite(value) && value > 0) return value;
-  }
-  return null;
-}
-
-function median(values) {
-  if (!values.length) return null;
-  const middle = Math.floor(values.length / 2);
-  return values.length % 2 ? values[middle] : (values[middle - 1] + values[middle]) / 2;
-}
-
-function clamp(value, min, max) {
-  return Math.max(min, Math.min(max, value));
-}
-
-function scoreCloseness(value, min, max, low, high) {
-  if (!Number.isFinite(value)) return (low + high) / 2;
-  const normalized = 1 - clamp((value - min) / (max - min), 0, 1);
-  return low + normalized * (high - low);
-}
-
-function scoreRecency(soldDate) {
-  if (!soldDate) return 0.95;
-  const date = new Date(soldDate);
-  if (Number.isNaN(date.getTime())) return 0.95;
-  const days = Math.max(0, (Date.now() - date.getTime()) / 86400000);
-  return clamp(1.18 - days / 1600, 0.65, 1.18);
-}
-
-function roundToNearest(value, nearest) {
-  return Math.round(value / nearest) * nearest;
-}
-
 /* Pick the most recent year's value from a {year: {...}} map (RentCast tax /
  * assessment records). Returns { year, value } or null. */
 function latestYearVal(obj, pick) {
@@ -735,8 +280,8 @@ function latestYearVal(obj, pick) {
   return null;
 }
 
-/* Condensed from Quick Comp's normalizeProperty — the subject attributes the
- * scorer needs, plus a few extras handy for the result + tax cards. */
+/* Normalize a RentCast property record into the fields the quote flow needs
+ * (sqft/beds/baths/type/year), plus a few extras (owner/tax) when present. */
 function normalizeSubjectProperty(p, fallbackAddress) {
   if (!p || typeof p !== "object") return { address: fallbackAddress || "" };
   const assess = latestYearVal(p.taxAssessments, (a) => a?.value ?? a?.total ?? null);
@@ -758,73 +303,6 @@ function normalizeSubjectProperty(p, fallbackAddress) {
     assessedYear: assess?.year ?? null,
     annualTax: tax?.value ?? null,
     taxYear: tax?.year ?? assess?.year ?? null,
-  };
-}
-
-/* Primary comp data call (AVM + sold comparables). Ported from Quick Comp's
- * handleComps orchestration: auto-expands radius and sold-window when a market
- * is too thin for the AVM, then runs the weighted-ppsf valuation. Returns the
- * estimate, range, confidence label, subject, and ranked comp list. */
-async function rentcastLookup(address, opts = {}) {
-  if (!RENTCAST_KEY || !address) return null;
-  const requestedRadius = Number(opts.radius || 2);
-  const requestedDaysOld = Number(opts.daysOld || 183);
-  const compCount = String(opts.compCount || 12);
-  const autoExpand = opts.autoExpand !== false; // expand by default when a market is thin
-  const allLookbacks = [
-    { days: 183, label: "6 months" },
-    { days: 365, label: "1 year" },
-    { days: 730, label: "2 years" },
-    { days: 1095, label: "3 years" },
-  ];
-  const exactLookback = allLookbacks.find((l) => l.days === requestedDaysOld) || { days: requestedDaysOld, label: `${requestedDaysOld} days` };
-  const radii = autoExpand ? [2, 5, 10].filter((r) => r >= requestedRadius) : [requestedRadius];
-  const lookbacks = autoExpand ? allLookbacks.filter((l) => l.days >= requestedDaysOld) : [exactLookback];
-  let data = null;
-  let usedRadius = radii[0] || 2;
-  let usedLookback = lookbacks[0] || exactLookback;
-  let lastError = null;
-
-  for (const radius of radii) {
-    for (const lookback of lookbacks) {
-      try {
-        data = await fetchRentcastValue({ address, radius, compCount, daysOld: lookback.days });
-        usedRadius = radius;
-        usedLookback = lookback;
-        break;
-      } catch (err) {
-        lastError = err;
-        if (!/insufficient comparables|unable to calculate avm/i.test(err.message || "")) throw err;
-      }
-    }
-    if (data) break;
-  }
-  if (!data) throw lastError || new Error("No comparable sales found");
-
-  const subject = normalizeSubjectProperty(data.subjectProperty || data.property || null, address);
-  const rawComps = normalizeRentcastComps(data);
-  const quick = calculateQuickCompValue({
-    subject,
-    comps: rawComps,
-    rentcastEstimate: data.price || data.value || data.estimate || null,
-    rentcastLow: data.priceRangeLow || data.valueRangeLow || null,
-    rentcastHigh: data.priceRangeHigh || data.valueRangeHigh || null,
-  });
-  return {
-    subject,
-    comps: quick.rankedComps || rawComps,
-    value: quick.estimate,
-    low: quick.low,
-    high: quick.high,
-    confidence: quick.confidence,
-    method: quick.method,
-    avgPpsf: quick.avgPpsf,
-    usedCompCount: quick.usedCompCount,
-    excludedOutliers: quick.excludedOutliers,
-    radius: usedRadius,
-    daysOld: usedLookback.days,
-    lookbackLabel: usedLookback.label,
-    rentcastEstimate: data.price || data.value || data.estimate || null,
   };
 }
 
@@ -891,31 +369,6 @@ app.get("/api/places", async (req, res) => {
   });
 });
 
-/* ── Parcel boundary (Regrid) for the fence estimator ── */
-function simplifyLatLng(pts, cap = 24) {
-  const k = Math.PI / 180, R = 6378137;
-  const [la0, ln0] = pts[0], c = Math.cos(la0 * k);
-  let m = pts.map(([la, ln]) => [(ln - ln0) * k * R * c, (la - la0) * k * R]);
-  let eps = 0.5, out = simplifyPoly(m, eps);
-  while (out.length > cap && eps < 10) { eps += 1; out = simplifyPoly(m, eps); }
-  return out.map(([x, y]) => [+(la0 + y / (R * k)).toFixed(6), +(ln0 + x / (R * k * c)).toFixed(6)]);
-}
-
-async function parcelLookup(lat, lng) {
-  const u = `https://app.regrid.com/api/v2/parcels/point?lat=${lat}&lon=${lng}&radius=5&token=${REGRID_KEY}`;
-  const r = await fetch(u);
-  if (!r.ok) { console.error("parcel failed:", r.status, (await r.text()).slice(0, 150)); return null; }
-  const j = await r.json();
-  const g = j?.parcels?.features?.[0]?.geometry;
-  if (!g) return null;
-  let ring = g.type === "Polygon" ? g.coordinates?.[0] : g.type === "MultiPolygon" ? g.coordinates?.[0]?.[0] : null;
-  if (!ring || ring.length < 4) return null;
-  let pts = ring.map(([ln, la]) => [la, ln]);
-  if (pts[0][0] === pts[pts.length - 1][0] && pts[0][1] === pts[pts.length - 1][1]) pts.pop();
-  if (pts.length < 3) return null;
-  return simplifyLatLng(pts);
-}
-
 app.post("/api/lookup", async (req, res) => {
   // Demo mode (no account) gets a small daily allowance per IP — enough to be
   // wowed, not enough to freeload. Clients get a high anti-runaway ceiling.
@@ -943,13 +396,6 @@ app.post("/api/lookup", async (req, res) => {
       geo = hasGps
         ? { lat: gpsLat, lng: gpsLng, formatted: await reverseGeocode(gpsLat, gpsLng).catch(() => "") }
         : (placeId && (await placeDetails(placeId).catch(() => null))) || (await geocode(address).catch(() => null));
-    }
-    // Parcel flow (dual-use): location + boundary only, no comps.
-    // No real parcel → no parcel at all; never show a fake boundary.
-    if (req.body?.parcel) {
-      if (!geo) return res.json({ found: false, source: "live" });
-      const parcel = REGRID_KEY ? await parcelLookup(geo.lat, geo.lng).catch((e) => { console.error("parcel:", e.message); return null; }) : null;
-      return res.json({ found: true, source: parcel ? "live" : "demo", addr: geo.formatted, lat: geo.lat, lng: geo.lng, parcel });
     }
     // Property flow: pull the home's characteristics (sqft/beds/baths/type/year)
     // so the cleaner can confirm them before quoting. No market valuation.
@@ -979,108 +425,7 @@ app.post("/api/lookup", async (req, res) => {
   }
 });
 
-/* Satellite photo of the measured roof, proxied so the key stays server-side.
- * Draws the measured roof sections (numbered orange boxes) when `boxes` is
- * provided. Requires "Maps Static API" enabled on the Google key. */
-app.get("/api/roofimg", async (req, res) => {
-  const { lat, lng, boxes, bbox, zoom, outline, lines } = req.query;
-  if (!GOOGLE_KEY || !lat || !lng) return res.status(404).end();
-  const riIp = String(req.headers["x-forwarded-for"] || "").split(",")[0].trim() || req.socket.remoteAddress || "?";
-  if (overQuota(`ri:${riIp}`, 120)) return res.status(429).end();
-  try {
-    let url = `https://maps.googleapis.com/maps/api/staticmap?size=640x400&scale=2&maptype=satellite&key=${GOOGLE_KEY}`;
-    const f = (n) => Number(n).toFixed(6);
-    // Frame the shot: explicit zoom (trace view) > building bounding box > default
-    let framed = false;
-    if (zoom) {
-      const z = Math.min(Math.max(parseInt(zoom) || 20, 15), 21);
-      url += `&center=${encodeURIComponent(lat)},${encodeURIComponent(lng)}&zoom=${z}`;
-      framed = true;
-    } else if (bbox) {
-      const [s, w, n, e] = String(bbox).split(",").map(Number);
-      if ([s, w, n, e].every(Number.isFinite)) {
-        const ctrLat = (s + n) / 2, ctrLng = (w + e) / 2;
-        const span = Math.max(n - s, (e - w) * Math.cos((ctrLat * Math.PI) / 180), 0.00005) * 2.2;
-        const zoom = Math.min(Math.max(Math.floor(Math.log2((360 * (640 / 256)) / span)), 17), 21);
-        url += `&center=${f(ctrLat)},${f(ctrLng)}&zoom=${zoom}`;
-        framed = true;
-      }
-    }
-    if (!framed) url += `&center=${encodeURIComponent(lat)},${encodeURIComponent(lng)}&zoom=20`;
-    // Fence runs: open polylines, white-cased orange
-    if (lines) {
-      for (const run of String(lines).split(";").slice(0, 12)) {
-        const pts = run.split("|").map((p) => p.split(",").map(Number)).filter((p) => p.length === 2 && p.every(Number.isFinite));
-        if (pts.length < 2) continue;
-        const pp = pts.map(([la, ln]) => `${f(la)},${f(ln)}`).join("|");
-        url += `&path=color:0xFFFFFFCC|weight:7|${pp}`;
-        url += `&path=color:0xF8B408FF|weight:4|${pp}`;
-      }
-    }
-    // Preferred overlay: one clean traced outline of the actual roof
-    if (outline) {
-      const pts = String(outline).split(";").map((p) => p.split(",").map(Number)).filter((p) => p.length === 2 && p.every(Number.isFinite));
-      if (pts.length >= 3) {
-        const pathPts = [...pts, pts[0]].map(([la, ln]) => `${f(la)},${f(ln)}`).join("|");
-        // white casing under the orange line so it reads on any roof color
-        url += `&path=color:0xFFFFFFCC|weight:6|${pathPts}`;
-        url += `&path=color:0xF8B408FF|weight:3|fillcolor:0xF8B40810|${pathPts}`;
-      }
-    } else if (boxes) {
-      const list = String(boxes).split(";").slice(0, 8);
-      list.forEach((b, i) => {
-        const [s, w, n, e] = b.split(",").map(Number);
-        if (![s, w, n, e].every(Number.isFinite)) return;
-        url += `&path=color:0xF8B408E6|weight:2|fillcolor:0xF8B40830|${f(s)},${f(w)}|${f(s)},${f(e)}|${f(n)},${f(e)}|${f(n)},${f(w)}|${f(s)},${f(w)}`;
-        url += `&markers=size:mid|color:0x101B30|label:${i + 1}|${f((s + n) / 2)},${f((w + e) / 2)}`;
-      });
-    }
-    const r = await fetch(url);
-    if (!r.ok) {
-      console.error("roofimg failed:", r.status, (await r.text()).slice(0, 200));
-      return res.status(404).end();
-    }
-    res.set("Content-Type", r.headers.get("content-type") || "image/png");
-    res.set("Cache-Control", "public, max-age=86400");
-    res.send(Buffer.from(await r.arrayBuffer()));
-  } catch (e) {
-    console.error("roofimg failed:", e.message);
-    res.status(404).end();
-  }
-});
 
-/* House photo for a subject/comp address: a real Street View shot when
- * Google has coverage, otherwise a top-down satellite frame. Proxied so the
- * Maps key stays server-side. Demo mode (no key) returns 404 → UI hides it. */
-app.get("/api/streetview", async (req, res) => {
-  const { lat, lng } = req.query;
-  if (!GOOGLE_KEY || !lat || !lng) return res.status(404).end();
-  const svIp = String(req.headers["x-forwarded-for"] || "").split(",")[0].trim() || req.socket.remoteAddress || "?";
-  if (overQuota(`sv:${svIp}`, 120)) return res.status(429).end();
-  const loc = `${encodeURIComponent(lat)},${encodeURIComponent(lng)}`;
-  try {
-    // Prefer a street-level photo of the house; check coverage first.
-    let hasStreet = false;
-    try {
-      const meta = await fetch(`https://maps.googleapis.com/maps/api/streetview/metadata?location=${loc}&key=${GOOGLE_KEY}`);
-      if (meta.ok) { const j = await meta.json(); hasStreet = j.status === "OK"; }
-    } catch { /* fall through to satellite */ }
-    const url = hasStreet
-      ? `https://maps.googleapis.com/maps/api/streetview?size=640x400&location=${loc}&fov=75&pitch=8&source=outdoor&key=${GOOGLE_KEY}`
-      : `https://maps.googleapis.com/maps/api/staticmap?size=640x400&scale=2&maptype=satellite&center=${loc}&zoom=20&key=${GOOGLE_KEY}`;
-    const r = await fetch(url);
-    if (!r.ok) {
-      console.error("streetview failed:", r.status, (await r.text()).slice(0, 200));
-      return res.status(404).end();
-    }
-    res.set("Content-Type", r.headers.get("content-type") || "image/jpeg");
-    res.set("Cache-Control", "public, max-age=86400");
-    res.send(Buffer.from(await r.arrayBuffer()));
-  } catch (e) {
-    console.error("streetview failed:", e.message);
-    res.status(404).end();
-  }
-});
 
 /* Browser key for the in-app interactive map (Maps JavaScript API). Prefers a
  * dedicated, HTTP-referrer-restricted browser key; falls back to the main key
@@ -1090,40 +435,6 @@ app.get("/api/mapconfig", (_req, res) => {
   res.json({ key: process.env.GOOGLE_MAPS_BROWSER_KEY || GOOGLE_KEY || "" });
 });
 
-/* Comparables map: a static map with markers baked in by Google (subject =
- * red "S", comps = numbered navy pins). Google auto-frames to fit all points.
- * pts = "lat,lng,LABEL;lat,lng,LABEL;..." — label is a single char or empty. */
-app.get("/api/compmap", async (req, res) => {
-  const { pts, maptype } = req.query;
-  if (!GOOGLE_KEY || !pts) return res.status(404).end();
-  const cmIp = String(req.headers["x-forwarded-for"] || "").split(",")[0].trim() || req.socket.remoteAddress || "?";
-  if (overQuota(`cm:${cmIp}`, 120)) return res.status(429).end();
-  try {
-    const type = maptype === "roadmap" ? "roadmap" : "satellite";
-    let url = `https://maps.googleapis.com/maps/api/staticmap?size=640x360&scale=2&maptype=${type}&key=${GOOGLE_KEY}`;
-    for (const it of String(pts).split(";").slice(0, 30)) {
-      const [la, ln, label] = it.split(",");
-      const lat = Number(la), lng = Number(ln);
-      if (!Number.isFinite(lat) || !Number.isFinite(lng)) continue;
-      const isSubj = label === "S";
-      const color = isSubj ? "red" : "0x1B2A5C";
-      // Static Maps labels accept one alphanumeric char only; skip otherwise.
-      const lbl = label && /^[A-Z0-9]$/.test(label) ? `label:${label}|` : "";
-      url += `&markers=${isSubj ? "size:mid|" : ""}color:${color}|${lbl}${lat.toFixed(6)},${lng.toFixed(6)}`;
-    }
-    const r = await fetch(url);
-    if (!r.ok) {
-      console.error("compmap failed:", r.status, (await r.text()).slice(0, 200));
-      return res.status(404).end();
-    }
-    res.set("Content-Type", r.headers.get("content-type") || "image/png");
-    res.set("Cache-Control", "public, max-age=86400");
-    res.send(Buffer.from(await r.arrayBuffer()));
-  } catch (e) {
-    console.error("compmap failed:", e.message);
-    res.status(404).end();
-  }
-});
 
 /* ── Accounts, login, and saved data ── */
 
@@ -2004,9 +1315,9 @@ app.post("/api/leads/:id", async (req, res) => {
 /* ── Instant-quote widget ──
  * Public page each client website embeds (or links to directly from an ad).
  * A homeowner types their address, leaves name + phone, and sees a satellite-
- * measured ballpark price computed from THIS contractor's saved prices.
- * Every submission becomes a lead in the contractor's app — even when the
- * roof can't be measured. */
+ * estimated price computed from THIS cleaner's saved rates.
+ * Every submission becomes a lead in the cleaner's app — even when the
+ * home record can't be found. */
 
 // Cost control: daily caps per visitor IP and per contractor, plus a 24h
 // per-address cache so repeat lookups don't re-bill the Solar API.
@@ -2333,8 +1644,8 @@ function render(j){track('w_result');var s4=document.getElementById('s4'),h='';
 
 /* ── Sales landing page (served at the bare ROOT_DOMAIN, and at /ventas) ──
  * One bold page that sells the bundle by SHOWING it: the live widget is
- * embedded so a visitor can measure a real roof right on the page.
- * Interested roofers leave name + phone → lead in the "alto-ventas" account. */
+ * embedded so a visitor can quote a real cleaning right on the page.
+ * Interested cleaners leave name + phone → lead in the "alto-ventas" account. */
 function landingPage(req) {
   const base = canonBase(req);
   const en = req.query.lang === "en";
@@ -2640,7 +1951,7 @@ function finishQuiz(){
 app.get("/ventas", (req, res) => res.send(landingPage(req)));
 
 /* ── Example client website (template #1, "Clásico") ──
- * A complete, working roofer site a prospect can click through — the
+ * A complete, working cleaner site a prospect can click through — the
  * live widget is embedded, so it really quotes. Branded with honest
  * placeholders ("imagina TU logo aquí"), never fake reviews. */
 app.get("/ejemplo", (req, res) => {
@@ -4096,7 +3407,6 @@ show(parseInt(location.hash.slice(1))-1||0);
 </body></html>`);
 });
 
-
 /* ── Sales presentation (/demo — used AFTER a call is booked) ──
  * Full-screen slides the closer walks through with the prospect: who we
  * are → the problem → live demo → the app → what's included → price →
@@ -5051,13 +4361,7 @@ app.get("/i", (req, res) => {
   const fmtM = (n) => "$" + Number(n || 0).toLocaleString("en-US", { maximumFractionDigits: 0 });
   const esc = (s) => String(s || "").replace(/[&<>"]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch]));
   const bal = (d.tot || 0) - (d.dep || 0);
-  const img = d.m && d.m.la != null
-    ? `/api/roofimg?lat=${d.m.la}&lng=${d.m.ln}` +
-      (d.m.bb ? `&bbox=${d.m.bb.join(",")}` : "") +
-      (!d.m.bb && d.m.l ? "&zoom=19" : "") +
-      (d.m.o ? `&outline=${d.m.o.map((p) => p.join(",")).join(";")}` : "") +
-      (d.m.l ? `&lines=${d.m.l.map((run) => run.map((p) => p.join(",")).join("|")).join(";")}` : "")
-    : null;
+  const img = null; // cleaning quotes carry no satellite/measurement image
   res.send(`<!doctype html><html lang="${es ? "es" : "en"}"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${esc(d.biz)} · ${d.k === "inv" ? L.inv : L.est} #${esc(d.inv)}</title>
