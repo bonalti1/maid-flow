@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="Maid Flow">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#5BC8F0"/>
+      <stop offset="1" stop-color="#1B8FD1"/>
+    </linearGradient>
+    <linearGradient id="drop" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#E9F6FD"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="116" fill="url(#bg)"/>
+  <!-- water droplet -->
+  <path d="M256 116
+           C 300 196, 360 256, 360 320
+           a 104 104 0 1 1 -208 0
+           C 152 256, 212 196, 256 116 Z"
+        fill="url(#drop)"/>
+  <!-- droplet shine -->
+  <ellipse cx="222" cy="318" rx="26" ry="40" fill="#FFFFFF" opacity="0.55"/>
+  <!-- sparkle -->
+  <path d="M388 150
+           C 395 178, 402 185, 430 192
+           C 402 199, 395 206, 388 234
+           C 381 206, 374 199, 346 192
+           C 374 185, 381 178, 388 150 Z"
+        fill="#FFFFFF"/>
+</svg>
