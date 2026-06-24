@@ -1175,19 +1175,20 @@ const csOk = (req) => {
 
 function loginPage(title, action, wrong) {
   return `<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Quick Comp · ${title}</title><link rel="icon" href="/icon-192.png"><style>
+<title>Maid Flow · ${title}</title><link rel="icon" href="/icon-192.png"><style>
 *{box-sizing:border-box;font-family:Inter,Arial,sans-serif;margin:0}
-body{background:#15244C;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+body{background:#0A5C4C;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
 .card{background:#fff;border-radius:22px;padding:36px 30px;width:100%;max-width:380px;text-align:center;box-shadow:0 30px 80px rgba(0,0,0,.45)}
-img{height:58px;margin-bottom:14px}
-h1{font-size:18px;color:#15244C;margin-bottom:4px}
-p{color:#6E7891;font-size:13px;font-weight:600;margin-bottom:18px}
-input{width:100%;padding:14px;border-radius:12px;border:1.5px solid #DDE3EE;font-size:16px;font-weight:600;outline:none;text-align:center}
-input:focus{border-color:#C9973A}
-button{width:100%;margin-top:10px;padding:14px;border:none;border-radius:12px;background:#C9973A;color:#fff;font-size:16px;font-weight:800;cursor:pointer}
+.mflogo{font-weight:900;font-size:30px;letter-spacing:-0.01em;color:#13332B;margin-bottom:14px}
+.mflogo span{color:#0E8C72}
+h1{font-size:18px;color:#13332B;margin-bottom:4px}
+p{color:#5F7068;font-size:13px;font-weight:600;margin-bottom:18px}
+input{width:100%;padding:14px;border-radius:12px;border:1.5px solid #DCE7E2;font-size:16px;font-weight:600;outline:none;text-align:center}
+input:focus{border-color:#0E8C72}
+button{width:100%;margin-top:10px;padding:14px;border:none;border-radius:12px;background:#0E8C72;color:#fff;font-size:16px;font-weight:800;cursor:pointer}
 .err{color:#D93025;font-size:13px;font-weight:700;margin-top:10px}
 </style></head><body><form class="card" method="get" action="${action}">
-<img src="/brand-logo.png" alt="Quick Comp">
+<div class="mflogo">Maid<span>Flow</span></div>
 <h1>${title}</h1>
 <p>Escribe tu clave para entrar</p>
 <input name="key" type="password" placeholder="Clave / Password" autofocus autocomplete="current-password">
@@ -3222,7 +3223,7 @@ app.get("/onboarding", async (req, res) => {
   if (!slug) {
     const list = (await db.listContractors()).filter((c) => !["alto-demo", "alto-ventas"].includes(c.slug));
     return res.send(`<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Quick Comp · Onboarding</title><link rel="icon" href="/icon-192.png"><style>
+<title>Maid Flow · Onboarding</title><link rel="icon" href="/icon-192.png"><style>
 *{box-sizing:border-box;font-family:Inter,Arial,sans-serif;margin:0}body{background:#F4F6FA;color:#101B30}
 header{background:#101B30;color:#fff;padding:14px 22px;display:flex;align-items:center;gap:12px}
 header img{height:32px;background:#fff;border-radius:8px;padding:4px 6px}header b em{color:#F8B408;font-style:normal}
@@ -3233,7 +3234,7 @@ h1{font-size:20px;margin-bottom:6px}.sub{color:#67718A;font-size:14px;font-weigh
 .row a{background:#F8B408;color:#101B30;text-decoration:none;font-weight:800;border-radius:10px;padding:9px 16px;font-size:13px}
 .empty{color:#8A94A8;font-weight:600;text-align:center;padding:30px}
 </style></head><body>
-<header><img src="/brand-logo.png" alt=""><b>QUICK <em>COMP</em> · Onboarding</b></header>
+<header><b>Maid<em>Flow</em> · Onboarding</b></header>
 <div class="wrap">
 <h1>¿Para qué cliente es la página?</h1>
 <p class="sub">Elige el cliente que ya creaste. Si no aparece, créalo primero en el portal del closer.</p>
@@ -3361,7 +3362,7 @@ textarea.big{min-height:150px;font-size:16px}
 </style></head><body>
 <div class="layout">
 <aside>
-  <div class="sb-brand"><img src="/brand-logo.png" alt=""><b>QUICK <em>COMP</em></b></div>
+  <div class="sb-brand"><b>Maid<em>Flow</em></b></div>
   <div class="sb-label">Onboarding · ${esc(c.name)}</div>
   <nav id="nav">
     <button class="nav-it on" onclick="go(0)"><span class="no">1</span>Bienvenida</button>
@@ -3375,7 +3376,7 @@ textarea.big{min-height:150px;font-size:16px}
   <div class="sb-foot">🌐 ${esc(siteDisplay(req, c.slug))}</div>
 </aside>
 <main>
-  <div class="mtop"><img src="/brand-logo.png" alt=""><div><div class="mstep" id="mstep">Paso 1 de 7</div><div class="mtitle" id="mtitle">Bienvenida</div></div></div>
+  <div class="mtop"><b style="color:#fff;font-weight:800;font-size:15px">Maid<span style="color:#F8B408">Flow</span></b><div><div class="mstep" id="mstep">Paso 1 de 7</div><div class="mtitle" id="mtitle">Bienvenida</div></div></div>
   <div class="stage">
 
     <section class="slide on">
@@ -3401,22 +3402,22 @@ textarea.big{min-height:150px;font-size:16px}
           <label>Teléfono</label><input id="phone" type="tel" value="${v(p.phone || c.phone)}" placeholder="(956) 555-0100">
           <label>Ciudad principal</label><input id="city" value="${v(st.city)}" placeholder="Rio Grande City, TX">
           <label>Pueblos o condados que cubre</label><input id="area" value="${v(st.area)}" placeholder="Starr, Hidalgo, Zapata…">
-          <label>Años en el negocio</label><input id="years" type="number" value="${v(st.years)}" placeholder="15">
+          <label>Años en el negocio</label><input id="years" type="number" value="${v(st.years)}" placeholder="10">
           <label>Servicios que ofrece</label>
           <div class="chips" id="services">
-            <label class="chip"><input type="checkbox" value="Venta de casas (listing)" ${chk("Venta de casas (listing)")}>Venta / listing</label>
-            <label class="chip"><input type="checkbox" value="Representación de compradores" ${chk("Representación de compradores")}>Compradores</label>
-            <label class="chip"><input type="checkbox" value="Valuación / CMA gratis" ${chk("Valuación / CMA gratis")}>Valuación / CMA</label>
-            <label class="chip"><input type="checkbox" value="Primera casa" ${chk("Primera casa")}>Primera casa</label>
-            <label class="chip"><input type="checkbox" value="Inversionistas" ${chk("Inversionistas")}>Inversionistas</label>
-            <label class="chip"><input type="checkbox" value="Casas de lujo" ${chk("Casas de lujo")}>Lujo</label>
-            <label class="chip"><input type="checkbox" value="Comercial" ${chk("Comercial")}>Comercial</label>
-            <label class="chip"><input type="checkbox" value="Renta / property management" ${chk("Renta / property management")}>Renta</label>
-            <label class="chip"><input type="checkbox" value="Crédito / financiamiento" ${chk("Crédito / financiamiento")}>Crédito</label>
+            <label class="chip"><input type="checkbox" value="Limpieza regular" ${chk("Limpieza regular")}>Regular</label>
+            <label class="chip"><input type="checkbox" value="Limpieza profunda" ${chk("Limpieza profunda")}>Profunda</label>
+            <label class="chip"><input type="checkbox" value="Mudanza (entrada/salida)" ${chk("Mudanza (entrada/salida)")}>Mudanza</label>
+            <label class="chip"><input type="checkbox" value="Rotación Airbnb" ${chk("Rotación Airbnb")}>Airbnb</label>
+            <label class="chip"><input type="checkbox" value="Post-construcción" ${chk("Post-construcción")}>Post-construcción</label>
+            <label class="chip"><input type="checkbox" value="Oficinas" ${chk("Oficinas")}>Oficinas</label>
+            <label class="chip"><input type="checkbox" value="Ventanas" ${chk("Ventanas")}>Ventanas</label>
+            <label class="chip"><input type="checkbox" value="Lavado de alfombras" ${chk("Lavado de alfombras")}>Alfombras</label>
+            <label class="chip"><input type="checkbox" value="Organización" ${chk("Organización")}>Organización</label>
           </div>
-          <label>Especialidad o enfoque (opcional)</label><input id="warranty" value="${v(st.warranty)}" placeholder="Ej. familias hispanas, primera casa, Starr County">
-          <label>¿Qué te hace diferente? (opcional)</label><input id="diff" value="${v(st.diff)}" placeholder="Ej. agente local, atención personal en cada cierre">
-          <label>Licencia / designaciones (opcional)</label><input id="license" value="${v(p.license)}" placeholder="TREC #123456 · Realtor®">
+          <label>Especialidad o enfoque (opcional)</label><input id="warranty" value="${v(st.warranty)}" placeholder="Ej. casas con mascotas, Airbnb, Starr County">
+          <label>¿Qué te hace diferente? (opcional)</label><input id="diff" value="${v(st.diff)}" placeholder="Ej. productos ecológicos, atención personal, puntualidad">
+          <label>Seguro / bonded (opcional)</label><input id="license" value="${v(p.license)}" placeholder="Ej. asegurada y bonded">
         </div>
       </div>
     </section>
@@ -3447,7 +3448,7 @@ textarea.big{min-height:150px;font-size:16px}
         <h1>Cuéntanos <em>su historia.</em></h1>
         <div class="fcard">
           <label>Cuéntanos del negocio — habla o escribe</label>
-          <textarea id="rough" class="big" placeholder="¿Cómo empezó en bienes raíces? ¿Cuántas casas ha vendido? ¿En qué se especializa? ¿Qué lo hace diferente? Puedes hablar con el micrófono — no tiene que estar bonito, la IA lo acomoda."></textarea>
+          <textarea id="rough" class="big" placeholder="¿Cómo empezó en la limpieza? ¿Cuántas casas ha limpiado? ¿En qué se especializa? ¿Qué la hace diferente? Puedes hablar con el micrófono — no tiene que estar bonito, la IA lo acomoda."></textarea>
           <div class="microw" style="margin-top:8px">
             <button type="button" id="aibtn" onclick="aiWrite()" class="btn-dark">✨ Escribir con IA</button>
             <button type="button" class="micbtn" onclick="dictate('rough',this)" title="Hablar en vez de escribir">🎤</button>
@@ -3455,7 +3456,7 @@ textarea.big{min-height:150px;font-size:16px}
           </div>
           <hr style="border:none;border-top:1px solid #EDF0F5;margin:18px 0">
           <label>Titular (opcional)</label><input id="hero" value="${v(st.hero)}" placeholder="Déjalo vacío para usar el de la plantilla">
-          <label>Frase corta</label><input id="tagline" value="${v(st.tagline)}" placeholder="Vende tu casa al mejor precio, con ventas reales de tu zona.">
+          <label>Frase corta</label><input id="tagline" value="${v(st.tagline)}" placeholder="Tu casa impecable, con precio claro desde el primer mensaje.">
           <label>Su historia (lo que va en la página)</label>
           <div class="microw">
             <textarea id="about" class="big" placeholder="2-3 oraciones sobre el negocio — la IA la llena desde tus notas de arriba.">${v(st.about)}</textarea>
@@ -3495,7 +3496,7 @@ textarea.big{min-height:150px;font-size:16px}
           <p class="hint" id="dsearchhint" style="margin-top:4px"></p>
           <hr style="border:none;border-top:1px solid #EDF0F5;margin:14px 0">
           <label>Dominio del cliente (conectar)</label>
-          <div style="display:flex;gap:8px"><input id="domain" value="${v(st.domain)}" placeholder="casabellarealty.com" style="flex:1"><button type="button" onclick="connectDomain()" id="dombtn" class="btn-dark" style="white-space:nowrap">Conectar</button></div>
+          <div style="display:flex;gap:8px"><input id="domain" value="${v(st.domain)}" placeholder="brillocleaning.com" style="flex:1"><button type="button" onclick="connectDomain()" id="dombtn" class="btn-dark" style="white-space:nowrap">Conectar</button></div>
           <div id="dommsg" class="hint" style="margin-top:8px"></div>
         </div>
       </div>
@@ -3757,14 +3758,14 @@ app.post("/api/onboarding/ai", async (req, res) => {
     b.biz ? `Negocio: ${b.biz}` : "",
     b.city ? `Ciudad/área: ${b.city}` : "",
     b.years ? `Años en el negocio: ${b.years}` : "",
-    b.rough ? `Notas del agente: ${b.rough}` : "",
+    b.rough ? `Notas de la limpiadora: ${b.rough}` : "",
   ].filter(Boolean).join("\n").slice(0, 1000);
   if (!facts) return res.status(400).json({ error: "faltan datos" });
   if (!aiLive) return res.json({ source: "demo", error: "ai_off" });
   try {
     const raw = await aiChat({
       maxTokens: 400,
-      system: `Eres redactor publicitario para un agente de bienes raíces (realtor) hispano en Texas. Con los datos que te doy, escribe el texto de su página web en español, cálido y confiable, enfocado en ayudar a la gente a vender o comprar su casa, sin exagerar ni inventar datos que no te dieron. Responde SOLO con un objeto JSON: {"hero": titular corto y fuerte (máx 6 palabras), "tagline": una frase de apoyo (máx 18 palabras), "about": párrafo de "nuestra historia" en 2-3 oraciones, en primera persona del agente}. Nada de markdown, nada de comillas tipográficas.`,
+      system: `Eres redactor publicitario para un negocio de limpieza de casas hispano en Texas. Con los datos que te doy, escribe el texto de su página web en español, cálido y confiable, enfocado en ayudar a la gente a tener su casa impecable (limpieza regular, profunda, mudanzas, Airbnb), sin exagerar ni inventar datos que no te dieron. Responde SOLO con un objeto JSON: {"hero": titular corto y fuerte (máx 6 palabras), "tagline": una frase de apoyo (máx 18 palabras), "about": párrafo de "nuestra historia" en 2-3 oraciones, en primera persona del negocio}. Nada de markdown, nada de comillas tipográficas.`,
       messages: [{ role: "user", content: facts }],
     });
     const j = JSON.parse(raw.match(/\{[\s\S]*\}/)?.[0] || "{}");
