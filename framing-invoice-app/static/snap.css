@@ -64,6 +64,46 @@
 @keyframes spin { to { transform: rotate(360deg); } }
 .working h2 { color: var(--navy); margin: 0; }
 
+/* The South Texas Builders "goalie" — blocks the ball (overcharge) on loading */
+.goalie-scene { width: 260px; max-width: 90%; margin: 0 auto 1.2rem; }
+.g-ground { stroke: #c9d3e3; stroke-width: 2; stroke-linecap: round; }
+.g-goal line { stroke: #b9c4d8; stroke-width: 2.5; stroke-linecap: round; }
+.g-net line { stroke: #dde4ef; stroke-width: 1; }
+.g-limb { stroke: var(--navy); stroke-width: 5; stroke-linecap: round; }
+.g-jersey { fill: var(--navy); }
+.g-collar { fill: var(--red); }
+.g-head { fill: #f1c9a5; }
+.g-glove { fill: var(--red); stroke: #fff; stroke-width: 1; }
+.g-stb { fill: #fff; font: 700 7px -apple-system, Arial, sans-serif; text-anchor: middle; letter-spacing: .5px; }
+.g-ballbg { fill: #fff; stroke: var(--navy); stroke-width: 1; }
+.g-ballp { fill: var(--navy); }
+
+.g-keeper { transform-box: fill-box; transform-origin: 64px 124px; animation: g-reach 1.8s ease-in-out infinite; }
+.g-ball   { transform: translate(210px, 70px); animation: g-shot 1.8s ease-in-out infinite; }
+.g-ball-spin { transform-box: fill-box; transform-origin: center; animation: g-spin .5s linear infinite; }
+
+@keyframes g-shot {
+  0%   { transform: translate(210px, 70px); opacity: 1; }
+  38%  { transform: translate(112px, 70px); opacity: 1; }   /* reaches the gloves */
+  50%  { transform: translate(122px, 40px); }               /* SAVE — punched up */
+  72%  { transform: translate(185px, 14px); opacity: 1; }
+  82%  { transform: translate(205px, 6px);  opacity: 0; }
+  83%  { transform: translate(210px, 70px); opacity: 0; }
+  100% { transform: translate(210px, 70px); opacity: 1; }
+}
+@keyframes g-reach {
+  0%, 28% { transform: rotate(0)    translateX(0); }
+  40%     { transform: rotate(7deg) translateX(5px); }       /* dive toward the ball */
+  56%     { transform: rotate(3deg) translateX(2px); }
+  70%,100%{ transform: rotate(0)    translateX(0); }
+}
+@keyframes g-spin { to { transform: rotate(360deg); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .g-keeper, .g-ball, .g-ball-spin { animation: none; }
+  .g-ball { transform: translate(118px, 48px); }            /* static "just saved" pose */
+}
+
 /* RESULT screen */
 .verdict { border-radius: 20px; padding: 1.8rem 1.3rem; text-align: center; color: #fff;
   margin-bottom: 1.1rem; }
