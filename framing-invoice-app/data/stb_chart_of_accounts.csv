@@ -1,0 +1,55 @@
+Account #,Account Name,Department,Category
+1010,Architect / Blue Prints,Pre-Construction / Soft Costs,Service
+1020,Engineering / Windstorm,Pre-Construction / Soft Costs,Service
+1030,Building Permits,Pre-Construction / Soft Costs,Service
+1040,Risk / Liability Insurance,Pre-Construction / Soft Costs,Service
+2010,Fill Dirt / Soil Compaction,P1 Foundation,Service
+2020,Plumbing Rough-In,P1 Foundation,Service
+2030,Pre-Form Survey,P1 Foundation,Service
+2040,Termite Treatment,P1 Foundation,Service
+2050,Rebar Materials,P1 Foundation,Materials
+2060,Concrete Materials,P1 Foundation,Materials
+2070,Foundation Labor,P1 Foundation,Labor
+3010,Framing Materials,P2 Framing / Dry-In,Materials
+3020,Framing Labor,P2 Framing / Dry-In,Labor
+3030,Roof Materials,P2 Framing / Dry-In,Materials
+3040,Roof Labor,P2 Framing / Dry-In,Labor
+3050,Windows,P2 Framing / Dry-In,Service
+4010,Plumbing Top-Out,P3 Rough Trades,Service
+4020,A/C Duct Work,P3 Rough Trades,Service
+4030,Electrical Rough-In,P3 Rough Trades,Service
+4040,Wall Insulation,P3 Rough Trades,Service
+4050,Exterior Painting,P3 Rough Trades,Service
+4060,Sheetrock Materials,P3 Rough Trades,Materials
+4070,Sheetrock Labor,P3 Rough Trades,Labor
+5010,"Tape, Float & Texture",P4 Exterior / Floors,Service
+5020,Exterior Materials,P4 Exterior / Floors,Materials
+5030,Exterior Labor,P4 Exterior / Floors,Labor
+5040,Flooring Materials,P4 Exterior / Floors,Materials
+5050,Flooring Labor,P4 Exterior / Floors,Labor
+6010,Cabinets / Vanities,P5 Interior,Service
+6020,Trim / Doors / Shelving Labor,P5 Interior,Labor
+6030,Trim / Doors / Shelving Materials,P5 Interior,Materials
+6040,Countertops Materials,P5 Interior,Materials
+6050,Countertops Labor,P5 Interior,Labor
+6060,Interior Paint / Stain,P5 Interior,Service
+6070,Front Door,P5 Interior,Service
+6080,Interior Miscellaneous,P5 Interior,Service
+7010,Electrical Final / Fixtures,P6 Final,Service
+7020,Plumbing Final / Fixtures,P6 Final,Service
+7030,Hardware / Mirrors / Glass,P6 Final,Service
+7040,Driveway Materials,P6 Final,Materials
+7050,Driveway Labor,P6 Final,Labor
+7060,Landscaping,P6 Final,Service
+7070,Final Clean-Up,P6 Final,Service
+8010,Dumpster Rental,Job Site Overhead,Service
+8020,Toilet Rental,Job Site Overhead,Service
+8030,Temporary Utilities,Job Site Overhead,Service
+8040,Job Site Miscellaneous / Re-inspections,Job Site Overhead,Service
+8050,Sales Commission,Job Site Overhead,Service
+8060,Change Orders,Job Site Overhead,Service
+8070,Management,Job Site Overhead,Service
+8080,Marketing,Job Site Overhead,Service
+9010,Marketing Allocation,Internal Allocations,Allocation
+9020,Management / Payroll Allocation,Internal Allocations,Allocation
+9030,Operations Allocation - Closing,Internal Allocations,Allocation

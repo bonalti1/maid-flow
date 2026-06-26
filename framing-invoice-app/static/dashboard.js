@@ -45,7 +45,17 @@ async function load() {
       <th>Checked</th><th>Overcharge</th><th>Export</th></tr></thead><tbody>${rows}</tbody></table>`;
   }
 
-  // Spend by Department
+  // Spend by House / Job
+  const houses = d.by_house || [];
+  $("#byHouse").innerHTML = houses.length ? `<table class="tbl"><thead><tr>
+      <th>House / Job</th><th>Invoices</th><th>Spend</th><th>Overcharge</th></tr></thead><tbody>` +
+    houses.map((x) => `<tr>
+      <td>${esc(x.house)}</td><td>${x.invoices}</td><td>${money(x.spend)}</td>
+      <td class="${x.overcharge>0?"over-amt":""}">${x.overcharge>0?money(x.overcharge):"—"}</td>
+    </tr>`).join("") + "</tbody></table>"
+    : '<div class="empty">No data yet.</div>';
+
+  // Spend by Phase
   const deps = d.by_department || [];
   const maxDep = Math.max(1, ...deps.map((x) => x.spend));
   $("#byDepartment").innerHTML = deps.length ? `<table class="tbl"><thead><tr>

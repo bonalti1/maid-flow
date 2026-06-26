@@ -96,19 +96,23 @@ def _ensure_ready():
                                 "framing_materials_budget_baseline.xlsx")
             if os.path.exists(xlsx):
                 import_baseline(xlsx)
-        # The seeded baseline is all framing materials — default their
-        # department so the dashboard groups them correctly until a broader
-        # chart of accounts assigns more specific codes.
+        # The seeded baseline is framing materials — default them to their phase
+        # (P2 Framing / Dry-In) in the STB chart of accounts.
         with db.connect() as conn:
             conn.execute(
-                "UPDATE baseline_items SET department='Framing' "
+                "UPDATE baseline_items SET department='P2 Framing / Dry-In' "
                 "WHERE department IS NULL OR department=''")
+        # Auto-import the bundled STB chart of accounts on a fresh database.
+        with db.connect() as conn:
+            coa_count = conn.execute(
+                "SELECT COUNT(*) c FROM chart_of_accounts").fetchone()["c"]
+        if coa_count == 0:
+            coa = os.path.join(BASE_DIR, "data", "stb_chart_of_accounts.csv")
+            if os.path.exists(coa):
+                import_chart_of_accounts(coa)
+                _autocode_to_accounts()
     except Exception:
         pass
-
-
-# Run at import so the DB exists no matter how the app is started.
-_ensure_ready()
 
 
 @app.on_event("startup")
@@ -706,6 +710,15 @@ def dashboard():
                GROUP BY li.gl_account ORDER BY spend DESC"""
         ).fetchall()]
 
+        by_house = [dict(r) for r in conn.execute(
+            """SELECT COALESCE(NULLIF(TRIM(i.property_or_job),''),'Unassigned') AS house,
+                      COUNT(DISTINCT i.id) AS invoices,
+                      COALESCE(SUM(li.line_amount),0) AS spend,
+                      COALESCE(SUM(li.potential_overcharge),0) AS overcharge
+               FROM invoices i LEFT JOIN invoice_line_items li ON li.invoice_id=i.id
+               GROUP BY house ORDER BY spend DESC"""
+        ).fetchall()]
+
         by_vendor = [dict(r) for r in conn.execute(
             """SELECT COALESCE(vendor_name,'Unknown') AS vendor,
                       COUNT(DISTINCT i.id) AS invoices,
@@ -726,6 +739,7 @@ def dashboard():
             "by_category": by_category,
             "by_department": by_department,
             "by_account": by_account,
+            "by_house": by_house,
             "by_vendor": by_vendor,
         }
 
@@ -780,6 +794,10 @@ def _summary_to_dict(s):
         "review_count": s.review_count, "line_count": s.line_count,
     }
 
+
+# Initialize + seed at import (after all helpers are defined) so the DB and the
+# bundled chart of accounts are ready no matter how the app is started.
+_ensure_ready()
 
 # Serve the SPA. Mounted last so /api/* routes take precedence.
 app.mount("/", StaticFiles(directory=STATIC_DIR, html=True), name="static")
