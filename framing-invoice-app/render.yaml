@@ -1,0 +1,33 @@
+# Render blueprint for the Framing Invoice Review app.
+# Easiest path is the Render dashboard (see DEPLOY.md) — this file documents the
+# exact settings and can also be used as a Blueprint.
+services:
+  - type: web
+    name: stb-invoice-check
+    runtime: python
+    rootDir: framing-invoice-app
+    plan: free                 # change to "starter" (~$7/mo) for saved data (see DEPLOY.md)
+    branch: claude/framing-invoice-review-app-7m3jb5
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /healthz
+    envVars:
+      - key: ANTHROPIC_API_KEY
+        sync: false            # paste your sk-ant-... key in the Render dashboard
+      - key: APP_USERNAME
+        value: alto            # the login username (change if you like)
+      - key: APP_PASSWORD
+        sync: false            # set your team password in the dashboard
+
+    # ── To SAVE DATA permanently (Starter plan ~$7/mo) ──────────────────────
+    # 1. Set `plan: starter` above.
+    # 2. Add these two env vars:
+    #      - key: FRAMING_DB
+    #        value: /var/data/framing.db
+    #      - key: FRAMING_UPLOADS
+    #        value: /var/data/uploads
+    # 3. Attach a disk:
+    #      disk:
+    #        name: data
+    #        mountPath: /var/data
+    #        sizeGB: 1

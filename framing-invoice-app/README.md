@@ -92,6 +92,13 @@ extraction stays editable before you compare.
 
 ---
 
+## Deploying online (web app for your team)
+See **[DEPLOY.md](DEPLOY.md)** for step-by-step hosting on Render: a password-
+protected web link your team opens from any phone/computer, free HTTPS, start
+free and upgrade (~$7/mo) for permanently saved data. Set `APP_USERNAME` /
+`APP_PASSWORD` to turn on the login, and `ANTHROPIC_API_KEY` for AI reading. On
+first boot the baseline workbook auto-imports so a fresh deploy is ready to use.
+
 ## Tests
 
 A sample test suite loads the real baseline workbook and exercises the

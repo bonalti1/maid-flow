@@ -39,15 +39,74 @@ from .messages import build_messages_for_line, build_invoice_messages
 
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 STATIC_DIR = os.path.join(BASE_DIR, "static")
-UPLOAD_DIR = os.path.join(BASE_DIR, "uploads")
+# Uploads + DB live on a persistent disk in production (set via env), or under
+# the project directory for local use.
+UPLOAD_DIR = os.environ.get("FRAMING_UPLOADS", os.path.join(BASE_DIR, "uploads"))
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 app = FastAPI(title="Framing Invoice Review", version="1.0.0")
 
+# --- Optional password protection (HTTP Basic over HTTPS) ------------------
+# When APP_PASSWORD is set (production), every request must present the
+# username/password. Unset = open (local development).
+APP_USERNAME = os.environ.get("APP_USERNAME", "admin")
+APP_PASSWORD = os.environ.get("APP_PASSWORD", "")
+
+
+@app.middleware("http")
+async def _password_gate(request, call_next):
+    if APP_PASSWORD and request.url.path != "/healthz":
+        import base64 as _b64
+        import secrets as _secrets
+        from starlette.responses import Response as _Resp
+        ok = False
+        auth = request.headers.get("authorization", "")
+        if auth.startswith("Basic "):
+            try:
+                user, _, pw = _b64.b64decode(
+                    auth[6:]).decode("utf-8", "ignore").partition(":")
+                ok = (_secrets.compare_digest(user, APP_USERNAME)
+                      and _secrets.compare_digest(pw, APP_PASSWORD))
+            except Exception:
+                ok = False
+        if not ok:
+            return _Resp("Authentication required", status_code=401,
+                         headers={"WWW-Authenticate":
+                                  'Basic realm="South Texas Builders"'})
+    return await call_next(request)
+
+
+@app.get("/healthz")
+def healthz():
+    """Unauthenticated health check for the host (Render) to ping."""
+    return {"ok": True}
+
+
+def _ensure_ready():
+    """Create tables and auto-import the baseline on a fresh database so a
+    brand-new deploy is ready to check invoices immediately. Idempotent — safe
+    to call at import time and on startup."""
+    db.init_db()
+    try:
+        with db.connect() as conn:
+            count = conn.execute(
+                "SELECT COUNT(*) c FROM baseline_items").fetchone()["c"]
+        if count == 0:
+            xlsx = os.path.join(BASE_DIR, "data",
+                                "framing_materials_budget_baseline.xlsx")
+            if os.path.exists(xlsx):
+                import_baseline(xlsx)
+    except Exception:
+        pass
+
+
+# Run at import so the DB exists no matter how the app is started.
+_ensure_ready()
+
 
 @app.on_event("startup")
 def _startup():
-    db.init_db()
+    _ensure_ready()
 
 
 # --------------------------------------------------------------------------
