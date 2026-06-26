@@ -82,6 +82,72 @@ def read_baseline_rows(xlsx_path: str):
         yield rec
 
 
+# Chart of accounts: header synonyms we accept (case-insensitive).
+COA_HEADERS = {
+    "account_number": ["account #", "account#", "account number", "account no",
+                       "gl #", "gl account", "gl code", "code", "number", "acct #", "acct"],
+    "account_name": ["account name", "name", "description", "account", "gl name"],
+    "department": ["department", "dept", "division", "category group", "class"],
+    "category": ["category", "type", "account type", "group"],
+}
+
+
+def read_coa_rows(path: str):
+    """Yield {account_number, account_name, department, category} from a chart of
+    accounts Excel or CSV. Header matching is forgiving so most exports work."""
+    import csv as _csv
+    ext = path.lower()
+    if ext.endswith(".csv"):
+        with open(path, newline="", encoding="utf-8", errors="replace") as f:
+            rows = [list(r) for r in _csv.reader(f)]
+    else:
+        wb = openpyxl.load_workbook(path, data_only=True)
+        ws = wb[wb.sheetnames[0]]
+        rows = [list(r) for r in ws.iter_rows(values_only=True)]
+    if not rows:
+        return
+    header = [str(h).strip().lower() if h is not None else "" for h in rows[0]]
+    idx = {}
+    for field, syns in COA_HEADERS.items():
+        for i, h in enumerate(header):
+            if h in syns:
+                idx[field] = i
+                break
+
+    def get(row, field):
+        i = idx.get(field)
+        if i is None or i >= len(row) or row[i] is None:
+            return None
+        val = row[i]
+        if isinstance(val, float) and val.is_integer():
+            val = int(val)
+        return str(val).strip() or None
+
+    for raw in rows[1:]:
+        num = get(raw, "account_number")
+        name = get(raw, "account_name")
+        if not num and not name:
+            continue
+        yield {"account_number": num, "account_name": name,
+               "department": get(raw, "department"), "category": get(raw, "category")}
+
+
+def import_chart_of_accounts(path: str, db_path: str = None, replace: bool = True) -> int:
+    """Import the chart of accounts into chart_of_accounts. Returns row count."""
+    rows = list(read_coa_rows(path))
+    with connect(db_path) as conn:
+        if replace:
+            conn.execute("DELETE FROM chart_of_accounts")
+        for rec in rows:
+            conn.execute(
+                """INSERT INTO chart_of_accounts
+                   (account_number, account_name, department, category)
+                   VALUES (:account_number, :account_name, :department, :category)""",
+                rec,
+            )
+    return len(rows)
+
+
 def import_baseline(xlsx_path: str, db_path: str = None, replace: bool = True) -> int:
     """Import the baseline sheet into baseline_items.
 

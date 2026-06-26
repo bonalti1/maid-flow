@@ -27,6 +27,8 @@ CREATE TABLE IF NOT EXISTS baseline_items (
     normalized_description TEXT,
     unit_measure          TEXT,
     category              TEXT,
+    department            TEXT,
+    gl_account            TEXT,
     baseline_unit_price   REAL,
     lowest_price_seen     REAL,
     highest_price_seen    REAL,
@@ -49,6 +51,7 @@ CREATE TABLE IF NOT EXISTS invoices (
     invoice_date       TEXT,
     property_or_job    TEXT,
     customer_po        TEXT,
+    department         TEXT,
     subtotal           REAL,
     tax                REAL,
     total              REAL,
@@ -73,6 +76,8 @@ CREATE TABLE IF NOT EXISTS invoice_line_items (
     status               TEXT,
     confidence_score     REAL,
     category             TEXT,
+    department           TEXT,
+    gl_account           TEXT,
     notes                TEXT,
     approved_by_user     TEXT,
     created_at           TEXT DEFAULT (datetime('now'))
@@ -90,11 +95,39 @@ CREATE TABLE IF NOT EXISTS message_drafts (
     created_at           TEXT DEFAULT (datetime('now'))
 );
 
+CREATE TABLE IF NOT EXISTS chart_of_accounts (
+    id             INTEGER PRIMARY KEY AUTOINCREMENT,
+    account_number TEXT,
+    account_name   TEXT,
+    department     TEXT,
+    category       TEXT,
+    created_at     TEXT DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_coa_account ON chart_of_accounts(account_number);
+CREATE INDEX IF NOT EXISTS idx_coa_department ON chart_of_accounts(department);
+
 CREATE TABLE IF NOT EXISTS settings (
     key   TEXT PRIMARY KEY,
     value TEXT
 );
 """
+
+# Columns added after v1 — applied to pre-existing databases via ALTER.
+_MIGRATIONS = [
+    ("baseline_items", "department", "TEXT"),
+    ("baseline_items", "gl_account", "TEXT"),
+    ("invoices", "department", "TEXT"),
+    ("invoice_line_items", "department", "TEXT"),
+    ("invoice_line_items", "gl_account", "TEXT"),
+]
+
+
+def _migrate(conn):
+    """Add new columns to existing tables (CREATE IF NOT EXISTS won't alter)."""
+    for table, column, decl in _MIGRATIONS:
+        cols = [r["name"] for r in conn.execute(f"PRAGMA table_info({table})")]
+        if column not in cols:
+            conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {decl}")
 
 
 def get_connection(path: str = None) -> sqlite3.Connection:
@@ -118,6 +151,7 @@ def init_db(path: str = None):
     """Create tables if they don't exist and seed default settings."""
     with connect(path) as conn:
         conn.executescript(SCHEMA)
+        _migrate(conn)
         # Default global allowed variance is $0.00 (spec default).
         conn.execute(
             "INSERT OR IGNORE INTO settings(key, value) VALUES('allowed_variance', '0')"

@@ -25,6 +25,35 @@
     <!-- KPIs -->
     <div class="kpis" id="kpis"></div>
 
+    <!-- Setup: chart of accounts -->
+    <div class="section">
+      <div class="section-head">
+        <h2>Chart of Accounts</h2>
+        <span id="coaStatus" class="muted small"></span>
+      </div>
+      <p class="muted small">Import your chart of accounts (Excel or CSV: Account #, Account Name, Department).
+        Every invoice line is coded to its account so the views below roll up by department and GL account.</p>
+      <div class="row-actions">
+        <label class="btn btn-sm">
+          <input type="file" id="coaFile" accept=".xlsx,.xls,.csv" hidden /> Choose chart of accounts
+        </label>
+        <button id="importCoa" class="btn btn-sm btn-navy">Import</button>
+        <a class="btn btn-sm btn-ghost" href="/sample_chart_of_accounts.csv" download>Download template</a>
+      </div>
+    </div>
+
+    <!-- Spend by department + GL account -->
+    <div class="grid-2">
+      <div class="section">
+        <h2>Spend by Department</h2>
+        <div id="byDepartment"></div>
+      </div>
+      <div class="section">
+        <h2>Spend by GL Account</h2>
+        <div id="byAccount"></div>
+      </div>
+    </div>
+
     <!-- Invoices -->
     <div class="section">
       <div class="section-head">

@@ -45,6 +45,29 @@ async function load() {
       <th>Checked</th><th>Overcharge</th><th>Export</th></tr></thead><tbody>${rows}</tbody></table>`;
   }
 
+  // Spend by Department
+  const deps = d.by_department || [];
+  const maxDep = Math.max(1, ...deps.map((x) => x.spend));
+  $("#byDepartment").innerHTML = deps.length ? `<table class="tbl"><thead><tr>
+      <th>Department</th><th>Spend</th><th>Overcharge</th></tr></thead><tbody>` +
+    deps.map((x) => `<tr>
+      <td><div class="bar-wrap"><span class="bar" style="width:${Math.max(8,(x.spend/maxDep)*120)}px"></span>${esc(x.department)}</div></td>
+      <td>${money(x.spend)}</td>
+      <td class="${x.overcharge>0?"over-amt":""}">${x.overcharge>0?money(x.overcharge):"—"}</td>
+    </tr>`).join("") + "</tbody></table>"
+    : '<div class="empty">No data yet.</div>';
+
+  // Spend by GL Account
+  const accts = d.by_account || [];
+  $("#byAccount").innerHTML = accts.length ? `<table class="tbl"><thead><tr>
+      <th>Account</th><th>Spend</th><th>Overcharge</th></tr></thead><tbody>` +
+    accts.map((x) => `<tr>
+      <td>${esc(x.gl_account)}${x.account_name?" · "+esc(x.account_name):""}</td>
+      <td>${money(x.spend)}</td>
+      <td class="${x.overcharge>0?"over-amt":""}">${x.overcharge>0?money(x.overcharge):"—"}</td>
+    </tr>`).join("") + "</tbody></table>"
+    : '<div class="empty">Import your chart of accounts to code spend by account.</div>';
+
   // Spend by account (bar)
   const cats = d.by_category;
   const maxSpend = Math.max(1, ...cats.map((c) => c.spend));
@@ -67,4 +90,40 @@ async function load() {
     </tr>`).join("") + "</tbody></table>"
     : '<div class="empty">No data yet.</div>';
 }
+// --- Chart of Accounts import ---
+async function loadCoaStatus() {
+  try {
+    const r = await (await fetch("/api/coa")).json();
+    const el = document.querySelector("#coaStatus");
+    if (el) el.textContent = r.accounts.length
+      ? `✓ ${r.accounts.length} accounts · ${r.departments.length} departments`
+      : "Not imported yet";
+  } catch (e) {}
+}
+const coaFile = document.querySelector("#coaFile");
+if (coaFile) {
+  coaFile.onchange = (e) => {
+    const f = e.target.files[0];
+    if (f) document.querySelector("#coaFile").parentElement.lastChild.textContent = " " + f.name;
+  };
+  document.querySelector("#importCoa").onclick = async () => {
+    const f = coaFile.files[0];
+    if (!f) { toast("Pick a chart of accounts file first"); return; }
+    const fd = new FormData(); fd.append("file", f);
+    try {
+      const r = await (await fetch("/api/coa/import", { method: "POST", body: fd })).json();
+      if (r.detail) throw new Error(r.detail);
+      toast(`Imported ${r.imported} accounts`);
+      loadCoaStatus(); load();
+    } catch (e) { toast("Error: " + (e.message || e)); }
+  };
+}
+function toast(m) {
+  const t = document.querySelector("#toast");
+  if (!t) return alert(m);
+  t.textContent = m; t.hidden = false;
+  clearTimeout(t._t); t._t = setTimeout(() => (t.hidden = true), 2600);
+}
+
+loadCoaStatus();
 load();

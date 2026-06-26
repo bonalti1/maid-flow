@@ -34,7 +34,7 @@ from . import export as export_mod
 from .compare import (Baseline, BaselineItem, LineItemInput, compare_line,
                       summarize, STATUS_OVER)
 from .extract import extract
-from .importer import import_baseline
+from .importer import import_baseline, import_chart_of_accounts
 from .messages import build_messages_for_line, build_invoice_messages
 
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
@@ -96,6 +96,13 @@ def _ensure_ready():
                                 "framing_materials_budget_baseline.xlsx")
             if os.path.exists(xlsx):
                 import_baseline(xlsx)
+        # The seeded baseline is all framing materials — default their
+        # department so the dashboard groups them correctly until a broader
+        # chart of accounts assigns more specific codes.
+        with db.connect() as conn:
+            conn.execute(
+                "UPDATE baseline_items SET department='Framing' "
+                "WHERE department IS NULL OR department=''")
     except Exception:
         pass
 
@@ -233,6 +240,66 @@ def settings_set(payload: dict = Body(...)):
 # Extraction + comparison
 # --------------------------------------------------------------------------
 
+@app.post("/api/coa/import")
+async def coa_import(file: UploadFile = File(...)):
+    """Import the chart of accounts (Excel or CSV)."""
+    dest = os.path.join(UPLOAD_DIR, f"coa_{uuid.uuid4().hex}_{file.filename}")
+    with open(dest, "wb") as f:
+        f.write(await file.read())
+    try:
+        count = import_chart_of_accounts(dest)
+        _autocode_to_accounts()
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Import failed: {e}")
+    return {"imported": count}
+
+
+def _autocode_to_accounts():
+    """After a COA import, assign each baseline item a GL account by matching its
+    department (and category, loosely), then backfill existing invoice lines."""
+    with db.connect() as conn:
+        accounts = [dict(r) for r in conn.execute(
+            "SELECT account_number, department, category FROM chart_of_accounts")]
+        by_dept = {}
+        for a in accounts:
+            by_dept.setdefault((a["department"] or "").lower(), []).append(a)
+        for it in conn.execute(
+                "SELECT id, department, category FROM baseline_items").fetchall():
+            cands = by_dept.get((it["department"] or "").lower())
+            if not cands:
+                continue
+            cat = (it["category"] or "").lower()
+            chosen = next(
+                (a for a in cands
+                 if cat and a["category"] and
+                 (cat in a["category"].lower() or a["category"].lower() in cat)),
+                cands[0])
+            conn.execute("UPDATE baseline_items SET gl_account=? WHERE id=?",
+                         (chosen["account_number"], it["id"]))
+        # Backfill department + account onto already-saved invoice lines.
+        conn.execute(
+            """UPDATE invoice_line_items SET
+               department=(SELECT department FROM baseline_items
+                           WHERE id=invoice_line_items.baseline_item_id),
+               gl_account=(SELECT gl_account FROM baseline_items
+                           WHERE id=invoice_line_items.baseline_item_id)
+               WHERE baseline_item_id IS NOT NULL""")
+
+
+@app.get("/api/coa")
+def coa_list():
+    with db.connect() as conn:
+        rows = conn.execute(
+            "SELECT * FROM chart_of_accounts ORDER BY department, account_number"
+        ).fetchall()
+        depts = conn.execute(
+            "SELECT DISTINCT department FROM chart_of_accounts "
+            "WHERE department IS NOT NULL AND department != '' ORDER BY department"
+        ).fetchall()
+        return {"accounts": [dict(r) for r in rows],
+                "departments": [d["department"] for d in depts]}
+
+
 @app.get("/api/config")
 def config():
     """Report whether AI reading is actually wired up, so the UI (and you) can
@@ -296,7 +363,15 @@ def compare_endpoint(payload: dict = Body(...)):
 
         summary = summarize(results)
 
-        # Persist invoice header.
+        # Map baseline_item_id -> (department, gl_account) so each line inherits
+        # the chart-of-accounts coding from the matched baseline item.
+        coding = {row["id"]: (row["department"], row["gl_account"])
+                  for row in conn.execute(
+                      "SELECT id, department, gl_account FROM baseline_items")}
+        # Department of the invoice = the most common line department.
+        dept_counts = {}
+
+        # Persist invoice header (department filled in after lines).
         cur = conn.execute(
             """INSERT INTO invoices
                (vendor_name, invoice_number, invoice_date, property_or_job,
@@ -314,22 +389,33 @@ def compare_endpoint(payload: dict = Body(...)):
         # Persist each compared line.
         out_rows = []
         for r in results:
+            dept, gl = coding.get(r.baseline_item_id, (None, None))
+            if dept:
+                dept_counts[dept] = dept_counts.get(dept, 0) + 1
             lc = conn.execute(
                 """INSERT INTO invoice_line_items
                    (invoice_id, quantity, unit_measure, item_number, description,
                     unit_price, line_amount, baseline_item_id, baseline_unit_price,
                     difference_per_unit, potential_overcharge, status,
-                    confidence_score, category, notes)
-                   VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                    confidence_score, category, department, gl_account, notes)
+                   VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
                 (invoice_id, r.quantity, r.unit_measure, r.item_number,
                  r.description, r.invoice_unit_price, r.line_amount,
                  r.baseline_item_id, r.baseline_unit_price, r.difference_per_unit,
                  r.potential_overcharge, r.status, r.confidence_score,
-                 r.category, r.notes),
+                 r.category, dept, gl, r.notes),
             )
             row = _result_to_dict(r)
             row["id"] = lc.lastrowid
+            row["department"] = dept
+            row["gl_account"] = gl
             out_rows.append(row)
+
+        # Stamp the invoice with its dominant department.
+        if dept_counts:
+            top_dept = max(dept_counts, key=dept_counts.get)
+            conn.execute("UPDATE invoices SET department=? WHERE id=?",
+                         (top_dept, invoice_id))
 
         return {
             "invoice_id": invoice_id,
@@ -601,6 +687,25 @@ def dashboard():
                FROM invoice_line_items GROUP BY category ORDER BY spend DESC"""
         ).fetchall()]
 
+        by_department = [dict(r) for r in conn.execute(
+            """SELECT COALESCE(department,'Unassigned') AS department,
+                      COALESCE(SUM(line_amount),0) AS spend,
+                      COALESCE(SUM(potential_overcharge),0) AS overcharge,
+                      COUNT(*) AS lines
+               FROM invoice_line_items GROUP BY department ORDER BY spend DESC"""
+        ).fetchall()]
+
+        by_account = [dict(r) for r in conn.execute(
+            """SELECT COALESCE(li.gl_account,'Unassigned') AS gl_account,
+                      MAX(coa.account_name) AS account_name,
+                      COALESCE(SUM(li.line_amount),0) AS spend,
+                      COALESCE(SUM(li.potential_overcharge),0) AS overcharge,
+                      COUNT(*) AS lines
+               FROM invoice_line_items li
+               LEFT JOIN chart_of_accounts coa ON coa.account_number = li.gl_account
+               GROUP BY li.gl_account ORDER BY spend DESC"""
+        ).fetchall()]
+
         by_vendor = [dict(r) for r in conn.execute(
             """SELECT COALESCE(vendor_name,'Unknown') AS vendor,
                       COUNT(DISTINCT i.id) AS invoices,
@@ -619,6 +724,8 @@ def dashboard():
             },
             "invoices": invoices,
             "by_category": by_category,
+            "by_department": by_department,
+            "by_account": by_account,
             "by_vendor": by_vendor,
         }
 

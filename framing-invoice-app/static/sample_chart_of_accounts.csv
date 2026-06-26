@@ -1,0 +1,14 @@
+Account #,Account Name,Department,Category
+5000,Framing Materials,Framing,Materials
+5010,Framing Labor / Subcontractor,Framing,Subcontractor
+5020,Delivery & Freight,Framing,Delivery
+5100,Concrete Materials,Concrete,Materials
+5110,Concrete Subcontractor,Concrete,Subcontractor
+5200,Electrical,Electrical,Subcontractor
+5300,Plumbing,Plumbing,Subcontractor
+5400,Roofing,Roofing,Subcontractor
+6000,Office Supplies,Office / Admin,Overhead
+6010,Software & Subscriptions,Office / Admin,Overhead
+6100,Marketing & Advertising,Marketing,Overhead
+6200,Fuel & Vehicle,Operations,Overhead
+6300,Equipment Rental,Operations,Materials

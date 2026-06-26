@@ -92,6 +92,15 @@ extraction stays editable before you compare.
 
 ---
 
+## Chart of accounts (multi-department)
+Import your chart of accounts (Excel/CSV: `Account #`, `Account Name`,
+`Department`, optional `Category`) from the **Dashboard → Chart of Accounts**
+area (a template is at `data/sample_chart_of_accounts.csv`). Every invoice line
+is then coded to a GL account + department, and the dashboard rolls up **Spend by
+Department** and **Spend by GL Account** — so the app scales from framing to
+checking spend across every department, all with the same price-vs-baseline
+engine. Baseline items auto-map to accounts by department/category on import.
+
 ## Deploying online (web app for your team)
 See **[DEPLOY.md](DEPLOY.md)** for step-by-step hosting on Render: a password-
 protected web link your team opens from any phone/computer, free HTTPS, start
