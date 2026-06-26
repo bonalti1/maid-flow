@@ -64,44 +64,96 @@
 @keyframes spin { to { transform: rotate(360deg); } }
 .working h2 { color: var(--navy); margin: 0; }
 
-/* The South Texas Builders "goalie" — blocks the ball (overcharge) on loading */
-.goalie-scene { width: 260px; max-width: 90%; margin: 0 auto 1.2rem; }
-.g-ground { stroke: #c9d3e3; stroke-width: 2; stroke-linecap: round; }
-.g-goal line { stroke: #b9c4d8; stroke-width: 2.5; stroke-linecap: round; }
-.g-net line { stroke: #dde4ef; stroke-width: 1; }
-.g-limb { stroke: var(--navy); stroke-width: 5; stroke-linecap: round; }
-.g-jersey { fill: var(--navy); }
-.g-collar { fill: var(--red); }
-.g-head { fill: #f1c9a5; }
-.g-glove { fill: var(--red); stroke: #fff; stroke-width: 1; }
-.g-stb { fill: #fff; font: 700 7px -apple-system, Arial, sans-serif; text-anchor: middle; letter-spacing: .5px; }
-.g-ballbg { fill: #fff; stroke: var(--navy); stroke-width: 1; }
-.g-ballp { fill: var(--navy); }
+/* The South Texas Builders "goalie" — dives to block the ball (overcharge) on loading */
+.goalie-scene { width: 320px; max-width: 94%; margin: 0 auto 1.3rem;
+  filter: drop-shadow(0 14px 22px rgba(22,40,76,.16)); }
+.goalie-scene svg { display: block; overflow: visible; }
 
-.g-keeper { transform-box: fill-box; transform-origin: 64px 124px; animation: g-reach 1.8s ease-in-out infinite; }
-.g-ball   { transform: translate(210px, 70px); animation: g-shot 1.8s ease-in-out infinite; }
-.g-ball-spin { transform-box: fill-box; transform-origin: center; animation: g-spin .5s linear infinite; }
+/* pitch + goal */
+.g-net   { fill: none; stroke: #d4ddec; stroke-width: 1; }
+.g-net > path:first-child { stroke: #c4d0e2; stroke-width: 1.4; }
+.g-frame line { stroke: #ffffff; stroke-width: 5; stroke-linecap: round;
+  filter: drop-shadow(0 1px 0 #b7c2d6); }
+.g-blades { fill: #2f9d54; opacity: .55; }
+.g-shadow { animation: g-shadow 1.9s ease-in-out infinite; transform-box: fill-box;
+  transform-origin: center; }
 
+/* keeper body */
+.g-leg     { fill: none; stroke: var(--navy); stroke-width: 11; stroke-linecap: round; stroke-linejoin: round; }
+.g-boot    { fill: #16284c; }
+.g-shorts  { fill: #11203f; }
+.g-jersey  { fill: var(--navy); }
+.g-hem     { fill: var(--red); }
+.g-crest   { fill: var(--red); stroke: #fff; stroke-width: 1; }
+.g-stb     { fill: #fff; font: 800 6px -apple-system, Arial, sans-serif; text-anchor: middle; letter-spacing: .3px; }
+.g-head    { fill: #f1c9a5; }
+.g-hair    { fill: #2a2118; }
+.g-arm     { fill: none; stroke: var(--navy); stroke-width: 10; stroke-linecap: round; }
+.g-glove   { fill: var(--red); stroke: #fff; stroke-width: 1.4; }
+.g-gloveline { fill: none; stroke: #fff; stroke-width: 1; stroke-linecap: round; opacity: .8; }
+
+/* ball */
+.g-ballbg { fill: #fff; stroke: var(--navy); stroke-width: 1.2; }
+.g-ballp  { fill: var(--navy); }
+
+/* impact burst */
+.g-burst { opacity: 0; transform-box: fill-box; transform-origin: center;
+  animation: g-burst 1.9s ease-out infinite; }
+.g-star  { fill: #ffd23c; }
+.g-spark { fill: #ffd23c; }
+
+/* speed streak */
+.g-streak { animation: g-streak 1.9s ease-out infinite; }
+
+/* ---- choreography ----
+   keeper coils, then explodes up-right into the dive to punch the ball away;
+   the ball streaks in low, gets met at the gloves, deflects up-and-out with spin. */
+.g-keeper { transform-box: fill-box; transform-origin: 130px 150px;
+  animation: g-dive 1.9s cubic-bezier(.5,0,.3,1) infinite; }
+.g-ball      { transform: translate(0,0); animation: g-shot 1.9s ease-in-out infinite; }
+.g-ball-spin { transform-box: fill-box; transform-origin: center; animation: g-spin .45s linear infinite; }
+
+/* ball base sits at SVG origin (0,0); keyframes carry it in absolute coords */
 @keyframes g-shot {
-  0%   { transform: translate(210px, 70px); opacity: 1; }
-  38%  { transform: translate(112px, 70px); opacity: 1; }   /* reaches the gloves */
-  50%  { transform: translate(122px, 40px); }               /* SAVE — punched up */
-  72%  { transform: translate(185px, 14px); opacity: 1; }
-  82%  { transform: translate(205px, 6px);  opacity: 0; }
-  83%  { transform: translate(210px, 70px); opacity: 0; }
-  100% { transform: translate(210px, 70px); opacity: 1; }
+  0%   { transform: translate(360px, 22px) scale(.7);  opacity: 0; }
+  10%  { transform: translate(330px, 34px) scale(.85); opacity: 1; }  /* streaks in, upper-right */
+  34%  { transform: translate(272px, 52px) scale(1);   opacity: 1; }  /* met at the gloves */
+  42%  { transform: translate(288px, 38px) scale(1);   opacity: 1; }  /* SAVE — punched away */
+  64%  { transform: translate(332px, 10px) scale(.95); opacity: 1; }  /* deflecting up & out */
+  80%  { transform: translate(368px,-16px) scale(.8);  opacity: 0; }
+  81%, 100% { transform: translate(360px, 22px) scale(.7); opacity: 0; }
 }
-@keyframes g-reach {
-  0%, 28% { transform: rotate(0)    translateX(0); }
-  40%     { transform: rotate(7deg) translateX(5px); }       /* dive toward the ball */
-  56%     { transform: rotate(3deg) translateX(2px); }
-  70%,100%{ transform: rotate(0)    translateX(0); }
+@keyframes g-dive {
+  0%, 14% { transform: translate(0,0) rotate(0); }
+  24%     { transform: translate(-3px,4px) rotate(-4deg); }         /* coil / load */
+  42%     { transform: translate(10px,-10px) rotate(12deg); }       /* explode into the dive */
+  56%     { transform: translate(7px,-6px) rotate(8deg); }
+  78%,100%{ transform: translate(0,0) rotate(0); }                  /* recover */
 }
 @keyframes g-spin { to { transform: rotate(360deg); } }
+@keyframes g-burst {
+  0%, 34%  { opacity: 0; transform: scale(.2); }
+  41%      { opacity: 1; transform: scale(1.15); }                  /* flash on contact */
+  52%      { opacity: .6; transform: scale(1.3); }
+  60%, 100%{ opacity: 0; transform: scale(1.4); }
+}
+@keyframes g-streak {
+  0%, 12%  { opacity: 0; }
+  20%      { opacity: .5; }
+  34%      { opacity: 0; }
+  100%     { opacity: 0; }
+}
+@keyframes g-shadow {
+  0%, 14%  { transform: scaleX(1);   opacity: .18; }
+  42%      { transform: scaleX(.62); opacity: .1; }                 /* keeper airborne */
+  78%,100% { transform: scaleX(1);   opacity: .18; }
+}
 
 @media (prefers-reduced-motion: reduce) {
-  .g-keeper, .g-ball, .g-ball-spin { animation: none; }
-  .g-ball { transform: translate(118px, 48px); }            /* static "just saved" pose */
+  .g-keeper, .g-ball, .g-ball-spin, .g-burst, .g-streak, .g-shadow { animation: none; }
+  .g-keeper { transform: translate(10px,-10px) rotate(12deg); }     /* static "save" pose */
+  .g-burst  { opacity: 1; }
+  .g-ball   { transform: translate(272px, 52px); }                  /* frozen at the gloves */
 }
 
 /* RESULT screen */
