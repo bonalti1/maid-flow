@@ -126,6 +126,19 @@ function renderResult(summary, lines, invoice, ext) {
   const list = $("#flagList");
   list.innerHTML = "";
   [...over, ...review].forEach((l) => list.appendChild(flagRow(l)));
+
+  // overcharge summary + invoice-level message buttons (only if something is over)
+  const overSummaryEl = $("#overSummary");
+  const btns = $("#invoiceMsgBtns");
+  if (over.length > 0 && overTotal > 0) {
+    overSummaryEl.hidden = false;
+    overSummaryEl.textContent =
+      `Based on these items alone, there's an overcharge of ${money(overTotal)}.`;
+    btns.hidden = false;
+  } else {
+    overSummaryEl.hidden = true;
+    btns.hidden = true;
+  }
 }
 
 function setVerdict(kind, ico, title, amount, sub) {
@@ -163,19 +176,36 @@ function flagRow(l) {
 function esc(s) { return String(s).replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c])); }
 
 // --- message bottom sheet ---
+function populateSheet(label, msgs, tab) {
+  $("#msgFor").textContent = label;
+  $("#waBody").value = msgs.whatsapp;
+  $("#emailSubject").value = msgs.email.subject;
+  $("#emailBody").value = msgs.email.body;
+  $("#waSend").href = "https://wa.me/?text=" + encodeURIComponent(msgs.whatsapp);
+  $("#emailSend").href = `mailto:?subject=${encodeURIComponent(msgs.email.subject)}&body=${encodeURIComponent(msgs.email.body)}`;
+  switchTab(tab || "wa");
+  $("#msgSheet").hidden = false;
+}
+
+// One line -> message about just that item.
 async function openSheet(line) {
   try {
     const msgs = await api(`/api/line/${line.id}/messages`, { method: "POST" });
-    $("#msgFor").textContent = line.description || line.item_number || "";
-    $("#waBody").value = msgs.whatsapp;
-    $("#emailSubject").value = msgs.email.subject;
-    $("#emailBody").value = msgs.email.body;
-    $("#waSend").href = "https://wa.me/?text=" + encodeURIComponent(msgs.whatsapp);
-    $("#emailSend").href = `mailto:?subject=${encodeURIComponent(msgs.email.subject)}&body=${encodeURIComponent(msgs.email.body)}`;
-    switchTab("wa");
-    $("#msgSheet").hidden = false;
+    populateSheet(line.description || line.item_number || "", msgs, "wa");
   } catch (e) { toast("Error: " + e.message); }
 }
+
+// Whole invoice -> one message covering every over-baseline item.
+async function openInvoiceMessages(tab) {
+  if (!current.invoiceId) return;
+  try {
+    const msgs = await api(`/api/invoices/${current.invoiceId}/messages`, { method: "POST" });
+    const label = "Invoice " + (current.invoice.invoice_number || "");
+    populateSheet(label, msgs, tab);
+  } catch (e) { toast("Error: " + e.message); }
+}
+$("#genWhatsapp").onclick = () => openInvoiceMessages("wa");
+$("#genEmail").onclick = () => openInvoiceMessages("email");
 function switchTab(t) {
   $$(".sheet .tab").forEach((b) => b.classList.toggle("active", b.dataset.tab === t));
   $("#pane-wa").hidden = t !== "wa";

@@ -63,6 +63,12 @@
 .flag .over-amt { color: var(--red); font-weight: 700; white-space: nowrap; }
 .flag .msg-btn { flex-shrink: 0; }
 
+.over-summary { background: var(--red-bg); color: var(--red-600); border-radius: 12px;
+  padding: .9rem 1rem; text-align: center; font-weight: 700; margin: .2rem 0 1rem; }
+.invoice-msg-btns { display: grid; grid-template-columns: 1fr 1fr; gap: .7rem; margin-bottom: 1.2rem; }
+.invoice-msg-btns .btn { padding: .9rem .6rem; }
+@media (max-width: 380px) { .invoice-msg-btns { grid-template-columns: 1fr; } }
+
 .result-actions { display: grid; gap: .7rem; margin-top: .5rem; }
 
 /* good-items collapsible */

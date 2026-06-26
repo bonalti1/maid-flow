@@ -35,7 +35,7 @@ from .compare import (Baseline, BaselineItem, LineItemInput, compare_line,
                       summarize, STATUS_OVER)
 from .extract import extract
 from .importer import import_baseline
-from .messages import build_messages_for_line
+from .messages import build_messages_for_line, build_invoice_messages
 
 BASE_DIR = os.path.dirname(os.path.dirname(__file__))
 STATIC_DIR = os.path.join(BASE_DIR, "static")
@@ -388,6 +388,45 @@ def approve_line(line_id: int, payload: dict = Body(...)):
 # --------------------------------------------------------------------------
 # Message generation
 # --------------------------------------------------------------------------
+
+@app.post("/api/invoices/{invoice_id}/messages")
+def invoice_messages(invoice_id: int):
+    """Generate one combined WhatsApp + email for ALL over-baseline lines on the
+    invoice, and persist them as drafts."""
+    with db.connect() as conn:
+        inv = conn.execute("SELECT * FROM invoices WHERE id=?", (invoice_id,)).fetchone()
+        if not inv:
+            raise HTTPException(status_code=404, detail="Invoice not found")
+        rows = conn.execute(
+            """SELECT * FROM invoice_line_items
+               WHERE invoice_id=? AND status='OVER BASELINE'
+                 AND potential_overcharge > 0 ORDER BY potential_overcharge DESC""",
+            (invoice_id,),
+        ).fetchall()
+        over = [dict(r) for r in rows]
+        total = round(sum(r["potential_overcharge"] or 0 for r in rows), 2)
+        msgs = build_invoice_messages(over, dict(inv), total)
+
+        # Save invoice-level drafts (line_item_id NULL = whole-invoice message).
+        conn.execute(
+            "DELETE FROM message_drafts WHERE invoice_id=? AND invoice_line_item_id IS NULL",
+            (invoice_id,),
+        )
+        conn.execute(
+            """INSERT INTO message_drafts
+               (invoice_id, invoice_line_item_id, message_type, recipient, subject, body)
+               VALUES (?,?,?,?,?,?)""",
+            (invoice_id, None, "whatsapp", inv["vendor_name"], None, msgs["whatsapp"]),
+        )
+        conn.execute(
+            """INSERT INTO message_drafts
+               (invoice_id, invoice_line_item_id, message_type, recipient, subject, body)
+               VALUES (?,?,?,?,?,?)""",
+            (invoice_id, None, "email", inv["vendor_name"],
+             msgs["email"]["subject"], msgs["email"]["body"]),
+        )
+        return msgs
+
 
 @app.post("/api/line/{line_id}/messages")
 def line_messages(line_id: int):
