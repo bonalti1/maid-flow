@@ -1,8 +1,4 @@
 Account #,Account Name,Department,Category
-1010,Architect / Blue Prints,Pre-Construction / Soft Costs,Service
-1020,Engineering / Windstorm,Pre-Construction / Soft Costs,Service
-1030,Building Permits,Pre-Construction / Soft Costs,Service
-1040,Risk / Liability Insurance,Pre-Construction / Soft Costs,Service
 2010,Fill Dirt / Soil Compaction,P1 Foundation,Service
 2020,Plumbing Rough-In,P1 Foundation,Service
 2030,Pre-Form Survey,P1 Foundation,Service
@@ -34,7 +30,6 @@ Account #,Account Name,Department,Category
 6050,Countertops Labor,P5 Interior,Labor
 6060,Interior Paint / Stain,P5 Interior,Service
 6070,Front Door,P5 Interior,Service
-6080,Interior Miscellaneous,P5 Interior,Service
 7010,Electrical Final / Fixtures,P6 Final,Service
 7020,Plumbing Final / Fixtures,P6 Final,Service
 7030,Hardware / Mirrors / Glass,P6 Final,Service
@@ -42,14 +37,3 @@ Account #,Account Name,Department,Category
 7050,Driveway Labor,P6 Final,Labor
 7060,Landscaping,P6 Final,Service
 7070,Final Clean-Up,P6 Final,Service
-8010,Dumpster Rental,Job Site Overhead,Service
-8020,Toilet Rental,Job Site Overhead,Service
-8030,Temporary Utilities,Job Site Overhead,Service
-8040,Job Site Miscellaneous / Re-inspections,Job Site Overhead,Service
-8050,Sales Commission,Job Site Overhead,Service
-8060,Change Orders,Job Site Overhead,Service
-8070,Management,Job Site Overhead,Service
-8080,Marketing,Job Site Overhead,Service
-9010,Marketing Allocation,Internal Allocations,Allocation
-9020,Management / Payroll Allocation,Internal Allocations,Allocation
-9030,Operations Allocation - Closing,Internal Allocations,Allocation

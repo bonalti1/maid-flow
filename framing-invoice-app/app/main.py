@@ -52,6 +52,11 @@ app = FastAPI(title="Framing Invoice Review", version="1.0.0")
 APP_USERNAME = os.environ.get("APP_USERNAME", "admin")
 APP_PASSWORD = os.environ.get("APP_PASSWORD", "")
 
+# Bump when the bundled chart of accounts changes so existing databases re-sync
+# (budgets are preserved by account_number). v2 removed Soft Costs, Job Site
+# Overhead, Internal Allocations, and Interior Miscellaneous.
+COA_SEED_VERSION = 2
+
 
 @app.middleware("http")
 async def _password_gate(request, call_next):
@@ -102,15 +107,19 @@ def _ensure_ready():
             conn.execute(
                 "UPDATE baseline_items SET department='P2 Framing / Dry-In' "
                 "WHERE department IS NULL OR department=''")
-        # Auto-import the bundled STB chart of accounts on a fresh database.
+        # Import the bundled STB chart of accounts on a fresh database, and
+        # re-sync when the bundled version changes (preserving any budgets set
+        # in the app — import matches by account_number).
         with db.connect() as conn:
             coa_count = conn.execute(
                 "SELECT COUNT(*) c FROM chart_of_accounts").fetchone()["c"]
-        if coa_count == 0:
-            coa = os.path.join(BASE_DIR, "data", "stb_chart_of_accounts.csv")
-            if os.path.exists(coa):
-                import_chart_of_accounts(coa)
-                _autocode_to_accounts()
+            ver = db.get_setting(conn, "coa_seed_version", "")
+        coa = os.path.join(BASE_DIR, "data", "stb_chart_of_accounts.csv")
+        if os.path.exists(coa) and (coa_count == 0 or ver != str(COA_SEED_VERSION)):
+            import_chart_of_accounts(coa)
+            _autocode_to_accounts()
+            with db.connect() as conn:
+                db.set_setting(conn, "coa_seed_version", str(COA_SEED_VERSION))
     except Exception:
         pass
 
