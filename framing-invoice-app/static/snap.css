@@ -22,6 +22,11 @@
 .recent-link { display: block; text-align: center; margin-top: 1.6rem; color: var(--navy);
   font-weight: 600; }
 
+.ai-banner { margin-top: 1.3rem; padding: .6rem .8rem; border-radius: 10px; font-size: .85rem;
+  font-weight: 600; text-align: center; }
+.ai-banner.on  { background: var(--green-bg); color: var(--green); }
+.ai-banner.off { background: var(--amber-bg); color: #9a7000; }
+
 /* WORKING screen */
 .working { text-align: center; padding: 4rem 1rem; }
 .spinner { width: 56px; height: 56px; border: 5px solid #d9e0ec; border-top-color: var(--navy);

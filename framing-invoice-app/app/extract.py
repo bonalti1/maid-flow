@@ -345,11 +345,25 @@ def extract(path: str) -> dict:
             # Prefer AI vision for documents/photos when available.
             from . import ai_extract
             if ai_extract.ai_available():
+                print(f"[extract] Using AI vision ({ai_extract.MODEL}) for {os.path.basename(path)}")
                 result = ai_extract.extract_with_ai(path)
                 # Only fall through to local parsing if AI hard-failed.
                 if result.get("extraction_status") != "error":
+                    print(f"[extract] AI read {len(result.get('line_items') or [])} line(s)")
                     return result
-            return extract_pdf(path) if ext == ".pdf" else extract_image(path)
+                ai_reason = "; ".join(result.get("warnings") or ["unknown error"])
+                print(f"[extract] AI extraction failed -> falling back. Reason: {ai_reason}")
+            else:
+                # Explain WHY AI is off so the user can fix it.
+                if not ai_extract.HAVE_ANTHROPIC:
+                    ai_reason = "AI reading off: the 'anthropic' package isn't installed (run pip install -r requirements.txt)."
+                else:
+                    ai_reason = "AI reading off: no ANTHROPIC_API_KEY set in the terminal before starting the app."
+                print(f"[extract] {ai_reason}")
+            fallback = extract_pdf(path) if ext == ".pdf" else extract_image(path)
+            # Surface the AI reason on the result so the UI can show it.
+            fallback.setdefault("warnings", []).insert(0, ai_reason)
+            return fallback
     except Exception as e:  # pragma: no cover - defensive
         return {**_sniff_metadata(""), "line_items": [],
                 "warnings": [f"Extraction failed: {e}"],

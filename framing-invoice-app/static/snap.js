@@ -78,9 +78,14 @@ function showNoRead(ext) {
     null, "We couldn't read the lines automatically. The office can finish it.");
   $("#invMeta").innerHTML = "";
   $("#okLine").hidden = true;
+  // Show the actual reason(s) so it's clear how to fix it.
+  const reasons = (ext.warnings || []).map((w) =>
+    `<div class="flag review"><div class="info"><div class="detail">⚠ ${esc(w)}</div></div></div>`
+  ).join("");
   $("#flagList").innerHTML =
     '<div class="flag review"><div class="info"><div class="name">Sent to office</div>' +
-    '<div class="detail">Open the dashboard to type the lines in and compare.</div></div></div>';
+    '<div class="detail">Open the dashboard to type the lines in and compare.</div></div></div>' +
+    reasons;
 }
 
 // --- render the verdict ---
@@ -183,6 +188,25 @@ $("#msgSheet").addEventListener("click", (e) => {
   const c = e.target.dataset.copy;
   if (c) navigator.clipboard.writeText($("#" + c).value).then(() => toast("Copied"));
 });
+
+// Show whether AI reading is actually on (helps confirm the key took effect).
+(async () => {
+  try {
+    const cfg = await api("/api/config");
+    const banner = $("#aiBanner");
+    if (!banner) return;
+    if (cfg.ai_extraction_enabled) {
+      banner.className = "ai-banner on";
+      banner.textContent = "✓ Photo & PDF reading is ON";
+    } else {
+      banner.className = "ai-banner off";
+      banner.textContent = !cfg.ai_package_installed
+        ? "⚠ Reading is OFF — run: pip install -r requirements.txt"
+        : "⚠ Reading is OFF — no API key. Set ANTHROPIC_API_KEY, then restart the app.";
+    }
+    banner.hidden = false;
+  } catch (e) {}
+})();
 
 // register service worker for Add-to-Home-Screen
 if ("serviceWorker" in navigator) {

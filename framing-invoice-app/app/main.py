@@ -174,6 +174,20 @@ def settings_set(payload: dict = Body(...)):
 # Extraction + comparison
 # --------------------------------------------------------------------------
 
+@app.get("/api/config")
+def config():
+    """Report whether AI reading is actually wired up, so the UI (and you) can
+    see at a glance if the API key / package took effect."""
+    import os as _os
+    from . import ai_extract
+    return {
+        "ai_package_installed": ai_extract.HAVE_ANTHROPIC,
+        "ai_key_present": bool(_os.environ.get("ANTHROPIC_API_KEY")),
+        "ai_extraction_enabled": ai_extract.ai_available(),
+        "ai_model": ai_extract.MODEL,
+    }
+
+
 @app.post("/api/extract")
 async def extract_endpoint(file: UploadFile = File(...)):
     """Save the uploaded invoice and return structured (editable) JSON."""
