@@ -1,0 +1,67 @@
+/* South Texas Builders — brand theme.
+   Navy #16284C + Red #FA3C2D pulled from the company logo. */
+:root {
+  --navy:    #16284C;
+  --navy-700:#1E365F;
+  --navy-900:#0E1C38;
+  --red:     #FA3C2D;
+  --red-600: #E22E20;
+
+  --green:   #1f9d55;  --green-bg:#e6f6ec;
+  --amber:   #E8A400;  --amber-bg:#fdf3da;
+  --red-bg:  #fdeaea;
+
+  --ink:   #16284C;   --muted: #6B7686;
+  --line:  #e3e7ee;   --bg: #f4f6fa;   --card: #ffffff;
+  --radius: 14px;
+  --shadow: 0 1px 3px rgba(16,28,56,.06), 0 8px 24px rgba(16,28,56,.05);
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  color: var(--ink); background: var(--bg); line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+}
+a { color: var(--navy); }
+.muted { color: var(--muted); }
+.small { font-size: .85rem; }
+.center { text-align: center; }
+
+/* buttons */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: .5rem;
+  padding: .7rem 1.1rem; border: 1px solid var(--line); border-radius: 10px;
+  background: #fff; color: var(--ink); font: inherit; font-weight: 600;
+  cursor: pointer; text-decoration: none; white-space: nowrap;
+}
+.btn:hover { background: #f0f3f8; }
+.btn-navy { background: var(--navy); color: #fff; border-color: var(--navy); }
+.btn-navy:hover { background: var(--navy-700); }
+.btn-red { background: var(--red); color: #fff; border-color: var(--red); }
+.btn-red:hover { background: var(--red-600); }
+.btn-ghost { background: transparent; }
+.btn-lg { padding: 1rem 1.4rem; font-size: 1.1rem; border-radius: 12px; }
+.btn-block { width: 100%; }
+.btn-sm { padding: .4rem .7rem; font-size: .85rem; }
+
+/* brand bar */
+.appbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: .8rem 1.1rem; background: #fff; border-bottom: 1px solid var(--line);
+  position: sticky; top: 0; z-index: 20;
+}
+.appbar .logo { height: 38px; }
+.appbar nav { display: flex; gap: .4rem; }
+.appbar nav a { padding: .45rem .8rem; border-radius: 8px; text-decoration: none;
+  color: var(--navy); font-weight: 600; font-size: .92rem; }
+.appbar nav a.active { background: var(--navy); color: #fff; }
+
+.card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
+  box-shadow: var(--shadow); }
+
+/* toast */
+.toast { position: fixed; bottom: 1.3rem; left: 50%; transform: translateX(-50%);
+  background: var(--navy); color: #fff; padding: .7rem 1.2rem; border-radius: 10px;
+  z-index: 80; font-size: .92rem; box-shadow: var(--shadow); }
+[hidden] { display: none !important; }

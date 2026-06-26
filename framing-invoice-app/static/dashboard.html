@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#16284C" />
+  <title>Office Dashboard — South Texas Builders</title>
+  <link rel="stylesheet" href="/theme.css" />
+  <link rel="stylesheet" href="/dashboard.css" />
+</head>
+<body>
+  <header class="appbar">
+    <a href="/"><img class="logo" src="/logo.svg" alt="South Texas Builders" /></a>
+    <nav>
+      <a href="/">Check Invoice</a>
+      <a href="/dashboard.html" class="active">Dashboard</a>
+      <a href="/review.html">Manual Review</a>
+    </nav>
+  </header>
+
+  <div class="page">
+    <h1>Office Dashboard</h1>
+    <p class="sub">Every checked invoice, coded and totaled. <a href="/review.html">Add or fix an invoice →</a></p>
+
+    <!-- KPIs -->
+    <div class="kpis" id="kpis"></div>
+
+    <!-- Invoices -->
+    <div class="section">
+      <div class="section-head">
+        <h2>Invoices</h2>
+        <a class="btn btn-sm btn-ghost" href="/api/baseline/export">Export baseline ↧</a>
+      </div>
+      <div id="invoicesWrap"></div>
+    </div>
+
+    <div class="grid-2">
+      <!-- Spend by account/category -->
+      <div class="section">
+        <h2>Spend by Account</h2>
+        <div id="byCategory"></div>
+      </div>
+      <!-- Vendor scorecard -->
+      <div class="section">
+        <h2>Vendor Scorecard</h2>
+        <div id="byVendor"></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast" hidden></div>
+  <script src="/dashboard.js"></script>
+</body>
+</html>

@@ -2,168 +2,99 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Framing Invoice Review</title>
-  <link rel="stylesheet" href="/styles.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#16284C" />
+  <title>South Texas Builders — Invoice Check</title>
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="/icon-192.png" />
+  <link rel="stylesheet" href="/theme.css" />
+  <link rel="stylesheet" href="/snap.css" />
 </head>
 <body>
-  <header class="topbar">
-    <div class="brand">
-      <span class="logo">🔨</span>
-      <div>
-        <h1>Framing Invoice Review</h1>
-        <p class="tag">Catch overcharges before you pay.</p>
-      </div>
-    </div>
-    <div class="variance-box">
-      <label>Allowed variance / unit
-        <span class="hint" title="Invoice prices up to baseline + this amount are still OK. Default $0.00.">?</span>
-      </label>
-      <div class="variance-input">
-        <span>$</span>
-        <input id="variance" type="number" step="0.01" min="0" value="0.00" />
-        <button id="saveVariance" class="btn btn-sm">Save</button>
-      </div>
-      <div id="varianceMsg" class="muted"></div>
-    </div>
-  </header>
+  <div class="wrap">
 
-  <main>
-    <!-- STEP 1: Baseline -->
-    <section class="card">
-      <h2><span class="step">1</span> Baseline price list <span class="src">(source of truth)</span></h2>
-      <p class="muted">Import the framing materials Excel workbook. The
-        <code>Baseline Price List</code> sheet is the budget every invoice is checked against.</p>
-      <div class="row">
-        <label class="filebtn">
-          <input type="file" id="baselineFile" accept=".xlsx,.xls" hidden />
-          Choose baseline .xlsx
-        </label>
-        <button id="importBaseline" class="btn">Import baseline</button>
-        <a id="exportBaseline" class="btn btn-ghost" href="/api/baseline/export">Export baseline ↧</a>
-        <span id="baselineStatus" class="status-pill"></span>
+    <!-- HOME -->
+    <section id="screen-home" class="hero">
+      <img class="logo" src="/logo.svg" alt="South Texas Builders" />
+      <h1>Check an Invoice</h1>
+      <p class="sub">Take a photo or upload a quote. We'll check the prices for you.</p>
+
+      <div class="big-actions">
+        <button class="snap-btn" id="takePhoto">
+          <span class="ico">📷</span>
+          Take Photo
+        </button>
+        <button class="snap-btn secondary" id="uploadFile">
+          <span class="ico">📎</span>
+          Upload a File
+        </button>
       </div>
+
+      <!-- camera capture (rear camera) and generic file picker -->
+      <input id="cameraInput" type="file" accept="image/*" capture="environment" hidden />
+      <input id="fileInput" type="file" accept=".pdf,.png,.jpg,.jpeg,.tif,.tiff,.csv,.xlsx,.xls" hidden />
+
+      <a class="recent-link" href="/dashboard.html">📊 Open Office Dashboard →</a>
     </section>
 
-    <!-- STEP 2: Upload invoice -->
-    <section class="card">
-      <h2><span class="step">2</span> Upload invoice or quote</h2>
-      <p class="muted">PDF, image (PNG/JPG), spreadsheet (.xlsx) or CSV. Extraction is
-        editable below — fix any OCR mistakes before comparing.</p>
-      <div id="dropzone" class="dropzone">
-        <input type="file" id="invoiceFile" accept=".pdf,.png,.jpg,.jpeg,.tif,.tiff,.csv,.xlsx,.xls" hidden />
-        <p>📄 Drag a file here or <button id="pickInvoice" class="link">browse</button></p>
-        <p class="muted small" id="invoiceFileName"></p>
-      </div>
-      <div id="extractWarnings"></div>
+    <!-- WORKING -->
+    <section id="screen-working" class="working" hidden>
+      <div class="spinner"></div>
+      <h2 id="workingMsg">Reading your invoice…</h2>
+      <p class="muted">This takes a few seconds.</p>
     </section>
 
-    <!-- STEP 3: Editable extraction -->
-    <section class="card" id="extractSection" hidden>
-      <h2><span class="step">3</span> Review &amp; edit extracted data</h2>
-      <div class="meta-grid">
-        <label>Vendor <input id="m_vendor" /></label>
-        <label>Invoice / quote # <input id="m_invoice" /></label>
-        <label>Date <input id="m_date" /></label>
-        <label>Property / job <input id="m_job" /></label>
-        <label>Customer PO <input id="m_po" /></label>
-        <label>Subtotal <input id="m_subtotal" type="number" step="0.01" /></label>
-        <label>Tax <input id="m_tax" type="number" step="0.01" /></label>
-        <label>Total <input id="m_total" type="number" step="0.01" /></label>
+    <!-- RESULT -->
+    <section id="screen-result" hidden>
+      <div id="verdict" class="verdict good">
+        <div class="vico" id="verdictIco">✅</div>
+        <h2 id="verdictTitle">Looks Good</h2>
+        <div class="amount" id="verdictAmount" hidden></div>
+        <p id="verdictSub"></p>
       </div>
-      <div class="table-wrap">
-        <table id="extractTable" class="grid">
-          <thead>
-            <tr>
-              <th>Item #</th><th>Description</th><th>Qty</th><th>UM</th>
-              <th>Unit price</th><th>Line amount</th><th>Category</th><th></th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
-      <div class="row">
-        <button id="addRow" class="btn btn-ghost">+ Add line</button>
-        <button id="runCompare" class="btn btn-primary">Compare against baseline →</button>
+
+      <div class="inv-meta" id="invMeta"></div>
+      <div class="okline" id="okLine" hidden></div>
+      <div class="flag-list" id="flagList"></div>
+
+      <div class="result-actions">
+        <button class="btn btn-navy btn-lg btn-block" id="checkAnother">📷 Check Another Invoice</button>
+        <a class="btn btn-ghost btn-block" href="/dashboard.html">View in Office Dashboard</a>
       </div>
     </section>
-
-    <!-- STEP 4: Summary cards -->
-    <section id="summarySection" hidden>
-      <div class="summary-cards">
-        <div class="scard"><div class="snum" id="s_total">$0</div><div class="slabel">Invoice total</div></div>
-        <div class="scard"><div class="snum" id="s_checked">$0</div><div class="slabel">Amount checked</div></div>
-        <div class="scard danger"><div class="snum" id="s_over">$0</div><div class="slabel">Potential overcharge</div></div>
-        <div class="scard green"><div class="snum" id="s_ok">0</div><div class="slabel">OK items</div></div>
-        <div class="scard red"><div class="snum" id="s_overc">0</div><div class="slabel">Over baseline</div></div>
-        <div class="scard yellow"><div class="snum" id="s_review">0</div><div class="slabel">New / review</div></div>
-      </div>
-    </section>
-
-    <!-- STEP 5: Review table -->
-    <section class="card" id="reviewSection" hidden>
-      <div class="row between">
-        <h2><span class="step">4</span> Review results</h2>
-        <div>
-          <a id="exportCsv" class="btn btn-ghost" href="#">Export CSV ↧</a>
-          <a id="exportXlsx" class="btn btn-ghost" href="#">Export Excel ↧</a>
-        </div>
-      </div>
-      <div class="table-wrap">
-        <table id="reviewTable" class="grid review">
-          <thead>
-            <tr>
-              <th>Status</th><th>Item #</th><th>Description</th><th>Qty</th>
-              <th>Invoice $</th><th>Baseline $</th><th>Diff/unit</th>
-              <th>Overcharge</th><th>Conf.</th><th>Notes</th><th>Actions</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
-    </section>
-  </main>
-
-  <!-- Approval modal -->
-  <div id="approveModal" class="modal" hidden>
-    <div class="modal-card">
-      <h3>Approve higher price?</h3>
-      <p id="approveDesc" class="muted"></p>
-      <p>How should we handle this?</p>
-      <div class="modal-actions col">
-        <button class="btn btn-primary" data-action="approve_line">Approve only this invoice line</button>
-        <button class="btn btn-warn" data-action="update_baseline">Update baseline price for future invoices</button>
-        <button class="btn btn-ghost" data-action="cancel">Cancel</button>
-      </div>
-    </div>
   </div>
 
-  <!-- Message modal -->
-  <div id="msgModal" class="modal" hidden>
-    <div class="modal-card wide">
-      <div class="row between">
-        <h3>Supplier message</h3>
-        <button class="link" data-action="closeMsg">✕ close</button>
-      </div>
+  <!-- message bottom-sheet -->
+  <div id="msgSheet" class="sheet-back" hidden>
+    <div class="sheet">
+      <h3>Message the vendor</h3>
+      <p class="muted small" id="msgFor"></p>
       <div class="tabs">
-        <button class="tab active" data-tab="wa">WhatsApp</button>
-        <button class="tab" data-tab="email">Email</button>
+        <button class="tab active" data-tab="wa">📲 Text / WhatsApp</button>
+        <button class="tab" data-tab="email">✉️ Email</button>
       </div>
-      <div id="tab-wa" class="tabpane">
-        <textarea id="waBody" rows="8"></textarea>
-        <div class="row"><button class="btn btn-sm" data-copy="waBody">Copy</button>
-          <a id="waLink" class="btn btn-sm btn-ghost" target="_blank">Open WhatsApp</a></div>
+      <div id="pane-wa">
+        <textarea id="waBody" rows="7"></textarea>
+        <div class="send-row">
+          <button class="btn" data-copy="waBody">Copy</button>
+          <a class="btn btn-navy" id="waSend" target="_blank">Open in WhatsApp</a>
+        </div>
       </div>
-      <div id="tab-email" class="tabpane" hidden>
-        <label class="block">Subject <input id="emailSubject" /></label>
-        <textarea id="emailBody" rows="10"></textarea>
-        <div class="row"><button class="btn btn-sm" data-copy="emailBody">Copy body</button>
-          <a id="emailLink" class="btn btn-sm btn-ghost">Open email</a></div>
+      <div id="pane-email" hidden>
+        <label class="fld">Subject</label>
+        <input id="emailSubject" />
+        <label class="fld">Message</label>
+        <textarea id="emailBody" rows="9"></textarea>
+        <div class="send-row">
+          <button class="btn" data-copy="emailBody">Copy</button>
+          <a class="btn btn-navy" id="emailSend">Open Email</a>
+        </div>
       </div>
+      <button class="btn btn-ghost btn-block" id="closeSheet" style="margin-top:.8rem">Close</button>
     </div>
   </div>
 
   <div id="toast" class="toast" hidden></div>
-  <script src="/app.js"></script>
+  <script src="/snap.js"></script>
 </body>
 </html>

@@ -444,6 +444,73 @@ def export_invoice(invoice_id: int, fmt: str = "xlsx"):
     )
 
 
+@app.get("/api/dashboard")
+def dashboard():
+    """Aggregates for the office/CFO dashboard.
+
+    Returns top-line KPIs, a per-invoice list, spend grouped by category
+    (chart-of-accounts ready), and a vendor scorecard ranking who overcharges.
+    """
+    with db.connect() as conn:
+        # KPIs
+        inv_count = conn.execute("SELECT COUNT(*) c FROM invoices").fetchone()["c"]
+        total_spend = conn.execute(
+            "SELECT COALESCE(SUM(line_amount),0) s FROM invoice_line_items"
+        ).fetchone()["s"]
+        total_over = conn.execute(
+            "SELECT COALESCE(SUM(potential_overcharge),0) s FROM invoice_line_items"
+        ).fetchone()["s"]
+        pending = conn.execute(
+            """SELECT COUNT(*) c FROM invoice_line_items
+               WHERE status IN ('OVER BASELINE','NEW ITEM - REVIEW','OCR REVIEW')
+                 AND (approved_by_user IS NULL OR approved_by_user='')"""
+        ).fetchone()["c"]
+
+        invoices = [dict(r) for r in conn.execute(
+            """SELECT i.id, i.vendor_name, i.invoice_number, i.invoice_date,
+                      i.property_or_job, i.total,
+                      (SELECT COALESCE(SUM(line_amount),0) FROM invoice_line_items
+                         WHERE invoice_id=i.id) AS checked_total,
+                      (SELECT COALESCE(SUM(potential_overcharge),0) FROM invoice_line_items
+                         WHERE invoice_id=i.id) AS overcharge,
+                      (SELECT COUNT(*) FROM invoice_line_items
+                         WHERE invoice_id=i.id AND status='OVER BASELINE') AS over_lines,
+                      (SELECT COUNT(*) FROM invoice_line_items
+                         WHERE invoice_id=i.id AND status IN
+                         ('NEW ITEM - REVIEW','OCR REVIEW')) AS review_lines
+               FROM invoices i ORDER BY i.id DESC"""
+        ).fetchall()]
+
+        by_category = [dict(r) for r in conn.execute(
+            """SELECT COALESCE(category,'Uncategorized') AS category,
+                      COALESCE(SUM(line_amount),0) AS spend,
+                      COALESCE(SUM(potential_overcharge),0) AS overcharge,
+                      COUNT(*) AS lines
+               FROM invoice_line_items GROUP BY category ORDER BY spend DESC"""
+        ).fetchall()]
+
+        by_vendor = [dict(r) for r in conn.execute(
+            """SELECT COALESCE(vendor_name,'Unknown') AS vendor,
+                      COUNT(DISTINCT i.id) AS invoices,
+                      COALESCE(SUM(li.line_amount),0) AS spend,
+                      COALESCE(SUM(li.potential_overcharge),0) AS overcharge
+               FROM invoices i LEFT JOIN invoice_line_items li ON li.invoice_id=i.id
+               GROUP BY vendor_name ORDER BY overcharge DESC, spend DESC"""
+        ).fetchall()]
+
+        return {
+            "kpis": {
+                "invoice_count": inv_count,
+                "total_spend": round(total_spend, 2),
+                "total_overcharge": round(total_over, 2),
+                "pending_review": pending,
+            },
+            "invoices": invoices,
+            "by_category": by_category,
+            "by_vendor": by_vendor,
+        }
+
+
 @app.get("/api/baseline/export")
 def export_baseline():
     with db.connect() as conn:

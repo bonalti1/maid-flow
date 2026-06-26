@@ -1,0 +1,36 @@
+/* Office / CFO dashboard. */
+.page { max-width: 1100px; margin: 1.4rem auto; padding: 0 1.1rem 3rem; }
+.page h1 { color: var(--navy); margin: 0 0 .2rem; }
+.page .sub { color: var(--muted); margin: 0 0 1.3rem; }
+
+/* KPI cards */
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 1.6rem; }
+.kpi { padding: 1.2rem 1.3rem; border-left: 6px solid var(--navy); }
+.kpi.over { border-left-color: var(--red); }
+.kpi.pending { border-left-color: var(--amber); }
+.kpi .num { font-size: 2rem; font-weight: 800; color: var(--navy); }
+.kpi.over .num { color: var(--red); }
+.kpi .lbl { color: var(--muted); font-size: .9rem; margin-top: .1rem; }
+
+.section { margin-bottom: 1.8rem; }
+.section h2 { color: var(--navy); font-size: 1.15rem; margin: 0 0 .7rem; }
+.section-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: .7rem; }
+.section-head h2 { margin: 0; }
+
+table.tbl { width: 100%; border-collapse: collapse; font-size: .9rem; background: #fff;
+  border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+table.tbl th { background: var(--navy); color: #fff; text-align: left; padding: .6rem .8rem; font-weight: 600; white-space: nowrap; }
+table.tbl td { padding: .55rem .8rem; border-top: 1px solid var(--line); }
+table.tbl tr:hover td { background: #f7f9fc; }
+.pill { display: inline-block; padding: .15rem .55rem; border-radius: 999px; font-size: .78rem; font-weight: 700; }
+.pill.ok { background: var(--green-bg); color: var(--green); }
+.pill.over { background: var(--red-bg); color: var(--red-600); }
+.pill.review { background: var(--amber-bg); color: #9a7000; }
+.over-amt { color: var(--red); font-weight: 700; }
+.bar-wrap { display: flex; align-items: center; gap: .6rem; }
+.bar { height: 10px; border-radius: 6px; background: var(--navy); }
+.empty { text-align: center; color: var(--muted); padding: 2.5rem; background: #fff;
+  border: 1px dashed var(--line); border-radius: 12px; }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.4rem; }
+@media (max-width: 760px) { .grid-2 { grid-template-columns: 1fr; } }
+.row-actions { display: flex; gap: .5rem; }
