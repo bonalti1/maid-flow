@@ -10,13 +10,45 @@ async function load() {
   try { d = await (await fetch("/api/dashboard")).json(); }
   catch (e) { return; }
 
-  // KPIs
+  // KPIs (quote-check first, then framing line-item flow)
   const k = d.kpis;
   $("#kpis").innerHTML = `
-    <div class="kpi card"><div class="num">${k.invoice_count}</div><div class="lbl">Invoices checked</div></div>
-    <div class="kpi card"><div class="num">${money(k.total_spend)}</div><div class="lbl">Total checked spend</div></div>
-    <div class="kpi over card"><div class="num">${money(k.total_overcharge)}</div><div class="lbl">Overcharges caught</div></div>
-    <div class="kpi pending card"><div class="num">${k.pending_review}</div><div class="lbl">Lines pending review</div></div>`;
+    <div class="kpi card"><div class="num">${k.quotes_checked || 0}</div><div class="lbl">Quotes checked</div></div>
+    <div class="kpi card"><div class="num">${money(k.quotes_amount || 0)}</div><div class="lbl">Quote amount checked</div></div>
+    <div class="kpi over card"><div class="num">${k.quotes_over || 0}</div><div class="lbl">Over budget</div></div>
+    <div class="kpi pending card"><div class="num">${k.quotes_ok || 0}</div><div class="lbl">Approved</div></div>`;
+
+  // Budget vs Actual
+  const ba = d.budget_actual || [];
+  $("#budgetActual").innerHTML = ba.length ? `<table class="tbl"><thead><tr>
+      <th>Account</th><th>Phase</th><th>Budget</th><th>Actual</th><th>Remaining</th><th>Checks</th></tr></thead><tbody>` +
+    ba.map((x) => {
+      const rem = x.budget != null ? x.budget - x.actual : null;
+      const remCls = rem != null && rem < 0 ? "over-amt" : (rem != null ? "" : "");
+      return `<tr>
+        <td>${esc(x.account_number)} · ${esc(x.account_name)}</td>
+        <td>${esc(x.department)}</td>
+        <td>${x.budget != null ? money(x.budget) : "—"}</td>
+        <td>${money(x.actual)}</td>
+        <td class="${remCls}">${rem != null ? money(rem) : "—"}${x.over_count>0?` · ${x.over_count} over`:""}</td>
+        <td>${x.checks}</td></tr>`;
+    }).join("") + "</tbody></table>"
+    : '<div class="empty">No quote checks yet. Set budgets and check a quote on the home screen.</div>';
+
+  // Recent quote checks
+  const rq = d.recent_quotes || [];
+  const pill = (s) => s==="APPROVED" ? '<span class="pill ok">Approved</span>'
+    : s==="OVER BUDGET" ? '<span class="pill over">Over budget</span>'
+    : '<span class="pill review">'+esc(s||"Logged")+'</span>';
+  $("#recentQuotes").innerHTML = rq.length ? `<table class="tbl"><thead><tr>
+      <th>Status</th><th>Account</th><th>Vendor</th><th>Amount</th><th>Budget</th></tr></thead><tbody>` +
+    rq.map((x) => `<tr>
+      <td>${pill(x.status)}</td>
+      <td>${esc(x.account_number)} · ${esc(x.account_name)}</td>
+      <td>${esc(x.vendor_name)||"—"}</td>
+      <td>${money(x.amount)}</td>
+      <td>${x.budget!=null?money(x.budget):"—"}</td></tr>`).join("") + "</tbody></table>"
+    : '<div class="empty">No quote checks yet.</div>';
 
   // Invoices
   const wrap = $("#invoicesWrap");

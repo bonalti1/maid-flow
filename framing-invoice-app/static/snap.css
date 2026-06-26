@@ -27,6 +27,33 @@
 .ai-banner.on  { background: var(--green-bg); color: var(--green); }
 .ai-banner.off { background: var(--amber-bg); color: #9a7000; }
 
+/* v2: account picker + budget */
+.step-label { display: flex; align-items: center; gap: .5rem; font-weight: 700; color: var(--navy);
+  text-align: left; margin: 1.5rem 0 .5rem; }
+.step-label .num { display: inline-flex; align-items: center; justify-content: center;
+  width: 1.5rem; height: 1.5rem; background: var(--navy); color: #fff; border-radius: 50%; font-size: .85rem; }
+.account-select { width: 100%; padding: .9rem .7rem; font-size: 1.05rem; border: 2px solid var(--navy);
+  border-radius: 12px; background: #fff; color: var(--ink); -webkit-appearance: menulist; }
+.budget-row { display: flex; align-items: center; gap: .5rem; margin-top: .7rem; text-align: left; }
+.budget-val { font-weight: 800; color: var(--navy); font-size: 1.1rem; }
+.budget-edit { display: flex; align-items: center; gap: .4rem; margin-top: .7rem; }
+.budget-edit input { width: 130px; padding: .5rem .6rem; border: 1px solid var(--line); border-radius: 8px; font: inherit; }
+
+/* v2: report card */
+.report-card { background: #fff; border: 1px solid var(--line); border-radius: 14px;
+  padding: .4rem 1.1rem; margin-bottom: 1.1rem; box-shadow: var(--shadow); }
+.rrow { display: flex; justify-content: space-between; align-items: center; gap: 1rem;
+  padding: .7rem 0; border-bottom: 1px solid var(--line); font-size: .95rem; }
+.rrow:last-child { border-bottom: none; }
+.rrow > span { color: var(--muted); }
+.rrow > b { color: var(--ink); text-align: right; }
+.rrow.big > b { font-size: 1.3rem; font-weight: 800; color: var(--navy); }
+.good-amt { color: var(--green); font-weight: 700; }
+.amount-edit { display: flex; align-items: center; gap: .4rem; justify-content: center;
+  margin-bottom: 1.2rem; flex-wrap: wrap; }
+.amount-edit input { width: 120px; padding: .45rem .6rem; border: 1px solid var(--line); border-radius: 8px; font: inherit; }
+.verdict .amount { font-size: 2.4rem; }
+
 /* WORKING screen */
 .working { text-align: center; padding: 4rem 1rem; }
 .spinner { width: 56px; height: 56px; border: 5px solid #d9e0ec; border-top-color: var(--navy);

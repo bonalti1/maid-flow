@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="theme-color" content="#16284C" />
-  <title>South Texas Builders — Invoice Check</title>
+  <title>South Texas Builders — Quote Check</title>
   <link rel="manifest" href="/manifest.webmanifest" />
   <link rel="apple-touch-icon" href="/icon-192.png" />
   <link rel="stylesheet" href="/theme.css" />
@@ -13,24 +13,34 @@
 <body>
   <div class="wrap">
 
-    <!-- HOME -->
+    <!-- HOME: pick account -> upload -> check vs budget -->
     <section id="screen-home" class="hero">
       <img class="logo" src="/logo.svg" alt="South Texas Builders" />
-      <h1>Check an Invoice</h1>
-      <p class="sub">Take a photo or upload a quote. We'll check the prices for you.</p>
+      <h1>Check a Quote</h1>
+      <p class="sub">Pick what it's for, upload the quote, get an instant yes/no.</p>
 
-      <div class="big-actions">
-        <button class="snap-btn" id="takePhoto">
-          <span class="ico">📷</span>
-          Take Photo
-        </button>
-        <button class="snap-btn secondary" id="uploadFile">
-          <span class="ico">📎</span>
-          Upload a File
-        </button>
+      <label class="step-label"><span class="num">1</span> What is this for?</label>
+      <select id="accountSelect" class="account-select">
+        <option value="">Choose an account…</option>
+      </select>
+
+      <div id="budgetRow" class="budget-row" hidden>
+        <span class="muted">Budget:</span>
+        <span id="budgetVal" class="budget-val"></span>
+        <button id="editBudget" class="link">edit</button>
+      </div>
+      <div id="budgetEdit" class="budget-edit" hidden>
+        <span>$</span>
+        <input id="budgetInput" type="number" step="0.01" min="0" placeholder="set a budget" />
+        <button id="saveBudget" class="btn btn-sm btn-navy">Save</button>
+        <button id="cancelBudget" class="link">cancel</button>
       </div>
 
-      <!-- camera capture (rear camera) and generic file picker -->
+      <label class="step-label"><span class="num">2</span> Upload the quote</label>
+      <div class="big-actions">
+        <button class="snap-btn" id="takePhoto"><span class="ico">📷</span> Take Photo</button>
+        <button class="snap-btn secondary" id="uploadFile"><span class="ico">📎</span> Upload a File</button>
+      </div>
       <input id="cameraInput" type="file" accept="image/*" capture="environment" hidden />
       <input id="fileInput" type="file" accept=".pdf,.png,.jpg,.jpeg,.tif,.tiff,.csv,.xlsx,.xls" hidden />
 
@@ -41,7 +51,7 @@
     <!-- WORKING -->
     <section id="screen-working" class="working" hidden>
       <div class="spinner"></div>
-      <h2 id="workingMsg">Reading your invoice…</h2>
+      <h2 id="workingMsg">Reading the quote…</h2>
       <p class="muted">This takes a few seconds.</p>
     </section>
 
@@ -49,56 +59,33 @@
     <section id="screen-result" hidden>
       <div id="verdict" class="verdict good">
         <div class="vico" id="verdictIco">✅</div>
-        <h2 id="verdictTitle">Looks Good</h2>
-        <div class="amount" id="verdictAmount" hidden></div>
+        <h2 id="verdictTitle">Approved</h2>
+        <div class="amount" id="verdictAmount"></div>
         <p id="verdictSub"></p>
       </div>
 
-      <div class="inv-meta" id="invMeta"></div>
-      <div class="okline" id="okLine" hidden></div>
-      <div class="flag-list" id="flagList"></div>
+      <div class="report-card">
+        <div class="rrow"><span>Account</span><b id="r_account"></b></div>
+        <div class="rrow"><span>Phase</span><b id="r_phase"></b></div>
+        <div class="rrow"><span>Vendor</span><b id="r_vendor"></b></div>
+        <div class="rrow"><span>Quote #</span><b id="r_qnum"></b></div>
+        <div class="rrow big"><span>Quote amount</span><b id="r_amount"></b></div>
+        <div class="rrow"><span>Budget</span><b id="r_budget"></b></div>
+        <div class="rrow"><span id="r_oulabel">Under budget</span><b id="r_overunder"></b></div>
+        <div class="rrow"><span>Lowest seen for this account</span><b id="r_baseline"></b></div>
+      </div>
 
-      <div id="overSummary" class="over-summary" hidden></div>
-      <div id="invoiceMsgBtns" class="invoice-msg-btns" hidden>
-        <button class="btn btn-red" id="genWhatsapp">📲 Generate WhatsApp message</button>
-        <button class="btn btn-navy" id="genEmail">✉️ Generate email</button>
+      <div class="amount-edit">
+        <span class="muted small">Amount read wrong?</span>
+        <span>$</span><input id="amountFix" type="number" step="0.01" />
+        <button id="recheck" class="btn btn-sm">Re-check</button>
       </div>
 
       <div class="result-actions">
-        <button class="btn btn-navy btn-lg btn-block" id="checkAnother">📷 Check Another Invoice</button>
+        <button class="btn btn-navy btn-lg btn-block" id="checkAnother">📷 Check Another Quote</button>
         <a class="btn btn-ghost btn-block" href="/dashboard.html">View in Office Dashboard</a>
       </div>
     </section>
-  </div>
-
-  <!-- message bottom-sheet -->
-  <div id="msgSheet" class="sheet-back" hidden>
-    <div class="sheet">
-      <h3>Message the vendor</h3>
-      <p class="muted small" id="msgFor"></p>
-      <div class="tabs">
-        <button class="tab active" data-tab="wa">📲 Text / WhatsApp</button>
-        <button class="tab" data-tab="email">✉️ Email</button>
-      </div>
-      <div id="pane-wa">
-        <textarea id="waBody" rows="7"></textarea>
-        <div class="send-row">
-          <button class="btn" data-copy="waBody">Copy</button>
-          <a class="btn btn-navy" id="waSend" target="_blank">Open in WhatsApp</a>
-        </div>
-      </div>
-      <div id="pane-email" hidden>
-        <label class="fld">Subject</label>
-        <input id="emailSubject" />
-        <label class="fld">Message</label>
-        <textarea id="emailBody" rows="9"></textarea>
-        <div class="send-row">
-          <button class="btn" data-copy="emailBody">Copy</button>
-          <a class="btn btn-navy" id="emailSend">Open Email</a>
-        </div>
-      </div>
-      <button class="btn btn-ghost btn-block" id="closeSheet" style="margin-top:.8rem">Close</button>
-    </div>
   </div>
 
   <div id="toast" class="toast" hidden></div>

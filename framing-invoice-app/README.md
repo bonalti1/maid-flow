@@ -12,7 +12,17 @@ is only used to check whether the supplier is charging more than your baseline.
 
 ---
 
-## What it does
+## Quote Check (v2 — the main screen)
+Pick the chart-of-account line from a dropdown (e.g. *P1 Foundation · Concrete
+Materials*), upload the quote, and the app reads the amount and **approves it
+against that account's budget** — 🟢 at/under, 🔴 over, 📋 logged (no budget set
+yet, builds the baseline). You get a simple report: account, phase, vendor,
+quote amount vs. budget, over/under, and the lowest amount seen for that account.
+Set a budget per account right on the home screen or in the dashboard; the
+**Budget vs Actual** view rolls it all up. The detailed framing line-item price
+check still lives under **Manual Review**.
+
+## What it does (framing line-item engine, under Manual Review)
 
 1. **Import** the Excel baseline (`Baseline Price List` sheet) into SQLite.
 2. **Upload** an invoice/quote (PDF, image, `.xlsx`, or `.csv`).

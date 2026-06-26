@@ -101,8 +101,30 @@ CREATE TABLE IF NOT EXISTS chart_of_accounts (
     account_name   TEXT,
     department     TEXT,
     category       TEXT,
+    budget         REAL,
     created_at     TEXT DEFAULT (datetime('now'))
 );
+
+-- v2: quote/invoice checked against a chosen account's budget.
+CREATE TABLE IF NOT EXISTS quote_checks (
+    id                 INTEGER PRIMARY KEY AUTOINCREMENT,
+    account_number     TEXT,
+    account_name       TEXT,
+    department         TEXT,
+    doc_type           TEXT,
+    vendor_name        TEXT,
+    quote_number       TEXT,
+    quote_date         TEXT,
+    property_or_job    TEXT,
+    amount             REAL,
+    budget             REAL,
+    over_under         REAL,
+    status             TEXT,
+    uploaded_file_path TEXT,
+    notes              TEXT,
+    created_at         TEXT DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_quote_account ON quote_checks(account_number);
 CREATE INDEX IF NOT EXISTS idx_coa_account ON chart_of_accounts(account_number);
 CREATE INDEX IF NOT EXISTS idx_coa_department ON chart_of_accounts(department);
 
@@ -119,6 +141,7 @@ _MIGRATIONS = [
     ("invoices", "department", "TEXT"),
     ("invoice_line_items", "department", "TEXT"),
     ("invoice_line_items", "gl_account", "TEXT"),
+    ("chart_of_accounts", "budget", "REAL"),
 ]
 
 

@@ -87,8 +87,9 @@ COA_HEADERS = {
     "account_number": ["account #", "account#", "account number", "account no",
                        "gl #", "gl account", "gl code", "code", "number", "acct #", "acct"],
     "account_name": ["account name", "name", "description", "account", "gl name"],
-    "department": ["department", "dept", "division", "category group", "class"],
+    "department": ["department", "dept", "division", "category group", "class", "phase"],
     "category": ["category", "type", "account type", "group"],
+    "budget": ["budget", "budget amount", "amount", "target", "allowance"],
 }
 
 
@@ -128,21 +129,35 @@ def read_coa_rows(path: str):
         name = get(raw, "account_name")
         if not num and not name:
             continue
+        budget = get(raw, "budget")
+        try:
+            budget = float(str(budget).replace("$", "").replace(",", "")) if budget else None
+        except (TypeError, ValueError):
+            budget = None
         yield {"account_number": num, "account_name": name,
-               "department": get(raw, "department"), "category": get(raw, "category")}
+               "department": get(raw, "department"), "category": get(raw, "category"),
+               "budget": budget}
 
 
 def import_chart_of_accounts(path: str, db_path: str = None, replace: bool = True) -> int:
-    """Import the chart of accounts into chart_of_accounts. Returns row count."""
+    """Import the chart of accounts into chart_of_accounts. Returns row count.
+
+    Existing budgets are preserved on re-import (matched by account_number) so a
+    re-upload of the account list doesn't wipe budgets typed in the app.
+    """
     rows = list(read_coa_rows(path))
     with connect(db_path) as conn:
+        prior = {r["account_number"]: r["budget"] for r in conn.execute(
+            "SELECT account_number, budget FROM chart_of_accounts")} if replace else {}
         if replace:
             conn.execute("DELETE FROM chart_of_accounts")
         for rec in rows:
+            if rec.get("budget") is None and rec["account_number"] in prior:
+                rec["budget"] = prior[rec["account_number"]]
             conn.execute(
                 """INSERT INTO chart_of_accounts
-                   (account_number, account_name, department, category)
-                   VALUES (:account_number, :account_name, :department, :category)""",
+                   (account_number, account_name, department, category, budget)
+                   VALUES (:account_number, :account_name, :department, :category, :budget)""",
                 rec,
             )
     return len(rows)
