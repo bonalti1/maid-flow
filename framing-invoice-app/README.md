@@ -12,15 +12,16 @@ is only used to check whether the supplier is charging more than your baseline.
 
 ---
 
-## Quote Check (v2 — the main screen)
-Pick the chart-of-account line from a dropdown (e.g. *P1 Foundation · Concrete
-Materials*), upload the quote, and the app reads the amount and **approves it
-against that account's budget** — 🟢 at/under, 🔴 over, 📋 logged (no budget set
-yet, builds the baseline). You get a simple report: account, phase, vendor,
-quote amount vs. budget, over/under, and the lowest amount seen for that account.
-Set a budget per account right on the home screen or in the dashboard; the
-**Budget vs Actual** view rolls it all up. The detailed framing line-item price
-check still lives under **Manual Review**.
+## Quote Check (the main screen)
+Pick the chart-of-account line from a dropdown (e.g. *P2 Framing / Dry-In ·
+Framing Materials*), upload the quote, and the app reads it and checks **every
+line against that account's itemized baseline (price list)** — flagging the
+exact items priced above baseline and the total overcharge, with one-tap
+WhatsApp/email to the vendor. Every account uses an itemized baseline (no
+budgets): attach a price list to any account right under the dropdown
+(**attach / replace price list** — Excel/CSV with Item #, Description, UM, Unit
+Price). Accounts without a price list yet log their items as "new" to build one.
+The dashboard's **Baseline Coverage** shows which accounts have a price list.
 
 ## What it does (framing line-item engine, under Manual Review)
 

@@ -163,6 +163,86 @@ def import_chart_of_accounts(path: str, db_path: str = None, replace: bool = Tru
     return len(rows)
 
 
+# A price list attached to one account: flexible header matching.
+PRICELIST_HEADERS = {
+    "item_number": ["item #", "item#", "item no", "item number", "sku", "item", "code", "product #"],
+    "description": ["description", "desc", "material", "item description", "product"],
+    "unit_measure": ["um", "uom", "unit", "unit of measure", "u/m"],
+    "baseline_unit_price": ["baseline unit price", "unit price", "price", "unit cost",
+                            "each", "cost", "baseline price"],
+    "category": ["category", "type"],
+}
+
+
+def import_price_list(path: str, gl_account: str, department: str = None,
+                      db_path: str = None) -> int:
+    """Import an itemized price list (Excel/CSV) and code every item to one
+    account. Replaces just this account's items. Returns the count."""
+    import csv as _csv
+    if path.lower().endswith(".csv"):
+        with open(path, newline="", encoding="utf-8", errors="replace") as f:
+            rows = [list(r) for r in _csv.reader(f)]
+    else:
+        wb = openpyxl.load_workbook(path, data_only=True)
+        # Prefer a "Baseline Price List" sheet if present (matches our format).
+        sheet = next((wb[s] for s in wb.sheetnames if "baseline" in s.lower()
+                      and "price" in s.lower()), wb[wb.sheetnames[0]])
+        rows = [list(r) for r in sheet.iter_rows(values_only=True)]
+    if not rows:
+        return 0
+    header = [str(h).strip().lower() if h is not None else "" for h in rows[0]]
+    idx = {}
+    for field, syns in PRICELIST_HEADERS.items():
+        for i, h in enumerate(header):
+            if h in syns:
+                idx[field] = i
+                break
+
+    def get(row, field):
+        i = idx.get(field)
+        return row[i] if i is not None and i < len(row) else None
+
+    def to_price(v):
+        if v is None:
+            return None
+        if isinstance(v, (int, float)):
+            return float(v)
+        s = str(v).replace("$", "").replace(",", "").strip()
+        try:
+            return float(s)
+        except ValueError:
+            return None
+
+    recs = []
+    for raw in rows[1:]:
+        item = get(raw, "item_number")
+        desc = get(raw, "description")
+        price = to_price(get(raw, "baseline_unit_price"))
+        if (item is None or str(item).strip() == "") and not desc:
+            continue
+        recs.append({
+            "item_number": normalize_item_number(item),
+            "description": str(desc).strip() if desc else None,
+            "normalized_description": normalize_description(desc),
+            "unit_measure": str(get(raw, "unit_measure")).strip() if get(raw, "unit_measure") else None,
+            "category": str(get(raw, "category")).strip() if get(raw, "category") else "Material",
+            "baseline_unit_price": price,
+            "gl_account": gl_account,
+            "department": department,
+        })
+    with connect(db_path) as conn:
+        conn.execute("DELETE FROM baseline_items WHERE gl_account=?", (gl_account,))
+        for rec in recs:
+            conn.execute(
+                """INSERT INTO baseline_items
+                   (item_number, description, normalized_description, unit_measure,
+                    category, baseline_unit_price, gl_account, department)
+                   VALUES (:item_number, :description, :normalized_description,
+                    :unit_measure, :category, :baseline_unit_price, :gl_account, :department)""",
+                rec)
+    return len(recs)
+
+
 def import_baseline(xlsx_path: str, db_path: str = None, replace: bool = True) -> int:
     """Import the baseline sheet into baseline_items.
 

@@ -133,8 +133,14 @@ def _startup():
 # Baseline lookup helpers
 # --------------------------------------------------------------------------
 
-def _load_baseline(conn) -> Baseline:
-    rows = conn.execute("SELECT * FROM baseline_items").fetchall()
+def _load_baseline(conn, account_number=None) -> Baseline:
+    """Load the baseline. If account_number is given, scope to that account's
+    itemized price list so a quote only matches against the right account."""
+    if account_number:
+        rows = conn.execute("SELECT * FROM baseline_items WHERE gl_account=?",
+                            (account_number,)).fetchall()
+    else:
+        rows = conn.execute("SELECT * FROM baseline_items").fetchall()
     items = [BaselineItem(
         id=r["id"], item_number=r["item_number"], description=r["description"],
         unit_measure=r["unit_measure"], category=r["category"],
@@ -313,93 +319,38 @@ def coa_list():
                 "departments": [d["department"] for d in depts]}
 
 
-@app.post("/api/coa/budget")
-def coa_set_budget(payload: dict = Body(...)):
-    """Set/update the budget for one account (by account_number)."""
-    acct = str(payload.get("account_number") or "").strip()
-    if not acct:
-        raise HTTPException(status_code=400, detail="account_number required")
-    budget = _num(payload.get("budget"))
-    with db.connect() as conn:
-        conn.execute("UPDATE chart_of_accounts SET budget=? WHERE account_number=?",
-                     (budget, acct))
-    return {"account_number": acct, "budget": budget}
-
-
-@app.post("/api/quote-check")
-def quote_check(payload: dict = Body(...)):
-    """v2 core: check a quote/invoice amount against a chosen account's budget.
-
-    Body: {account_number, amount, vendor_name, quote_number, quote_date,
-           property_or_job, doc_type, uploaded_file_path, notes}
-    Status:
-      APPROVED       amount <= budget
-      OVER BUDGET    amount >  budget
-      LOGGED         no budget set yet (records the quote, builds the baseline)
-    """
-    acct_no = str(payload.get("account_number") or "").strip()
-    amount = _num(payload.get("amount"))
-    if not acct_no:
-        raise HTTPException(status_code=400, detail="Pick an account first")
+@app.post("/api/coa/{account_number}/baseline")
+async def coa_attach_baseline(account_number: str, file: UploadFile = File(...)):
+    """Attach an itemized price list to an account: upload an Excel/CSV with
+    Item #, Description, UM, Unit Price → baseline items coded to this account.
+    Replaces this account's existing items (other accounts are untouched)."""
+    acct_no = str(account_number).strip()
     with db.connect() as conn:
         acct = conn.execute(
             "SELECT * FROM chart_of_accounts WHERE account_number=?", (acct_no,)
         ).fetchone()
         if not acct:
             raise HTTPException(status_code=404, detail="Account not found")
-        budget = acct["budget"]
+        department = acct["department"]
+    dest = os.path.join(UPLOAD_DIR, f"baseline_{acct_no}_{uuid.uuid4().hex}_{file.filename}")
+    with open(dest, "wb") as f:
+        f.write(await file.read())
+    try:
+        from .importer import import_price_list
+        count = import_price_list(dest, gl_account=acct_no, department=department)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Import failed: {e}")
+    return {"account_number": acct_no, "imported": count}
 
-        if amount is None:
-            status, over_under = "NEEDS AMOUNT", None
-        elif budget is None:
-            status, over_under = "LOGGED", None
-        elif amount <= budget:
-            status, over_under = "APPROVED", round(budget - amount, 2)
-        else:
-            status, over_under = "OVER BUDGET", round(budget - amount, 2)
 
-        qcid = payload.get("quote_check_id")
-        if qcid:  # re-check after fixing a misread amount -> update same record
-            conn.execute(
-                """UPDATE quote_checks SET account_number=?, account_name=?,
-                   department=?, amount=?, budget=?, over_under=?, status=? WHERE id=?""",
-                (acct_no, acct["account_name"], acct["department"], amount, budget,
-                 over_under, status, qcid))
-            new_id = qcid
-        else:
-            cur = conn.execute(
-                """INSERT INTO quote_checks
-                   (account_number, account_name, department, doc_type, vendor_name,
-                    quote_number, quote_date, property_or_job, amount, budget,
-                    over_under, status, uploaded_file_path, notes)
-                   VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
-                (acct_no, acct["account_name"], acct["department"],
-                 payload.get("doc_type") or "quote", payload.get("vendor_name"),
-                 payload.get("quote_number"), payload.get("quote_date"),
-                 payload.get("property_or_job"), amount, budget, over_under, status,
-                 payload.get("uploaded_file_path"), payload.get("notes")),
-            )
-            new_id = cur.lastrowid
-
-        # Baseline = lowest amount ever seen for this account (incl. this one).
-        baseline = conn.execute(
-            "SELECT MIN(amount) m, AVG(amount) a, COUNT(*) c FROM quote_checks "
-            "WHERE account_number=? AND amount IS NOT NULL", (acct_no,)
-        ).fetchone()
-
-        return {
-            "quote_check_id": new_id,
-            "account_number": acct_no,
-            "account_name": acct["account_name"],
-            "department": acct["department"],
-            "amount": amount,
-            "budget": budget,
-            "over_under": over_under,
-            "status": status,
-            "baseline_low": round(baseline["m"], 2) if baseline["m"] is not None else None,
-            "baseline_avg": round(baseline["a"], 2) if baseline["a"] is not None else None,
-            "times_seen": baseline["c"],
-        }
+@app.get("/api/coa/{account_number}/baseline")
+def coa_account_baseline(account_number: str):
+    """List the itemized baseline items attached to an account."""
+    with db.connect() as conn:
+        rows = conn.execute(
+            "SELECT * FROM baseline_items WHERE gl_account=? ORDER BY item_number",
+            (str(account_number).strip(),)).fetchall()
+        return {"items": [dict(r) for r in rows], "count": len(rows)}
 
 
 @app.get("/api/config")
@@ -443,9 +394,17 @@ def compare_endpoint(payload: dict = Body(...)):
     """
     inv = payload.get("invoice", {}) or {}
     raw_lines = payload.get("line_items", []) or []
+    # When the user picked an account on the home screen, scope the baseline to
+    # that account's itemized price list and tag everything to it.
+    account_number = str(inv.get("account_number") or "").strip() or None
 
     with db.connect() as conn:
-        baseline = _load_baseline(conn)
+        acct_row = None
+        if account_number:
+            acct_row = conn.execute(
+                "SELECT * FROM chart_of_accounts WHERE account_number=?",
+                (account_number,)).fetchone()
+        baseline = _load_baseline(conn, account_number)
         allowed, by_cat = _variance_settings(conn)
 
         # Run the comparison engine over every line.
@@ -491,7 +450,11 @@ def compare_endpoint(payload: dict = Body(...)):
         # Persist each compared line.
         out_rows = []
         for r in results:
-            dept, gl = coding.get(r.baseline_item_id, (None, None))
+            if account_number:  # user explicitly chose the account -> tag all lines
+                dept = acct_row["department"] if acct_row else None
+                gl = account_number
+            else:
+                dept, gl = coding.get(r.baseline_item_id, (None, None))
             if dept:
                 dept_counts[dept] = dept_counts.get(dept, 0) + 1
             lc = conn.execute(
@@ -826,27 +789,17 @@ def dashboard():
                GROUP BY vendor_name ORDER BY overcharge DESC, spend DESC"""
         ).fetchall()]
 
-        # v2: budget vs actual from quote checks, per account (with budget or
-        # any logged quotes), newest accounts with activity first.
-        budget_actual = [dict(r) for r in conn.execute(
+        # Itemized baseline coverage per account (how many accounts have a price
+        # list attached vs. still need one).
+        baseline_coverage = [dict(r) for r in conn.execute(
             """SELECT coa.account_number, coa.account_name, coa.department,
-                      coa.budget AS budget,
-                      COALESCE(SUM(q.amount),0) AS actual,
-                      COUNT(q.id) AS checks,
-                      SUM(CASE WHEN q.status='OVER BUDGET' THEN 1 ELSE 0 END) AS over_count
+                      COUNT(b.id) AS items
                FROM chart_of_accounts coa
-               LEFT JOIN quote_checks q ON q.account_number = coa.account_number
+               LEFT JOIN baseline_items b ON b.gl_account = coa.account_number
                GROUP BY coa.account_number
-               HAVING coa.budget IS NOT NULL OR COUNT(q.id) > 0
-               ORDER BY (coa.budget IS NOT NULL) DESC, actual DESC"""
+               ORDER BY items DESC, coa.account_number"""
         ).fetchall()]
-        recent_quotes = [dict(r) for r in conn.execute(
-            "SELECT * FROM quote_checks ORDER BY id DESC LIMIT 50").fetchall()]
-        q_kpis = conn.execute(
-            """SELECT COUNT(*) c, COALESCE(SUM(amount),0) amt,
-                      SUM(CASE WHEN status='OVER BUDGET' THEN 1 ELSE 0 END) over_n,
-                      SUM(CASE WHEN status='APPROVED' THEN 1 ELSE 0 END) ok_n
-               FROM quote_checks""").fetchone()
+        accounts_with_baseline = sum(1 for r in baseline_coverage if r["items"] > 0)
 
         return {
             "kpis": {
@@ -854,13 +807,10 @@ def dashboard():
                 "total_spend": round(total_spend, 2),
                 "total_overcharge": round(total_over, 2),
                 "pending_review": pending,
-                "quotes_checked": q_kpis["c"],
-                "quotes_amount": round(q_kpis["amt"], 2),
-                "quotes_over": q_kpis["over_n"],
-                "quotes_ok": q_kpis["ok_n"],
+                "accounts_total": len(baseline_coverage),
+                "accounts_with_baseline": accounts_with_baseline,
             },
-            "budget_actual": budget_actual,
-            "recent_quotes": recent_quotes,
+            "baseline_coverage": baseline_coverage,
             "invoices": invoices,
             "by_category": by_category,
             "by_department": by_department,

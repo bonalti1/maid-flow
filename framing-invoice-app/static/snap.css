@@ -34,6 +34,9 @@
   width: 1.5rem; height: 1.5rem; background: var(--navy); color: #fff; border-radius: 50%; font-size: .85rem; }
 .account-select { width: 100%; padding: .9rem .7rem; font-size: 1.05rem; border: 2px solid var(--navy);
   border-radius: 12px; background: #fff; color: var(--ink); -webkit-appearance: menulist; }
+.baseline-row { display: flex; align-items: center; justify-content: space-between; gap: .5rem;
+  margin-top: .6rem; text-align: left; flex-wrap: wrap; }
+.baseline-row .link { white-space: nowrap; }
 .budget-row { display: flex; align-items: center; gap: .5rem; margin-top: .7rem; text-align: left; }
 .budget-val { font-weight: 800; color: var(--navy); font-size: 1.1rem; }
 .budget-edit { display: flex; align-items: center; gap: .4rem; margin-top: .7rem; }

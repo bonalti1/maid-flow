@@ -1,6 +1,6 @@
 /* Minimal service worker — enables "Add to Home Screen" / installable PWA.
    Network-first; falls back to cached shell when offline. */
-const CACHE = "stb-invoice-v2";
+const CACHE = "stb-invoice-v3";
 const SHELL = ["/", "/theme.css", "/snap.css", "/snap.js", "/logo.svg",
                "/manifest.webmanifest", "/icon-192.png"];
 
