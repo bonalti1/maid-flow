@@ -324,18 +324,32 @@ def extract_image(path: str) -> dict:
             "extraction_status": "ocr" if items else "needs_review"}
 
 
+IMAGE_EXTS = (".png", ".jpg", ".jpeg", ".tif", ".tiff", ".bmp", ".gif", ".webp")
+
+
 def extract(path: str) -> dict:
-    """Dispatch on file extension and return the structured JSON result."""
+    """Dispatch on file extension and return the structured JSON result.
+
+    Spreadsheets/CSV are parsed deterministically. PDFs and images go through
+    Claude vision (ai_extract) when it's configured — that's the reliable path
+    for scanned/photographed invoices — and fall back to the local
+    pdfplumber/tesseract parsers otherwise.
+    """
     ext = os.path.splitext(path)[1].lower()
     try:
         if ext in (".xlsx", ".xlsm", ".xls"):
             return extract_xlsx(path)
         if ext == ".csv":
             return extract_csv(path)
-        if ext == ".pdf":
-            return extract_pdf(path)
-        if ext in (".png", ".jpg", ".jpeg", ".tif", ".tiff", ".bmp", ".gif", ".webp"):
-            return extract_image(path)
+        if ext == ".pdf" or ext in IMAGE_EXTS:
+            # Prefer AI vision for documents/photos when available.
+            from . import ai_extract
+            if ai_extract.ai_available():
+                result = ai_extract.extract_with_ai(path)
+                # Only fall through to local parsing if AI hard-failed.
+                if result.get("extraction_status") != "error":
+                    return result
+            return extract_pdf(path) if ext == ".pdf" else extract_image(path)
     except Exception as e:  # pragma: no cover - defensive
         return {**_sniff_metadata(""), "line_items": [],
                 "warnings": [f"Extraction failed: {e}"],

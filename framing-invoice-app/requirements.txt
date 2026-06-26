@@ -4,7 +4,12 @@ uvicorn[standard]>=0.27
 python-multipart>=0.0.9   # file uploads
 openpyxl>=3.1             # Excel import/export
 
-# Document parsing (optional but recommended)
+# AI vision extraction (recommended for scanned/photographed invoices)
+# Reads scans & phone photos reliably. Needs an ANTHROPIC_API_KEY env var.
+# Without a key the app falls back to the local parsers below.
+anthropic>=0.40
+
+# Document parsing (optional fallback when no API key is set)
 # pdfplumber gives text-based PDF parsing; pytesseract+Pillow give image OCR.
 # The app runs without them — those upload types simply report "needs review".
 pdfplumber>=0.11

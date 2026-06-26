@@ -65,19 +65,30 @@ Then in the browser:
 3. Fix any extraction mistakes in **Step 3** and click **Compare**.
 4. Review flagged lines, approve or message the supplier, and export.
 
-### Optional: PDF & image OCR
+### Reading PDFs & photos (AI vision — recommended)
 Spreadsheet/CSV invoices are parsed deterministically and need no extra setup.
-For **PDF** and **image** invoices, install the optional parsers (already in
-`requirements.txt`) plus the system Tesseract binary for images:
+**Scanned PDFs and phone photos are images**, so reading them reliably uses
+Claude vision. Set an Anthropic API key and the app reads them automatically:
 
 ```bash
-# Debian/Ubuntu
-sudo apt-get install tesseract-ocr
-# macOS
-brew install tesseract
+export ANTHROPIC_API_KEY=sk-ant-...      # from console.anthropic.com
+# optional: cheaper model for high volume (default is claude-opus-4-8)
+export FRAMING_AI_MODEL=claude-haiku-4-5
 ```
-Without them, PDF/image uploads still work but report "needs review" and you
-add line items by hand. The comparison engine is identical either way.
+Cost is roughly a few cents per invoice on the default model, well under a cent
+on Haiku. The invoice image is sent to Anthropic only when you upload one; no
+key means this step is skipped.
+
+**Fallback without a key:** PDFs/images use local parsers instead — `pdfplumber`
+for text-based PDFs, and `pytesseract` (+ the system Tesseract binary) for
+images:
+```bash
+sudo apt-get install tesseract-ocr   # Debian/Ubuntu
+brew install tesseract               # macOS
+```
+Text-based PDFs read fine locally; true scans/photos fall back to "needs review"
+and manual entry. The comparison engine is identical either way — and every
+extraction stays editable before you compare.
 
 ---
 
