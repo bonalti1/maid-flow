@@ -1,8 +1,8 @@
 /* Minimal service worker — enables "Add to Home Screen" / installable PWA.
    Network-first; falls back to cached shell when offline. */
-const CACHE = "stb-invoice-v5";
+const CACHE = "stb-invoice-v6";
 const SHELL = ["/", "/theme.css", "/snap.css", "/snap.js", "/logo.svg",
-               "/manifest.webmanifest", "/icon-192.png"];
+               "/goalie.mp4", "/manifest.webmanifest", "/icon-192.png"];
 
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).catch(() => {}));

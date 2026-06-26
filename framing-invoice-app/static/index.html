@@ -45,92 +45,9 @@
 
     <!-- WORKING -->
     <section id="screen-working" class="working" hidden>
-      <div class="goalie-scene" aria-label="South Texas Builders goalie diving to make a save">
-        <svg viewBox="0 0 360 200" width="100%" height="100%" role="img">
-          <defs>
-            <radialGradient id="g-glow" cx="45%" cy="48%" r="55%">
-              <stop offset="0%" stop-color="#dbe6ff" stop-opacity=".9" />
-              <stop offset="100%" stop-color="#dbe6ff" stop-opacity="0" />
-            </radialGradient>
-            <linearGradient id="g-grass" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stop-color="#3fbf6a" /><stop offset="100%" stop-color="#2f9d54" />
-            </linearGradient>
-            <filter id="g-soft" x="-30%" y="-30%" width="160%" height="160%">
-              <feGaussianBlur stdDeviation="2.2" />
-            </filter>
-          </defs>
-
-          <ellipse cx="165" cy="96" rx="150" ry="92" fill="url(#g-glow)" />
-
-          <!-- goal net (perspective) -->
-          <g class="g-net">
-            <path d="M36 36 L300 50 L300 150 L36 150 Z" fill="none" />
-            <path d="M36 36 L300 50 M36 64 L300 72 M36 92 L300 94 M36 120 L300 116 M36 150 L300 150" />
-            <path d="M70 39 L70 150 M110 41 L110 150 M150 44 L150 150 M190 46 L190 150 M230 48 L230 150 M268 49 L268 150" />
-          </g>
-          <!-- goal frame -->
-          <g class="g-frame">
-            <line x1="34" y1="34" x2="34" y2="152" /><line x1="302" y1="49" x2="302" y2="152" />
-            <line x1="34" y1="34" x2="302" y2="49" />
-          </g>
-
-          <!-- grass -->
-          <path d="M0 152 Q180 142 360 152 L360 200 L0 200 Z" fill="url(#g-grass)" />
-          <g class="g-blades"><path d="M60 153 l-3 -9 6 0 z"/><path d="M120 151 l-3 -10 6 0 z"/><path d="M250 152 l-3 -9 6 0 z"/><path d="M320 153 l-3 -9 6 0 z"/></g>
-
-          <!-- diving keeper's shadow -->
-          <ellipse class="g-shadow" cx="150" cy="168" rx="70" ry="10" fill="#16284c" opacity=".18" filter="url(#g-soft)" />
-
-          <!-- speed streak trailing the incoming ball (upper right) -->
-          <path class="g-streak" d="M366 22 L322 40 L366 58 Z" fill="#16284c" opacity="0" />
-
-          <!-- THE DIVING KEEPER (leaping up-right to the ball) -->
-          <g class="g-keeper">
-            <!-- trailing legs -->
-            <path class="g-leg" d="M150 118 L120 150 L108 162" />
-            <path class="g-leg" d="M158 116 L140 150 L150 166" />
-            <ellipse class="g-boot" cx="105" cy="163" rx="9" ry="5" transform="rotate(-30 105 163)" />
-            <ellipse class="g-boot" cx="153" cy="167" rx="9" ry="5" transform="rotate(20 153 167)" />
-            <!-- shorts -->
-            <path class="g-shorts" d="M146 108 q16 -5 30 2 l3 16 q-18 7 -36 1 z" />
-            <!-- jersey torso (leaning toward the ball) -->
-            <path class="g-jersey" d="M168 70 q22 -6 40 6 l-2 30 q-22 9 -42 0 z" />
-            <path class="g-hem" d="M165 104 q20 8 40 0 l-1 6 q-20 8 -40 0 z" />
-            <!-- crest + STB -->
-            <path class="g-crest" d="M176 86 l11 0 0 7 q0 5 -5.5 7 q-5.5 -2 -5.5 -7 z" />
-            <text class="g-stb" x="181.5" y="92">STB</text>
-            <!-- head -->
-            <path class="g-hair" d="M214 56 a14 14 0 0 1 18 16 l-22 -4 z" />
-            <circle class="g-head" cx="222" cy="66" r="12" />
-            <!-- arms reaching to punch the ball -->
-            <path class="g-arm" d="M200 78 Q236 64 268 52" />
-            <path class="g-arm" d="M204 86 Q238 76 266 64" />
-            <!-- gloves -->
-            <g class="g-glovewrap">
-              <circle class="g-glove" cx="270" cy="50" r="9" /><circle class="g-glove" cx="268" cy="64" r="9" />
-              <path class="g-gloveline" d="M266 44 v12 M272 45 v11 M264 60 v10 M270 60 v10" />
-            </g>
-          </g>
-
-          <!-- impact burst at the save point (outer g fixes position; inner g is animated) -->
-          <g transform="translate(272 52)">
-            <g class="g-burst">
-              <path class="g-star" d="M0 -18 L4 -5 L18 -4 L7 4 L11 18 L0 9 L-11 18 L-7 4 L-18 -4 L-4 -5 Z" />
-              <circle class="g-spark" cx="20" cy="-10" r="2.4" /><circle class="g-spark" cx="-18" cy="12" r="2" />
-              <circle class="g-spark" cx="16" cy="16" r="1.8" /><circle class="g-spark" cx="-14" cy="-16" r="2" />
-            </g>
-          </g>
-
-          <!-- ball -->
-          <g class="g-ball">
-            <g class="g-ball-spin">
-              <circle r="10" class="g-ballbg" />
-              <polygon points="0,-5 4.8,-1.5 3,4 -3,4 -4.8,-1.5" class="g-ballp" />
-              <circle cx="0" cy="-8.5" r="1.7" class="g-ballp" /><circle cx="8" cy="2.5" r="1.7" class="g-ballp" />
-              <circle cx="-8" cy="2.5" r="1.7" class="g-ballp" /><circle cx="0" cy="9" r="1.4" class="g-ballp" />
-            </g>
-          </g>
-        </svg>
+      <div class="goalie-scene">
+        <video class="goalie-vid" src="/goalie.mp4" autoplay muted loop playsinline
+               aria-label="South Texas Builders goalie making a save"></video>
       </div>
       <h2 id="workingMsg">Reading the quote…</h2>
       <p class="muted">🧤 Our goalie is blocking overcharges…</p>
