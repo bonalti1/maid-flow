@@ -1,0 +1,15 @@
+# Core (required)
+fastapi>=0.110
+uvicorn[standard]>=0.27
+python-multipart>=0.0.9   # file uploads
+openpyxl>=3.1             # Excel import/export
+
+# Document parsing (optional but recommended)
+# pdfplumber gives text-based PDF parsing; pytesseract+Pillow give image OCR.
+# The app runs without them — those upload types simply report "needs review".
+pdfplumber>=0.11
+pytesseract>=0.3.10       # also requires the Tesseract binary on the system
+Pillow>=10.0
+
+# Testing
+pytest>=8.0
