@@ -264,6 +264,19 @@ $("#msgSheet").addEventListener("click", (e) => {
   } catch (e) {}
 })();
 
+// Nudge the hero clip to play even when the browser is shy about autoplay
+// (iOS low-power, etc.). Until it plays, the goalie poster shows — never a logo.
+(function () {
+  const hv = document.querySelector(".hero-vid");
+  if (!hv) return;
+  hv.muted = true;
+  const go = () => { const p = hv.play(); if (p && p.catch) p.catch(() => {}); };
+  go();
+  document.addEventListener("touchstart", go, { once: true, passive: true });
+  document.addEventListener("click", go, { once: true });
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) go(); });
+})();
+
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => {});
 loadHouses();
 loadAccounts();
