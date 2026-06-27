@@ -9,6 +9,8 @@ const $$ = (s) => Array.from(document.querySelectorAll(s));
 
 let accounts = [];
 let selected = null;
+let houses = [];
+let selectedHouse = null;
 let current = { invoiceId: null, lines: [], invoice: {} };
 
 function money(v) {
@@ -23,6 +25,26 @@ async function api(url, opts) {
   if (!r.ok) { let d = r.statusText; try { d = (await r.json()).detail || d; } catch (e) {} throw new Error(d); }
   return r.json();
 }
+
+// ---------- house dropdown (read-only, from the Cash Flow Center) ----------
+async function loadHouses() {
+  try {
+    const data = await api("/api/houses");
+    houses = data.houses || [];
+    const sel = $("#houseSelect");
+    sel.innerHTML = '<option value="">Choose a house…</option>';
+    houses.forEach((h) => {
+      const o = document.createElement("option");
+      o.value = h.id != null ? h.id : h.name;
+      o.textContent = h.name || h.label || h.id;
+      sel.appendChild(o);
+    });
+  } catch (e) {}
+}
+$("#houseSelect").onchange = () => {
+  const v = $("#houseSelect").value;
+  selectedHouse = houses.find((h) => String(h.id != null ? h.id : h.name) === String(v)) || null;
+};
 
 // ---------- account dropdown (grouped by phase) ----------
 async function loadAccounts() {
@@ -77,12 +99,16 @@ $("#baselineFile").onchange = async (e) => {
 };
 
 // ---------- pickers ----------
-$("#takePhoto").onclick = () => requireAccount() && $("#cameraInput").click();
-$("#uploadFile").onclick = () => requireAccount() && $("#fileInput").click();
+$("#takePhoto").onclick = () => requireReady() && $("#cameraInput").click();
+$("#uploadFile").onclick = () => requireReady() && $("#fileInput").click();
 $("#cameraInput").onchange = (e) => e.target.files[0] && handleFile(e.target.files[0]);
 $("#fileInput").onchange = (e) => e.target.files[0] && handleFile(e.target.files[0]);
 $("#checkAnother").onclick = () => { $("#cameraInput").value = ""; $("#fileInput").value = ""; show("home"); };
-function requireAccount() { if (!selected) { toast("First pick what this quote is for"); return false; } return true; }
+function requireReady() {
+  if (!selectedHouse) { toast("First pick which house"); return false; }
+  if (!selected) { toast("Now pick what this quote is for"); return false; }
+  return true;
+}
 
 // ---------- pipeline: read -> compare (scoped to account) ----------
 async function handleFile(file) {
@@ -97,7 +123,8 @@ async function handleFile(file) {
     const invoice = {
       account_number: selected.account_number,
       vendor_name: ext.vendor_name, invoice_number: ext.invoice_number,
-      invoice_date: ext.invoice_date, property_or_job: ext.property_or_job,
+      invoice_date: ext.invoice_date,
+      property_or_job: selectedHouse ? (selectedHouse.name || selectedHouse.id) : ext.property_or_job,
       customer_po: ext.customer_po, subtotal: ext.subtotal, tax: ext.tax,
       total: ext.total, uploaded_file_path: ext.uploaded_file_path,
       extraction_status: ext.extraction_status,
@@ -138,6 +165,7 @@ function renderResult(summary, lines) {
 
   const m = [];
   const inv = current.invoice;
+  if (selectedHouse) m.push(`<span>🏠 <b>${esc(selectedHouse.name || selectedHouse.id)}</b></span>`);
   m.push(`<span><b>${esc((selected && (selected.account_number + " · " + selected.account_name)) || "")}</b></span>`);
   if (inv.vendor_name) m.push(`<span>${esc(inv.vendor_name)}</span>`);
   if (inv.invoice_number) m.push(`<span>Quote <b>${esc(inv.invoice_number)}</b></span>`);
@@ -237,4 +265,5 @@ $("#msgSheet").addEventListener("click", (e) => {
 })();
 
 if ("serviceWorker" in navigator) navigator.serviceWorker.register("/sw.js").catch(() => {});
+loadHouses();
 loadAccounts();

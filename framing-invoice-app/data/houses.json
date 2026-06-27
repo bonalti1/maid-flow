@@ -1,0 +1,19 @@
+{
+  "_comment": "Read-only house list for the Quote Check house picker. This is a SNAPSHOT mirror — the source of truth lives in the Cash Flow Center. When that app exposes a live read-only API, set SOURCE_OF_TRUTH_URL and this file is no longer used. Nothing here is edited inside this app.",
+  "houses": [
+    { "id": "charles",     "name": "Charles" },
+    { "id": "chavez",      "name": "Chavez" },
+    { "id": "delgadillo",  "name": "Delgadillo" },
+    { "id": "gomez",       "name": "Gomez" },
+    { "id": "gonzalez",    "name": "Gonzalez" },
+    { "id": "hunn",        "name": "HUNN" },
+    { "id": "lot6",        "name": "Lot 6" },
+    { "id": "ruvalcaba",   "name": "Ruvalcaba" },
+    { "id": "hernandez",   "name": "Hernandez" },
+    { "id": "pulido",      "name": "Pulido" },
+    { "id": "saavedra",    "name": "Saavedra" },
+    { "id": "valerio",     "name": "Valerio" },
+    { "id": "vazquez",     "name": "Vazquez" },
+    { "id": "cepeda",      "name": "Cepeda" }
+  ]
+}

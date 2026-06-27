@@ -346,6 +346,45 @@ def _autocode_to_accounts():
                WHERE baseline_item_id IS NOT NULL""")
 
 
+def _load_houses():
+    """Return the read-only list of houses for the Quote Check house picker.
+
+    Single switchable source of truth, by design:
+      • If SOURCE_OF_TRUTH_URL is set, fetch the live read-only feed from the
+        Cash Flow Center (one URL = the only thing that changes when it's ready).
+      • Otherwise fall back to the bundled data/houses.json snapshot mirror.
+    This app NEVER edits houses — it only displays what the source of truth says.
+    """
+    url = os.environ.get("SOURCE_OF_TRUTH_URL", "").strip()
+    if url:
+        try:
+            import json as _json
+            import urllib.request as _u
+            with _u.urlopen(url, timeout=6) as resp:
+                data = _json.loads(resp.read().decode("utf-8"))
+            houses = data.get("houses", data) if isinstance(data, dict) else data
+            if isinstance(houses, list):
+                return houses
+        except Exception:
+            pass  # fall back to the local snapshot below
+    try:
+        import json as _json
+        path = os.path.join(BASE_DIR, "data", "houses.json")
+        with open(path, "r", encoding="utf-8") as f:
+            return _json.load(f).get("houses", [])
+    except Exception:
+        return []
+
+
+@app.get("/api/houses")
+def houses_list():
+    """Read-only list of houses. Source: the Cash Flow Center (live) or the
+    bundled snapshot. The quote check is scoped to the house chosen here."""
+    houses = _load_houses()
+    return {"houses": houses,
+            "source": "live" if os.environ.get("SOURCE_OF_TRUTH_URL") else "snapshot"}
+
+
 @app.get("/api/coa")
 def coa_list():
     with db.connect() as conn:

@@ -17,9 +17,14 @@
     <section id="screen-home" class="hero">
       <img class="logo" src="/logo.svg" alt="South Texas Builders" />
       <h1>Check a Quote</h1>
-      <p class="sub">Pick what it's for, upload the quote, and we check every line against your baseline.</p>
+      <p class="sub">Pick the house and what it's for, upload the quote, and we check every line against your baseline.</p>
 
-      <label class="step-label"><span class="num">1</span> What is this for?</label>
+      <label class="step-label"><span class="num">1</span> Which house?</label>
+      <select id="houseSelect" class="account-select">
+        <option value="">Choose a house…</option>
+      </select>
+
+      <label class="step-label"><span class="num">2</span> What is this for?</label>
       <select id="accountSelect" class="account-select">
         <option value="">Choose an account…</option>
       </select>
@@ -31,7 +36,7 @@
         </label>
       </div>
 
-      <label class="step-label"><span class="num">2</span> Upload the quote</label>
+      <label class="step-label"><span class="num">3</span> Upload the quote</label>
       <div class="big-actions">
         <button class="snap-btn" id="takePhoto"><span class="ico">📷</span> Take Photo</button>
         <button class="snap-btn secondary" id="uploadFile"><span class="ico">📎</span> Upload a File</button>
