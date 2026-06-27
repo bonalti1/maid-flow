@@ -4,10 +4,11 @@
 /* HOME screen */
 .hero { text-align: center; padding-top: 1.2rem; }
 .hero .logo { height: 88px; margin-bottom: 1.4rem; }
-/* Small, centered hero clip — sits where the logo did. No card/frame/shadow. */
-.hero .hero-vid { width: 150px; max-width: 45%; aspect-ratio: 16 / 9;
-  object-fit: contain; display: block; margin: 0 auto 1.2rem;
-  background: transparent; border: 0; }
+/* Small, centered hero clip — a tidy rounded badge so its background reads as
+   intentional, not a video pasted on the page. */
+.hero .hero-vid { width: 160px; max-width: 48%; aspect-ratio: 16 / 9;
+  object-fit: cover; display: block; margin: .4rem auto 1.4rem;
+  border-radius: 16px; box-shadow: 0 10px 22px rgba(22,40,76,.16); }
 .hero h1 { font-size: 1.6rem; margin: 0 0 .3rem; color: var(--navy); }
 .hero p.sub { color: var(--muted); margin: 0 0 2rem; }
 
