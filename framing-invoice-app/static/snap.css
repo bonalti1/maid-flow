@@ -4,9 +4,12 @@
 /* HOME screen */
 .hero { text-align: center; padding-top: 1.2rem; }
 .hero .logo { height: 88px; margin-bottom: 1.4rem; }
-.hero .hero-vid { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; display: block;
-  border-radius: 18px; margin: 0 auto 1.4rem; background: #16284c;
-  box-shadow: 0 14px 30px rgba(22,40,76,.18); }
+/* Hero clip embedded into the page — no card, no frame, no shadow. The
+   `multiply` blend melts a white/light video background into the app
+   background so you see the animation, not a video rectangle. */
+.hero .hero-vid { width: 100%; max-width: 440px; aspect-ratio: 16 / 9;
+  object-fit: contain; display: block; margin: -.4rem auto .6rem;
+  background: transparent; border: 0; mix-blend-mode: multiply; }
 .hero h1 { font-size: 1.6rem; margin: 0 0 .3rem; color: var(--navy); }
 .hero p.sub { color: var(--muted); margin: 0 0 2rem; }
 
