@@ -4,6 +4,9 @@
 /* HOME screen */
 .hero { text-align: center; padding-top: 1.2rem; }
 .hero .logo { height: 88px; margin-bottom: 1.4rem; }
+.hero .hero-vid { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; display: block;
+  border-radius: 18px; margin: 0 auto 1.4rem; background: #16284c;
+  box-shadow: 0 14px 30px rgba(22,40,76,.18); }
 .hero h1 { font-size: 1.6rem; margin: 0 0 .3rem; color: var(--navy); }
 .hero p.sub { color: var(--muted); margin: 0 0 2rem; }
 
