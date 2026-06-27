@@ -57,6 +57,14 @@ APP_PASSWORD = os.environ.get("APP_PASSWORD", "")
 # Overhead, Internal Allocations, and Interior Miscellaneous.
 COA_SEED_VERSION = 2
 
+# Quotes are kept for a rolling window, then auto-deleted to keep the database
+# small — you can still look back about a month. Override with
+# FRAMING_RETENTION_DAYS (set to 0 to keep quotes forever).
+try:
+    RETENTION_DAYS = int(os.environ.get("FRAMING_RETENTION_DAYS", "30") or "30")
+except ValueError:
+    RETENTION_DAYS = 30
+
 
 @app.middleware("http")
 async def _password_gate(request, call_next):
@@ -85,6 +93,37 @@ async def _password_gate(request, call_next):
 def healthz():
     """Unauthenticated health check for the host (Render) to ping."""
     return {"ok": True}
+
+
+def _purge_old_invoices():
+    """Delete quotes (and, via FK cascade, their line items and message drafts,
+    plus the uploaded source file on disk) older than RETENTION_DAYS, so only a
+    rolling window is kept. No-op when RETENTION_DAYS <= 0. Best-effort."""
+    if RETENTION_DAYS <= 0:
+        return
+    cutoff = f"-{RETENTION_DAYS} days"
+    try:
+        with db.connect() as conn:
+            old = conn.execute(
+                "SELECT uploaded_file_path FROM invoices "
+                "WHERE created_at < datetime('now', ?)", (cutoff,)).fetchall()
+            conn.execute(
+                "DELETE FROM invoices WHERE created_at < datetime('now', ?)",
+                (cutoff,))
+        # FK cascade can't touch the filesystem — remove the source files too.
+        for r in old:
+            p = r["uploaded_file_path"]
+            if not p:
+                continue
+            for cand in (p, os.path.join(UPLOAD_DIR, os.path.basename(p))):
+                try:
+                    if os.path.exists(cand):
+                        os.remove(cand)
+                        break
+                except OSError:
+                    pass
+    except Exception:
+        pass
 
 
 def _ensure_ready():
@@ -122,6 +161,8 @@ def _ensure_ready():
                 db.set_setting(conn, "coa_seed_version", str(COA_SEED_VERSION))
     except Exception:
         pass
+    # Trim anything past the rolling retention window on every boot.
+    _purge_old_invoices()
 
 
 @app.on_event("startup")
@@ -482,11 +523,15 @@ def compare_endpoint(payload: dict = Body(...)):
             conn.execute("UPDATE invoices SET department=? WHERE id=?",
                          (top_dept, invoice_id))
 
-        return {
+        result = {
             "invoice_id": invoice_id,
             "line_items": out_rows,
             "summary": _summary_to_dict(summary),
         }
+
+    # Keep only the rolling retention window (runs after the insert is committed).
+    _purge_old_invoices()
+    return result
 
 
 # --------------------------------------------------------------------------
