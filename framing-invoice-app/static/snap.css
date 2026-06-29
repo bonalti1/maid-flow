@@ -5,8 +5,8 @@
 .hero { text-align: center; padding-top: 1.2rem; }
 .hero .logo { height: 88px; margin-bottom: 1.4rem; }
 /* El Portero logo on the front — small, centered, transparent cutout. */
-.hero .hero-logo { width: 150px; max-width: 45%; display: block;
-  margin: .4rem auto 1.2rem; }
+.hero .hero-logo { width: 130px; max-width: 40%; height: auto; display: block;
+  margin: .6rem auto 1.3rem; }
 .hero h1 { font-size: 1.6rem; margin: 0 0 .3rem; color: var(--navy); }
 .hero p.sub { color: var(--muted); margin: 0 0 2rem; }
 
