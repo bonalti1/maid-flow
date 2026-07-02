@@ -1508,6 +1508,7 @@ app.post("/api/widget/quote", async (req, res) => {
     cleaningType = "regular", condition = "normal", pets = "none",
     furnished = "partial", frequency = "one_time", addOns = [],
     beds: bedsIn = null, baths: bathsIn = null, sqft: sqftIn = null,
+    leadId: priorLeadId = null,
   } = req.body || {};
   const c = slug && (await db.getContractorBySlug(String(slug)));
   if (!c) return res.status(404).json({ error: "unknown contractor" });
@@ -1562,14 +1563,19 @@ app.post("/api/widget/quote", async (req, res) => {
     ? priceQuote({ sqft, beds, baths, cleaningType, condition, pets, furnished, frequency, addOns }, rates)
     : null;
 
-  const leadId = await db.addLead(c.id, {
-    name: String(name).slice(0, 80),
-    phone: digits.slice(0, 15),
-    address: String(m?.addr || address).slice(0, 160),
-    info: q
-      ? { recommended: q.recommended, low: q.range[0], high: q.range[1], cleaningType: q.cleaningType, condition: q.condition, frequency: q.frequency, sqft, beds, baths }
-      : { unquoted: true },
-  });
+  const leadInfo = q
+    ? { recommended: q.recommended, low: q.range[0], high: q.range[1], cleaningType: q.cleaningType, condition: q.condition, frequency: q.frequency, sqft, beds, baths }
+    : { unquoted: true };
+  const leadAddr = String(m?.addr || address).slice(0, 160);
+  // On a manual-sqft re-submit the widget sends the first leadId — enrich that
+  // lead instead of creating a duplicate.
+  let leadId = priorLeadId;
+  if (priorLeadId) {
+    await db.updateLead(c.id, priorLeadId, { address: leadAddr, info: leadInfo }).catch(() => { leadId = null; });
+  }
+  if (!leadId) {
+    leadId = await db.addLead(c.id, { name: String(name).slice(0, 80), phone: digits.slice(0, 15), address: leadAddr, info: leadInfo });
+  }
   forwardLead(c, {
     id: leadId, name: String(name).slice(0, 80), phone: digits.slice(0, 15),
     address: String(m?.addr || address).slice(0, 160),
@@ -1620,6 +1626,7 @@ ${pPhone ? `<a href="tel:+1${pPhone}">📞 Llámanos / Call us</a>` : ""}
     range: "PRECIO ESTIMADO", recoLbl: "Recomendado", rangeSub: "Estimado preliminar según el tamaño de tu casa. El precio final puede cambiar después de ver fotos o la casa.",
     sent: "✓ Recibimos tus datos", call: (b) => `${b} te contacta hoy mismo para apartar tu cita.`,
     nores: "¡Listo! Recibimos tu información.", noresSub: (b) => `${b} te llama hoy con tu cotización de limpieza.`,
+    sqftQ: "Para darte el precio al instante, ¿cuántos pies² tiene tu casa? (aprox.)", sqftPh: "Ej. 1500", sqftBtn: "VER MI PRECIO →",
     callBtn: "📞 LLAMAR AHORA", phoneErr: "Pon un teléfono de 10 dígitos", addrErr: "Pon la dirección de tu casa",
     err: "Algo falló — intenta otra vez o llámanos.",
   } : {
@@ -1633,6 +1640,7 @@ ${pPhone ? `<a href="tel:+1${pPhone}">📞 Llámanos / Call us</a>` : ""}
     range: "ESTIMATED PRICE", recoLbl: "Recommended", rangeSub: "Preliminary estimate based on your home size. Final price may change after photos or a walkthrough.",
     sent: "✓ We got your info", call: (b) => `${b} will contact you today to book your appointment.`,
     nores: "Done! We received your information.", noresSub: (b) => `${b} will call you today with your cleaning quote.`,
+    sqftQ: "To price it instantly, how many sq ft is your home? (approx.)", sqftPh: "e.g. 1500", sqftBtn: "SEE MY PRICE →",
     callBtn: "📞 CALL NOW", phoneErr: "Enter a 10-digit phone", addrErr: "Enter your home address",
     err: "Something went wrong — try again or call us.",
   };
@@ -1711,7 +1719,7 @@ select:focus{border-color:#5BC8F0}
 </div>
 <script>
 var SLUG=${JSON.stringify(c.slug).replace(/</g, "\\u003c")},BIZ=${JSON.stringify(prof.biz || c.name).replace(/</g, "\\u003c")},BPH=${JSON.stringify(bizPhone).replace(/</g, "\\u003c")};
-var L=${JSON.stringify({ m1: L.m1, m2: L.m2, m3: L.m3, range: L.range, rangeSub: L.rangeSub, sent: L.sent, callTxt: L.call(prof.biz || c.name), nores: L.nores, noresSub: L.noresSub(prof.biz || c.name), callBtn: L.callBtn, err: L.err,
+var L=${JSON.stringify({ m1: L.m1, m2: L.m2, m3: L.m3, range: L.range, rangeSub: L.rangeSub, sent: L.sent, callTxt: L.call(prof.biz || c.name), nores: L.nores, noresSub: L.noresSub(prof.biz || c.name), sqftQ: L.sqftQ, sqftPh: L.sqftPh, sqftBtn: L.sqftBtn, callBtn: L.callBtn, err: L.err,
   // contractor-facing note, demo widget only — homeowners on client sites get the free-inspection line instead
   manual: c.slug === "alto-demo" ? (es
     ? "👆 Este es el imán de clientes. En tu app Maid Flow armas la cotización completa con tus precios y la mandas por WhatsApp — para captar y cerrar con confianza."
@@ -1733,17 +1741,24 @@ function toStep2(){if(addr.value.trim().length<6){document.getElementById('e1').
   document.getElementById('e1').style.display='none';
   document.getElementById('addrEcho').textContent='📍 '+addr.value.trim();show('s2');document.getElementById('nm').focus()}
 function back1(){show('s1')}
-function submit(){
-  var ph=document.getElementById('ph').value.replace(/\\D/g,'');
-  if(ph.length<10){document.getElementById('e2').style.display='block';return}
+var lastLeadId=null;
+function postQuote(extra){
   document.getElementById('e2').style.display='none';show('s3');
   var msgs=[L.m1,L.m2,L.m3],mi=0,lm=document.getElementById('lmsg');
   var mt=setInterval(function(){mi=(mi+1)%msgs.length;lm.textContent=msgs[mi]},1600);
-  var wait=new Promise(function(r){setTimeout(r,2800)});
-  var req=fetch('/api/widget/quote',{method:'POST',headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({slug:SLUG,name:document.getElementById('nm').value.trim(),phone:ph,address:addr.value.trim(),placeId:placeId,cleaningType:(document.getElementById('ctype')||{}).value||'regular'})
-  }).then(function(r){return r.ok?r.json():null}).catch(function(){return null});
+  var wait=new Promise(function(r){setTimeout(r,2200)});
+  var body={slug:SLUG,name:document.getElementById('nm').value.trim(),phone:document.getElementById('ph').value.replace(/\\D/g,''),address:addr.value.trim(),placeId:placeId,cleaningType:(document.getElementById('ctype')||{}).value||'regular'};
+  if(extra){for(var k in extra)body[k]=extra[k];}
+  var req=fetch('/api/widget/quote',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}).then(function(r){return r.ok?r.json():null}).catch(function(){return null});
   Promise.all([req,wait]).then(function(a){clearInterval(mt);render(a[0])})}
+function submit(){
+  var ph=document.getElementById('ph').value.replace(/\\D/g,'');
+  if(ph.length<10){document.getElementById('e2').style.display='block';return}
+  postQuote()}
+function submitSqft(){
+  var el=document.getElementById('sqftIn');var v=parseInt((el||{}).value,10);
+  if(!v||v<=0){if(el)el.focus();return}
+  postQuote({sqft:v,leadId:lastLeadId})}
 function fmt(n){return '$'+Number(n).toLocaleString('en-US',{maximumFractionDigits:0})}
 function render(j){track('w_result');var s4=document.getElementById('s4'),h='';
   if(!j){s4.innerHTML='<p class="err">'+L.err+'</p>';show('s4');return}
@@ -1753,6 +1768,14 @@ function render(j){track('w_result');var s4=document.getElementById('s4'),h='';
     h+='<div class="rg">'+fmt(j.low)+' – '+fmt(j.high)+'</div></div>';
     h+='<p class="note">'+L.rangeSub+'</p>';
     h+='<div class="ok">'+L.sent+' — '+L.callTxt+'</div>';
+  }else if(!j.sqft){
+    // No property data (e.g. no RentCast) — ask for sqft so we can still price.
+    lastLeadId=j.id||null;
+    h+='<div class="ok">'+L.sent+'</div>';
+    h+='<div style="margin-top:14px;text-align:left">';
+    h+='<p class="note" style="margin-bottom:8px">'+L.sqftQ+'</p>';
+    h+='<input id="sqftIn" type="number" inputmode="numeric" placeholder="'+L.sqftPh+'" style="width:100%;padding:14px;border:1.5px solid #E6EBF3;border-radius:12px;font-size:16px;margin-bottom:10px;font-weight:700">';
+    h+='<button class="btn" onclick="submitSqft()">'+L.sqftBtn+'</button></div>';
   }else{
     h+='<div class="ok">'+L.nores+'</div><p class="note">'+L.noresSub+'</p>';
   }

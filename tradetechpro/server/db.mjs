@@ -454,6 +454,14 @@ export async function getMetrics(days = 14) {
   return out;
 }
 
+/* Update a lead's address/info (e.g. when a widget re-submits with manual sqft)
+ * so we enrich the existing lead instead of creating a duplicate. */
+export async function updateLead(contractorId, leadId, { address, info }) {
+  if (pool) { await pool.query("UPDATE leads SET address=COALESCE($3,address), info=COALESCE($4,info) WHERE id=$1 AND contractor_id=$2", [leadId, contractorId, address ?? null, info ?? null]); return; }
+  const l = (mem.leads || []).find((x) => x.id === leadId && x.contractor_id === contractorId);
+  if (l) { if (address != null) l.address = address; if (info != null) l.info = info; persistMem(); }
+}
+
 export async function updateLeadStatus(contractorId, leadId, status) {
   if (pool) { await pool.query("UPDATE leads SET status=$3 WHERE id=$1 AND contractor_id=$2", [leadId, contractorId, status]); return; }
   const l = mem.leads.find(x => x.id === leadId && x.contractor_id === contractorId);
