@@ -77,6 +77,9 @@ async function aiChat({ system, messages, maxTokens = 1024 }) {
 }
 
 const app = express();
+// Behind Render's single proxy: derive req.ip from the last forwarded hop so
+// rate-limit keys can't be spoofed by a client-set X-Forwarded-For.
+app.set("trust proxy", 1);
 
 /* ── Stripe billing webhook ──
  * Registered BEFORE the JSON parser because Stripe signatures are computed
@@ -409,7 +412,7 @@ app.post("/api/lookup", async (req, res) => {
   // Demo mode (no account) gets a small daily allowance per IP — enough to be
   // wowed, not enough to freeload. Clients get a high anti-runaway ceiling.
   const me = await auth(req).catch(() => null);
-  const lkIp = String(req.headers["x-forwarded-for"] || "").split(",")[0].trim() || req.socket.remoteAddress || "?";
+  const lkIp = req.ip || req.socket.remoteAddress || "?";
   if (!me) {
     if (overQuota(`lk:${lkIp}`, 6)) return res.status(429).json({ error: "demo_limit" });
     // lifetime allowance per connection — survives incognito and browser wipes
@@ -491,9 +494,21 @@ const reqCookies = (req) => Object.fromEntries(
     return [c.slice(0, i), decodeURIComponent(c.slice(i + 1))];
   })
 );
-const setKeyCookie = (res, name, val) =>
-  res.setHeader("Set-Cookie", `${name}=${encodeURIComponent(val)}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${30 * 86400}`);
+const setKeyCookie = (res, name, val, req) => {
+  // SameSite=Strict blocks the cookie from riding cross-site GET navigations —
+  // the CSRF vector for the state-changing admin GET endpoints. Secure on HTTPS.
+  const secure = !req || req.secure || String(req.headers["x-forwarded-proto"] || "").includes("https") ? "; Secure" : "";
+  res.setHeader("Set-Cookie", `${name}=${encodeURIComponent(val)}; Path=/; HttpOnly; SameSite=Strict${secure}; Max-Age=${30 * 86400}`);
+};
 const clearKeyCookie = (res, name) => res.setHeader("Set-Cookie", `${name}=; Path=/; Max-Age=0`);
+// Constant-time secret comparison (staff keys) — avoids a timing side-channel.
+const keyEq = (a, b) => {
+  a = String(a || ""); b = String(b || "");
+  if (!a || !b) return false;
+  const ha = crypto.createHash("sha256").update(a).digest();
+  const hb = crypto.createHash("sha256").update(b).digest();
+  return crypto.timingSafeEqual(ha, hb);
+};
 // Canonical public base for generated links: always the main https domain in
 // production (never app./www. or http), so copied links work everywhere.
 function canonBase(req) {
@@ -509,18 +524,18 @@ function siteDisplay(req, slug) {
   return `${canonBase(req).replace(/^https?:\/\//, "")}/site/${slug}`;
 }
 
-const adminOk = (req) => ADMIN_KEY && (
-  req.query.key === ADMIN_KEY || req.body?.key === ADMIN_KEY || reqCookies(req).alto_admin === ADMIN_KEY
+const adminOk = (req) => (
+  keyEq(req.query.key, ADMIN_KEY) || keyEq(req.body?.key, ADMIN_KEY) || keyEq(reqCookies(req).alto_admin, ADMIN_KEY)
 );
 // Closers get a limited portal: create clients + the sales toolkit, nothing else
 const closerOk = (req) => {
   const k = req.query.key || req.body?.key || reqCookies(req).alto_closer || reqCookies(req).alto_admin;
-  return (CLOSER_KEY && k === CLOSER_KEY) || (ADMIN_KEY && k === ADMIN_KEY);
+  return keyEq(k, CLOSER_KEY) || keyEq(k, ADMIN_KEY);
 };
 // Customer service: the command center (tasks + edit client sites), no money/MRR
 const csOk = (req) => {
   const k = req.query.key || req.body?.key || reqCookies(req).alto_cs || reqCookies(req).alto_admin;
-  return (CS_KEY && k === CS_KEY) || (ADMIN_KEY && k === ADMIN_KEY);
+  return keyEq(k, CS_KEY) || keyEq(k, ADMIN_KEY);
 };
 
 function loginPage(title, action, wrong) {
@@ -625,10 +640,14 @@ function periodRange(q, en) {
   const cap = (s) => s.charAt(0).toUpperCase() + s.slice(1);
   const mlabel = (d) => cap(d.toLocaleDateString(en ? "en-US" : "es-MX", { month: "long", year: "numeric", timeZone: "UTC" }));
   if (period === "all") return { from: null, to: null, period: "all", label: en ? "All time" : "Todo el tiempo" };
-  if (period === "custom" && q.from) {
-    const from = new Date(q.from + "T00:00:00Z");
-    const to = q.to ? new Date(q.to + "T23:59:59Z") : now;
-    return { from: iso(from), to: iso(to), period: "custom", fromStr: q.from, toStr: q.to || "", label: `${q.from} → ${q.to || (en ? "now" : "hoy")}` };
+  // Validate to strict YYYY-MM-DD — these strings are echoed into HTML, so a
+  // free-form value would be a reflected-XSS vector.
+  const okDate = (s) => (/^\d{4}-\d{2}-\d{2}$/.test(String(s || "")) ? String(s) : "");
+  const fromD = okDate(q.from), toD = okDate(q.to);
+  if (period === "custom" && fromD) {
+    const from = new Date(fromD + "T00:00:00Z");
+    const to = toD ? new Date(toD + "T23:59:59Z") : now;
+    return { from: iso(from), to: iso(to), period: "custom", fromStr: fromD, toStr: toD, label: `${fromD} → ${toD || (en ? "now" : "hoy")}` };
   }
   if (period === "last") {
     const d = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 1));
@@ -660,7 +679,7 @@ function periodSeg(basePath, range, en) {
 app.get("/admin", async (req, res) => {
   if (!ADMIN_KEY) return res.status(503).send("Set ADMIN_KEY env var to enable admin.");
   if (req.query.logout != null) { clearKeyCookie(res, "alto_admin"); return res.redirect("/admin"); }
-  if (req.query.key === ADMIN_KEY) { setKeyCookie(res, "alto_admin", ADMIN_KEY); return res.redirect("/admin"); }
+  if (keyEq(req.query.key, ADMIN_KEY)) { setKeyCookie(res, "alto_admin", ADMIN_KEY, req); return res.redirect("/admin"); }
   if (!adminOk(req)) return res.status(req.query.key ? 403 : 401).send(loginPage("Admin", "/admin", !!req.query.key));
   const KEY = encodeURIComponent(ADMIN_KEY);
   const base = canonBase(req);
@@ -959,7 +978,7 @@ app.post("/api/admin/ceo", async (req, res) => {
 
 app.get("/admin/economics", async (req, res) => {
   if (!ADMIN_KEY) return res.status(503).send("Set ADMIN_KEY env var to enable admin.");
-  if (req.query.key === ADMIN_KEY) { setKeyCookie(res, "alto_admin", ADMIN_KEY); return res.redirect("/admin/economics"); }
+  if (keyEq(req.query.key, ADMIN_KEY)) { setKeyCookie(res, "alto_admin", ADMIN_KEY, req); return res.redirect("/admin/economics"); }
   if (!adminOk(req)) return res.status(req.query.key ? 403 : 401).send(loginPage("Admin", "/admin/economics", !!req.query.key));
   const en = req.query.lang === "en";
   const tr = (es, eng) => (en ? eng : es);
@@ -1360,7 +1379,7 @@ function forwardLead(c, lead) {
   fetch(hook, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ source: "alto-pro", contractor: c.slug, ...lead }),
+    body: JSON.stringify({ source: "maid-flow", contractor: c.slug, ...lead }),
   }).catch((e) => console.error(`webhook ${c.slug} failed:`, e.message));
 }
 
@@ -1380,7 +1399,7 @@ app.post("/api/lead", async (req, res) => {
 
 // Widget (and anything public) drops a lead for a contractor by slug
 app.post("/api/widget/lead", async (req, res) => {
-  const wlIp = String(req.headers["x-forwarded-for"] || "").split(",")[0].trim() || req.socket.remoteAddress || "?";
+  const wlIp = req.ip || req.socket.remoteAddress || "?";
   if (overQuota(`wl:${wlIp}`, 10)) return res.status(429).json({ error: "quota" });
   const { slug, name, phone, address, info } = req.body || {};
   const c = slug && (await db.getContractorBySlug(String(slug)));
@@ -1430,7 +1449,7 @@ const quoteCache = new Map();
  * Only whitelisted event names are accepted. */
 const TRACK_EVENTS = new Set(["visit", "quiz_work", "quiz_crew", "quiz_revenue", "quiz_marketing", "quiz_done", "w_view", "w_result"]);
 app.post("/api/track", (req, res) => {
-  const trIp = String(req.headers["x-forwarded-for"] || "").split(",")[0].trim() || req.socket.remoteAddress || "?";
+  const trIp = req.ip || req.socket.remoteAddress || "?";
   if (overQuota(`tr:${trIp}`, 300)) return res.json({ ok: true }); // silently ignore spam
   const event = String(req.body?.event || "");
   if (!TRACK_EVENTS.has(event)) return res.status(400).json({ error: "bad event" });
@@ -1443,7 +1462,7 @@ app.post("/api/track", (req, res) => {
 app.post("/api/widget/chat", async (req, res) => {
   const msgs = Array.isArray(req.body?.messages) ? req.body.messages.slice(-12) : [];
   if (!msgs.length) return res.status(400).json({ error: "messages required" });
-  const ip = String(req.headers["x-forwarded-for"] || "").split(",")[0].trim() || req.socket.remoteAddress || "?";
+  const ip = req.ip || req.socket.remoteAddress || "?";
   if (overQuota(`chat:${ip}`, 40) || overQuota("chat:all", 500)) return res.status(429).json({ error: "quota" });
   if (!aiLive) return res.json({ text: "(Demo) La IA se activa cuando el servidor tenga su API key.", source: "demo" });
   try {
@@ -1494,12 +1513,14 @@ app.post("/api/widget/quote", async (req, res) => {
   const digits = String(phone).replace(/\D/g, "");
   if (digits.length < 10 || digits.length > 11) return res.status(400).json({ error: "phone required" });
   if (!String(address).trim()) return res.status(400).json({ error: "address required" });
-  const ip = String(req.headers["x-forwarded-for"] || "").split(",")[0].trim() || req.socket.remoteAddress || "?";
-  if (overQuota(`wip:${ip}`, 2) || overQuota(`wslug:${slug}`, 150)) return res.status(429).json({ error: "quota" });
+  const ip = req.ip || req.socket.remoteAddress || "?";
+  if (overQuota(`wip:${ip}`, 12) || overQuota(`wslug:${slug}`, 150)) return res.status(429).json({ error: "quota" });
   // lifetime per connection per widget: homeowners quote a cleaning 1-3 times
   // ever; only freeloaders and price-spies get anywhere near 5
-  const wqLife = await db.incrCounter(`wq:${slug}:${ip}`).catch(() => 0);
-  if (wqLife > 5) return res.status(429).json({ error: "quota" });
+  // Lifetime cap keyed by PHONE (a real homeowner quotes 1-3× ever), not IP —
+  // so many homeowners behind one carrier/CGNAT address aren't blocked.
+  const wqLife = await db.incrCounter(`wq:${slug}:${digits}`).catch(() => 0);
+  if (wqLife > 6) return res.status(429).json({ error: "quota" });
 
   // Pull the home's characteristics (best effort — the lead is saved regardless).
   // sqft/beds/baths come from RentCast property records; Google cleans the address.
@@ -2379,7 +2400,7 @@ h1 em{color:#5BC8F0;font-style:normal}
 <p class="sub">Tres estilos, el mismo motor: tu logo, tus colores y el valuador de casas adentro. Prueba tu color de marca — las tres se pintan al instante.</p>
 <div class="colorbar">
   <label>🎨 Tu color:</label>
-  <input type="color" id="col" value="#B30F24">
+  <input type="color" id="col" value="#1B8FD1">
   <button onclick="paint()">Pintar las 3</button>
   <button onclick="reset()" style="background:#1577B8;color:#fff">Colores originales</button>
 </div>
@@ -2435,7 +2456,7 @@ app.get("/cs", async (req, res) => {
   if (!CS_KEY && !ADMIN_KEY) return res.status(503).send("Set CS_KEY or ADMIN_KEY.");
   if (req.query.logout != null) { clearKeyCookie(res, "alto_cs"); return res.redirect("/cs"); }
   const qk = req.query.key;
-  if (qk && ((CS_KEY && qk === CS_KEY) || (ADMIN_KEY && qk === ADMIN_KEY))) { setKeyCookie(res, "alto_cs", qk); return res.redirect("/cs"); }
+  if (keyEq(qk, CS_KEY) || keyEq(qk, ADMIN_KEY)) { setKeyCookie(res, "alto_cs", qk, req); return res.redirect("/cs"); }
   if (!csOk(req)) return res.status(qk ? 403 : 401).send(loginPage("Servicio al cliente", "/cs", !!qk));
   const ck = reqCookies(req);
   const K = encodeURIComponent(String(ck.alto_cs || ck.alto_admin || qk || ""));
@@ -3140,7 +3161,7 @@ app.post("/api/onboarding/save", async (req, res) => {
   if (typeof b.logo === "string" && /^data:image\/(png|jpeg);base64,/.test(b.logo) && b.logo.length < 220000) data.profile.logo = b.logo;
   data.site = {
     template: ["1", "2", "3"].includes(String(b.template)) ? String(b.template) : (data.site?.template || "1"),
-    color: /^#?[a-f0-9]{6}$/i.test(String(b.color || "")) ? (String(b.color).startsWith("#") ? b.color : "#" + b.color) : (data.site?.color || "#B30F24"),
+    color: /^#?[a-f0-9]{6}$/i.test(String(b.color || "")) ? (String(b.color).startsWith("#") ? b.color : "#" + b.color) : (data.site?.color || "#1B8FD1"),
     city: String(b.city || "").slice(0, 80),
     area: String(b.area || "").slice(0, 200),
     years: b.years ? Math.max(0, Math.min(99, parseInt(b.years) || 0)) : null,
@@ -3212,7 +3233,7 @@ async function rdapAvailable(domain) {
 }
 app.get("/api/onboarding/domaincheck", async (req, res) => {
   if (!closerOk(req) && !csOk(req)) return res.status(403).json({ error: "no auth" });
-  const ip = String(req.headers["x-forwarded-for"] || "").split(",")[0].trim() || req.socket.remoteAddress || "?";
+  const ip = req.ip || req.socket.remoteAddress || "?";
   if (overQuota(`dchk:${ip}`, 60)) return res.status(429).json({ error: "quota" });
   const cands = domainCandidates(req.query.name);
   if (!cands.length) return res.status(400).json({ error: "escribe un nombre" });
@@ -3600,8 +3621,8 @@ app.get("/closer", async (req, res) => {
   if (!CLOSER_KEY && !ADMIN_KEY) return res.status(503).send("Set CLOSER_KEY env var to enable.");
   if (req.query.logout != null) { clearKeyCookie(res, "alto_closer"); return res.redirect("/closer"); }
   const qk = req.query.key;
-  if (qk && ((CLOSER_KEY && qk === CLOSER_KEY) || (ADMIN_KEY && qk === ADMIN_KEY))) {
-    setKeyCookie(res, "alto_closer", qk);
+  if (keyEq(qk, CLOSER_KEY) || keyEq(qk, ADMIN_KEY)) {
+    setKeyCookie(res, "alto_closer", qk, req);
     return res.redirect("/closer" + (req.query.lang === "en" ? "?lang=en" : ""));
   }
   if (!closerOk(req)) return res.status(qk ? 403 : 401).send(loginPage("Portal del closer", "/closer", !!qk));
@@ -4524,7 +4545,7 @@ ${d.k === "est" && !d.paid ? `<div class="sec" style="font-size:12px;color:#6771
 });
 
 app.post("/api/ai", async (req, res) => {
-  const { messages, lang = "es", trade = "concrete", bizName = "", data = {} } = req.body || {};
+  const { messages, lang = "es", trade = "cleaning", bizName = "", data = {} } = req.body || {};
   if (!Array.isArray(messages) || messages.length === 0) return res.status(400).json({ error: "messages required" });
 
   if (!aiLive) {
