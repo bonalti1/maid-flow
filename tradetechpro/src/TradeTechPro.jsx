@@ -1034,7 +1034,9 @@ export default function TradeTechPro() {
         )}
         {tabScreens.includes(screen) && screen !== "quote" && <BrandHeader />}
         {screen === "quote" && step === 0 && !measuring && <BrandHeader />}
-        {screen === "result" && <div><TopBar title={titles.result} back={resetQuote} /></div>}
+        {/* Back returns to the questionnaire (state intact) to tweak an answer;
+            "Nueva cotización" on the result screen is the destructive reset. */}
+        {screen === "result" && <div><TopBar title={titles.result} back={() => setScreen("quote")} /></div>}
 
         {screen === "welcome" && Welcome()}
         {screen === "quote" && QuoteFlow()}
