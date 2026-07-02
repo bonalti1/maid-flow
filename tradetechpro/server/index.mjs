@@ -4439,30 +4439,41 @@ show(parseInt(location.hash.slice(1))-1||0);
 </body></html>`);
 });
 
-/* ── Contractor logos ──
- * Stored by content hash; the app re-uploads automatically whenever it shares,
- * so logos self-heal after server restarts. */
+/* ── Contractor logos & site photos ──
+ * Stored by content hash in the DB (kv table, base64) so they survive restarts
+ * and redeploys — the previous disk store was wiped on every deploy, 404-ing
+ * every tenant site's photo gallery. Legacy disk files are still read if present. */
 const logosDir = path.join(path.dirname(fileURLToPath(import.meta.url)), "logos");
-fs.mkdirSync(logosDir, { recursive: true });
+try { fs.mkdirSync(logosDir, { recursive: true }); } catch { /* read-only fs is fine now */ }
 
-app.post("/api/logo", (req, res) => {
+app.post("/api/logo", async (req, res) => {
   const m = /^data:image\/(png|jpeg);base64,([A-Za-z0-9+/=]+)$/.exec(String(req.body?.data || ""));
   if (!m) return res.status(400).json({ error: "bad image" });
   const buf = Buffer.from(m[2], "base64");
   if (buf.length > 150000) return res.status(413).json({ error: "too large" });
   const id = crypto.createHash("sha1").update(buf).digest("hex").slice(0, 16) + (m[1] === "png" ? ".png" : ".jpg");
-  try { fs.writeFileSync(path.join(logosDir, id), buf); } catch (e) { return res.status(500).json({ error: e.message }); }
+  try { await db.kvSet(`logo:${id}`, { ct: m[1] === "png" ? "image/png" : "image/jpeg", b64: m[2] }); }
+  catch (e) { return res.status(500).json({ error: e.message }); }
   res.json({ id });
 });
 
-app.get("/api/logo/:id", (req, res) => {
+app.get("/api/logo/:id", async (req, res) => {
   const id = String(req.params.id);
   if (!/^[a-f0-9]{16}\.(png|jpg)$/.test(id)) return res.status(404).end();
+  const rec = await db.kvGet(`logo:${id}`).catch(() => null);
+  if (rec && rec.b64) {
+    res.set("Content-Type", rec.ct || (id.endsWith(".png") ? "image/png" : "image/jpeg"));
+    res.set("Cache-Control", "public, max-age=604800, immutable");
+    return res.send(Buffer.from(rec.b64, "base64"));
+  }
+  // Legacy disk fallback (pre-DB uploads on a warm instance).
   const p = path.join(logosDir, id);
-  if (!fs.existsSync(p)) return res.status(404).end();
-  res.set("Content-Type", id.endsWith(".png") ? "image/png" : "image/jpeg");
-  res.set("Cache-Control", "public, max-age=604800");
-  res.send(fs.readFileSync(p));
+  if (fs.existsSync(p)) {
+    res.set("Content-Type", id.endsWith(".png") ? "image/png" : "image/jpeg");
+    res.set("Cache-Control", "public, max-age=604800");
+    return res.send(fs.readFileSync(p));
+  }
+  return res.status(404).end();
 });
 
 /* ── Public invoice/estimate page ──
