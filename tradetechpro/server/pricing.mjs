@@ -26,17 +26,32 @@ const BASE_HOURS = { regular:0.8, deep:1.4, move_in:1.6, move_out:1.8, airbnb:0.
 const num = (v, f = 0) => { const n = Number(v); return Number.isFinite(n) ? n : f; };
 
 // Deep-merge a cleaner's saved overrides onto the defaults (her "my rates").
+// Only finite, non-negative numeric overrides are accepted — anything else
+// (undefined, "", NaN, negative, wrong type) falls back to the default, so a
+// half-typed or corrupt "Mis precios" entry can never produce NaN/negative
+// prices in the app or on the public widget.
+const okNum = (v, max = 1e6) => { const n = Number(v); return Number.isFinite(n) && n >= 0 && n <= max ? n : undefined; };
+// Per-group sane upper bounds so an override can't invert the math (e.g. a
+// frequency discount > 1 would make the recurring price negative).
+const CAP = { RATE_perSqft: 100, RATE_min: 1e5, CONDITION: 10, FURNISHED: 10, FREQ_DISCOUNT: 0.95, PETS: 1e4, ADDON: 1e4, BATHROOM_ADDER: 1e4, BEDROOM_ADDER: 1e4 };
 export function mergeRates(overrides) {
-  if (!overrides) return DEFAULTS;
+  if (!overrides || typeof overrides !== 'object') return DEFAULTS;
   const out = { ...DEFAULTS };
   for (const key of Object.keys(DEFAULTS)) {
     const def = DEFAULTS[key], ov = overrides[key];
-    if (ov && typeof def === 'object' && !Array.isArray(def)) {
+    if (typeof def === 'object' && !Array.isArray(def)) {
+      if (!ov || typeof ov !== 'object') continue;
       if (key === 'RATE') {
         out.RATE = { ...DEFAULTS.RATE };
-        for (const t of Object.keys(DEFAULTS.RATE)) out.RATE[t] = { ...DEFAULTS.RATE[t], ...(ov[t] || {}) };
-      } else out[key] = { ...def, ...ov };
-    } else if (ov !== undefined && typeof def !== 'object') out[key] = ov;
+        for (const t of Object.keys(DEFAULTS.RATE)) {
+          const o = ov[t] || {};
+          out.RATE[t] = { perSqft: okNum(o.perSqft, CAP.RATE_perSqft) ?? DEFAULTS.RATE[t].perSqft, min: okNum(o.min, CAP.RATE_min) ?? DEFAULTS.RATE[t].min };
+        }
+      } else {
+        out[key] = { ...def };
+        for (const k of Object.keys(def)) { const v = okNum(ov[k], CAP[key]); if (v !== undefined) out[key][k] = v; }
+      }
+    } else { const v = okNum(ov, CAP[key]); if (v !== undefined) out[key] = v; }
   }
   return out;
 }
@@ -56,7 +71,7 @@ export function quote(i = {}, rates = DEFAULTS) {
   const range = [Math.round(base*0.88/5)*5, Math.round(base*1.12/5)*5];
   const freq = i.frequency;
   const recurring = freq && freq !== 'one_time' && rates.FREQ_DISCOUNT[freq] != null
-    ? Math.round(recommended * (1 - rates.FREQ_DISCOUNT[freq]) / 5) * 5 : null;
+    ? Math.max(0, Math.round(recommended * (1 - rates.FREQ_DISCOUNT[freq]) / 5) * 5) : null;
   const bh = BASE_HOURS[cleaningType] ?? BASE_HOURS.regular;
   let hours = Math.max(1.5, (sqft/1000) * bh * rates.CONDITION[condition]);
   const cleaners = sqft > 1800 || hours > 5 ? 2 : 1;

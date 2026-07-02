@@ -121,7 +121,7 @@ ${ribbonHtml(opts)}
 <div class="hero"><div class="veil"></div>
   <div class="wrap in">
     <span class="kick">LIMPIEZA DE CASAS${d.city ? ` · ${esc(d.city).toUpperCase()}` : ""}</span>
-    <h1>${d.hero || `Tu casa, <em>impecable</em><br>sin mover un dedo`}</h1>
+    <h1>${d.hero ? esc(d.hero) : `Tu casa, <em>impecable</em><br>sin mover un dedo`}</h1>
     <p>${esc(d.tagline) || "Recibe el precio de tu limpieza al instante, según el tamaño de tu casa — gratis y sin que nadie te visite."}</p>
     <a class="cta" href="#cotiza">COTIZA TU LIMPIEZA EN 60 SEGUNDOS</a>${d.phone ? `<a class="cta ghost" href="tel:+1${d.phone}">Llámanos</a>` : ""}
   </div>
@@ -231,7 +231,7 @@ ${ribbonHtml(opts)}
   <div class="ghostword bc">${ghost}</div>
   <div class="wrap in">
     <p class="hk">Limpieza de casas${d.city ? ` · ${esc(d.city).toUpperCase()}` : ""}</p>
-    <h1>${d.hero || `Casa <em>impecable</em><br>sin estrés.`}</h1>
+    <h1>${d.hero ? esc(d.hero) : `Casa <em>impecable</em><br>sin estrés.`}</h1>
     <p class="lede">${esc(d.tagline) || "Recibe el precio de tu limpieza en 60 segundos — según el tamaño de tu casa, sin visitas y sin compromiso."}</p>
     <div class="ctas"><a class="btn p" href="#cotiza">Cotiza ya</a>${d.phone ? `<a class="btn g" href="tel:+1${d.phone}">Llámanos</a>` : ""}</div>
   </div>
@@ -323,7 +323,7 @@ ${ribbonHtml(opts)}
 <div class="hero"><div class="wrap"><div class="hgrid">
   <div>
     <span class="pill">🧹 Limpieza de casas${d.city ? ` · ${esc(d.city)}` : ""}</span>
-    <h1>${d.hero || `Tu casa, impecable.<br><em>Sin estrés.</em>`}</h1>
+    <h1>${d.hero ? esc(d.hero) : `Tu casa, impecable.<br><em>Sin estrés.</em>`}</h1>
     <p class="lede">${esc(d.tagline) || "Recibe el precio de tu limpieza según el tamaño de tu casa — aquí mismo, gratis y sin que nadie te visite."}</p>
     <div class="hcta"><a class="btn p" href="#cotiza">Cotiza gratis</a>${d.phone ? `<a class="btn g" href="tel:+1${d.phone}">📞 Llámanos</a>` : ""}</div>
   </div>
@@ -365,6 +365,9 @@ export function renderSite(data, opts = {}) {
     color: "#1B8FD1",
     ...data,
   };
+  // Harden the brand color: it's interpolated raw into <style>, so a non-hex
+  // value (e.g. "</style><script>…") would be an injection. Force a valid hex.
+  d.color = /^#[0-9a-f]{6}$/i.test(String(d.color || "").trim()) ? String(d.color).trim() : "#1B8FD1";
   const fn = TEMPLATES[String(d.template || "1")] || t1;
   return fn(d, opts);
 }

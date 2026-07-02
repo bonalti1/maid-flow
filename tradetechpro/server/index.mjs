@@ -98,43 +98,79 @@ app.post("/api/stripe/webhook", express.raw({ type: "application/json" }), async
 
   let event;
   try { event = JSON.parse(req.body.toString("utf8")); } catch { return res.status(400).json({ error: "bad json" }); }
+
+  // Idempotency: Stripe retries deliveries; process each event.id at most once.
+  if (event.id && (await db.kvGet(`evt:${event.id}`).catch(() => null))) return res.json({ ok: true, dup: true });
+
   const obj = event.data?.object || {};
   const customerId = obj.customer || null;
+  const clientRef = obj.client_reference_id || obj.metadata?.contractorId || null;
   const email = String(obj.customer_email || obj.customer_details?.email || "").toLowerCase();
   const phone = String(obj.customer_phone || obj.customer_details?.phone || "").replace(/\D/g, "").replace(/^1/, "");
 
-  // Match the Stripe customer to a contractor: stored id first, then email, then phone
+  const PAID_EVENTS = ["invoice.paid", "invoice.payment_succeeded", "checkout.session.completed"];
+  // A "paid" event must actually represent money moving: real checkouts have
+  // payment_status "paid"; invoices must have a positive amount (skip $0 trials/
+  // 100%-off coupons and delayed/unpaid checkouts).
+  const isRealPayment = event.type === "checkout.session.completed"
+    ? obj.payment_status === "paid"
+    : (event.type === "invoice.paid" || event.type === "invoice.payment_succeeded")
+      ? Number(obj.amount_paid || 0) > 0
+      : false;
+
+  // Match the Stripe customer to a contractor. Prefer the deterministic
+  // client_reference_id/metadata (set on the Payment Link); fall back to stored
+  // customer id, then contractor-editable email/phone (last resort — logged).
   const list = await db.listContractors();
-  const match =
-    list.find((c) => c.data?.stripeCustomer && customerId && c.data.stripeCustomer === customerId) ||
-    list.find((c) => email && String(c.data?.profile?.email || "").toLowerCase() === email) ||
-    list.find((c) => phone && [c.phone, c.data?.profile?.phone].some((p) => String(p || "").replace(/\D/g, "").replace(/^1/, "") === phone));
+  const byRef = clientRef && list.find((c) => c.id === clientRef || c.slug === clientRef);
+  const byCust = customerId && list.find((c) => c.data?.stripeCustomer && c.data.stripeCustomer === customerId);
+  const byContact = (email && list.find((c) => String(c.data?.profile?.email || "").toLowerCase() === email))
+    || (phone && list.find((c) => [c.phone, c.data?.profile?.phone].some((p) => String(p || "").replace(/\D/g, "").replace(/^1/, "") === phone)));
+  const match = byRef || byCust || byContact || null;
+  if (match && !byRef && !byCust) console.warn(`stripe: matched ${match.slug} by editable email/phone — add client_reference_id to the Payment Link`);
+
   if (!match) {
-    // Payment often arrives BEFORE the closer finishes creating the client — remember it
-    // so the new account activates itself on creation.
-    if (["invoice.paid", "invoice.payment_succeeded", "checkout.session.completed"].includes(event.type)) {
-      if (phone) await db.kvSet(`paid:${phone}`, { customerId, email, phone }).catch(() => {});
-      if (email) await db.kvSet(`paid:${email}`, { customerId, email, phone }).catch(() => {});
+    // Payment often arrives BEFORE the account is created — remember it (30d) so
+    // the new account activates itself on creation, keyed by phone AND email.
+    if (PAID_EVENTS.includes(event.type) && isRealPayment) {
+      const rec = { customerId, email, phone, at: new Date().toISOString() };
+      if (phone) await db.kvSet(`paid:${phone}`, rec).catch(() => {});
+      if (email) await db.kvSet(`paid:${email}`, rec).catch(() => {});
     }
+    if (event.id) await db.kvSet(`evt:${event.id}`, { at: Date.now() }).catch(() => {});
     console.log("stripe webhook: no contractor match for", event.type, customerId, email, phone);
     return res.json({ ok: true, matched: false });
   }
 
-  const data = { ...(match.data || {}) };
-  if (customerId) data.stripeCustomer = customerId;
-  if (["invoice.paid", "invoice.payment_succeeded", "checkout.session.completed"].includes(event.type)) {
-    delete data.status; // unpause — access back the second the card goes through
-    delete data.payFailedAt;
-    data.payStatus = "ok";
-  } else if (event.type === "invoice.payment_failed") {
-    data.payStatus = "failed";
-    data.payFailedAt = data.payFailedAt || new Date().toISOString();
-  } else if (event.type === "customer.subscription.deleted") {
-    data.status = "paused";
-    data.payStatus = "canceled";
+  // Ordering: ignore a billing event older than the last one applied to this
+  // account, so a delayed/retried invoice.paid can't un-cancel a later deletion.
+  const cur = match.data || {};
+  if (event.created && cur.billingEventAt && Number(event.created) < Number(cur.billingEventAt)) {
+    if (event.id) await db.kvSet(`evt:${event.id}`, { at: Date.now() }).catch(() => {});
+    console.log(`stripe webhook: stale ${event.type} for ${match.slug} — ignored`);
+    return res.json({ ok: true, stale: true });
   }
-  await db.saveContractorData(match.id, data);
-  console.log(`stripe webhook: ${event.type} → ${match.slug} (${data.payStatus}${data.status ? ", " + data.status : ""})`);
+
+  const patch = { billingEventAt: Number(event.created) || Math.floor(Date.now() / 1000) };
+  if (customerId) patch.stripeCustomer = customerId;
+  if (PAID_EVENTS.includes(event.type)) {
+    if (!isRealPayment) { if (event.id) await db.kvSet(`evt:${event.id}`, { at: Date.now() }).catch(() => {}); return res.json({ ok: true, ignored: "unpaid_or_zero" }); }
+    patch.status = null;       // unpause — access back the second the card goes through
+    patch.payFailedAt = null;
+    patch.payStatus = "ok";
+  } else if (event.type === "invoice.payment_failed") {
+    patch.payStatus = "failed";
+    patch.payFailedAt = cur.payFailedAt || new Date().toISOString();
+  } else if (event.type === "customer.subscription.deleted") {
+    patch.status = "paused";
+    patch.payStatus = "canceled";
+  } else {
+    if (event.id) await db.kvSet(`evt:${event.id}`, { at: Date.now() }).catch(() => {});
+    return res.json({ ok: true, ignored: event.type });
+  }
+  await db.mergeContractorData(match.id, patch);
+  if (event.id) await db.kvSet(`evt:${event.id}`, { at: Date.now() }).catch(() => {});
+  console.log(`stripe webhook: ${event.type} → ${match.slug} (${patch.payStatus}${patch.status ? ", " + patch.status : ""})`);
   res.json({ ok: true });
 });
 
@@ -432,7 +468,10 @@ app.post("/api/lookup", async (req, res) => {
  * so the map works out of the box. Restrict the key by referrer in production. */
 app.get("/api/mapconfig", (_req, res) => {
   res.set("Cache-Control", "public, max-age=300");
-  res.json({ key: process.env.GOOGLE_MAPS_BROWSER_KEY || GOOGLE_KEY || "" });
+  // Only ever expose a dedicated, HTTP-referrer-restricted browser key. Never
+  // fall back to the server key (used for Geocoding/Places) — that would hand an
+  // unrestricted key to anyone who curls this endpoint.
+  res.json({ key: process.env.GOOGLE_MAPS_BROWSER_KEY || "" });
 });
 
 
@@ -1263,11 +1302,52 @@ app.get("/api/me", async (req, res) => {
 });
 
 // The app saves its data (customers, jobs, profile) — whole snapshot, simple and safe
+// Sanitize a contractor-supplied rate override table: every numeric field must
+// be finite and non-negative (drop anything else so it falls back to defaults),
+// and only known keys survive. Prevents NaN/negative/huge prices and injection
+// of arbitrary fields via the profile blob.
+function sanitizeRates(r) {
+  if (!r || typeof r !== "object") return undefined;
+  const posNum = (v, max = 1e6) => { const n = Number(v); return Number.isFinite(n) && n >= 0 && n <= max ? n : undefined; };
+  const out = {};
+  if (r.RATE && typeof r.RATE === "object") {
+    out.RATE = {};
+    for (const t of Object.keys(RATE_DEFAULTS.RATE)) {
+      const ov = r.RATE[t]; if (!ov || typeof ov !== "object") continue;
+      const e = {}; const ps = posNum(ov.perSqft, 100); const mn = posNum(ov.min, 1e5);
+      if (ps !== undefined) e.perSqft = ps; if (mn !== undefined) e.min = mn;
+      if (Object.keys(e).length) out.RATE[t] = e;
+    }
+    if (!Object.keys(out.RATE).length) delete out.RATE;
+  }
+  for (const grp of ["CONDITION", "PETS", "FURNISHED", "FREQ_DISCOUNT", "ADDON"]) {
+    if (!r[grp] || typeof r[grp] !== "object") continue;
+    const g = {}; const cap = grp === "FREQ_DISCOUNT" ? 0.9 : grp === "CONDITION" || grp === "FURNISHED" ? 10 : 1e4;
+    for (const k of Object.keys(RATE_DEFAULTS[grp])) { const v = posNum(r[grp][k], cap); if (v !== undefined) g[k] = v; }
+    if (Object.keys(g).length) out[grp] = g;
+  }
+  for (const k of ["BATHROOM_ADDER", "BEDROOM_ADDER"]) { const v = posNum(r[k], 1e4); if (v !== undefined) out[k] = v; }
+  return Object.keys(out).length ? out : undefined;
+}
+
 app.put("/api/state", async (req, res) => {
   const c = await auth(req);
   if (!c) return res.status(401).json({ error: "no session" });
   await db.saveState(c.id, req.body?.state || {});
-  if (req.body?.profile) await db.saveContractorData(c.id, req.body.profile);
+  // Merge ONLY the self-editable profile subtree; never let this endpoint write
+  // billing/pause/site/webhook fields, and never replace the whole data blob.
+  const p = req.body?.profile?.profile;
+  if (p && typeof p === "object") {
+    const str = (v, n = 200) => (v == null ? undefined : String(v).slice(0, n));
+    const profile = {
+      name: str(p.name, 80), biz: str(p.biz, 80), phone: str(p.phone, 30),
+      email: str(p.email, 120), zelle: str(p.zelle, 120),
+      lang: p.lang === "en" ? "en" : "es",
+      logo: typeof p.logo === "string" && p.logo.length < 400000 ? p.logo : undefined,
+      rates: sanitizeRates(p.rates),
+    };
+    await db.mergeContractorData(c.id, { profile });
+  }
   res.json({ ok: true });
 });
 
@@ -1373,6 +1453,9 @@ app.post("/api/widget/chat", async (req, res) => {
 app.post("/api/quote", async (req, res) => {
   const c = await auth(req);
   if (!c) return res.status(401).json({ error: "no session" });
+  // A paused (non-paying, past grace) account can still open the app and keep
+  // its data, but can't generate new quotes — the paid feature is gated.
+  if (c.data?.status === "paused") return res.status(403).json({ error: "paused" });
   const b = req.body || {};
   const rates = mergeRates(c.data?.profile?.rates);
   const q = priceQuote({
@@ -1590,12 +1673,12 @@ select:focus{border-color:#5BC8F0}
 <div class="ft">⚡ Maid Flow</div>
 </div>
 <script>
-var SLUG=${JSON.stringify(c.slug)},BIZ=${JSON.stringify(prof.biz || c.name)},BPH=${JSON.stringify(bizPhone)};
+var SLUG=${JSON.stringify(c.slug).replace(/</g, "\\u003c")},BIZ=${JSON.stringify(prof.biz || c.name).replace(/</g, "\\u003c")},BPH=${JSON.stringify(bizPhone).replace(/</g, "\\u003c")};
 var L=${JSON.stringify({ m1: L.m1, m2: L.m2, m3: L.m3, range: L.range, rangeSub: L.rangeSub, sent: L.sent, callTxt: L.call(prof.biz || c.name), nores: L.nores, noresSub: L.noresSub(prof.biz || c.name), callBtn: L.callBtn, err: L.err,
   // contractor-facing note, demo widget only — homeowners on client sites get the free-inspection line instead
   manual: c.slug === "alto-demo" ? (es
     ? "👆 Este es el imán de clientes. En tu app Maid Flow armas la cotización completa con tus precios y la mandas por WhatsApp — para captar y cerrar con confianza."
-    : "👆 This is the lead magnet. In your Maid Flow app you build the full quote with your prices and send it on WhatsApp — to capture and close with confidence.") : null })};
+    : "👆 This is the lead magnet. In your Maid Flow app you build the full quote with your prices and send it on WhatsApp — to capture and close with confidence.") : null }).replace(/</g, "\\u003c")};
 function track(ev){try{fetch('/api/track',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({event:ev})})}catch(e){}}
 track('w_view');
 var placeId=null,tmr=null;
@@ -3462,16 +3545,20 @@ app.post("/api/hl/lead", async (req, res) => {
 
 app.post("/api/closer/contractors", async (req, res) => {
   if (!closerOk(req)) return res.status(403).send("Clave incorrecta.");
-  const { name, phone } = req.body || {};
+  const { name, phone, email } = req.body || {};
   if (!name) return res.status(400).send("Falta el nombre del negocio.");
   const c = await db.createContractor({ name, phone });
   // Closer accounts activate only with money: a Stripe payment in the last
-  // 48h matching this phone activates now; otherwise the access link waits.
+  // 30 days matching this phone OR email activates now; otherwise the link waits.
   const digits = String(phone || "").replace(/\D/g, "").replace(/^1/, "");
-  const paid = digits ? await db.kvGet(`paid:${digits}`, 48 * 3600 * 1000).catch(() => null) : null;
+  const em = String(email || "").trim().toLowerCase();
+  const WINDOW = 30 * 24 * 3600 * 1000;
+  const paid = (digits && await db.kvGet(`paid:${digits}`, WINDOW).catch(() => null))
+    || (em && await db.kvGet(`paid:${em}`, WINDOW).catch(() => null)) || null;
   const cData = paid
-    ? { payStatus: "ok", ...(paid.customerId ? { stripeCustomer: paid.customerId } : {}) }
+    ? { payStatus: "ok", billingEventAt: Math.floor(Date.now() / 1000), ...(paid.customerId ? { stripeCustomer: paid.customerId } : {}) }
     : { payStatus: "pending" };
+  if (em) cData.profile = { email: em };
   await db.saveContractorData(c.id, cData);
   const invite = await db.createInvite(c.id);
   const base = canonBase(req);

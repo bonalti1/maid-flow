@@ -41,6 +41,9 @@ export async function initDb() {
       ssl: process.env.DATABASE_URL.includes("localhost") ? false : { rejectUnauthorized: false },
       max: 5,
     });
+    // Render/managed Postgres drops idle connections; without this listener an
+    // idle-client error is an unhandled 'error' event that kills the process.
+    pool.on("error", (e) => console.error("pg pool error (idle client):", e.message));
     await pool.query(`
       CREATE TABLE IF NOT EXISTS contractors (
         id UUID PRIMARY KEY,
@@ -104,14 +107,23 @@ export async function initDb() {
         created_at TIMESTAMPTZ DEFAULT now(),
         done_at TIMESTAMPTZ
       );
+      CREATE INDEX IF NOT EXISTS leads_contractor_idx ON leads (contractor_id, created_at DESC);
+      CREATE INDEX IF NOT EXISTS sessions_contractor_idx ON sessions (contractor_id);
+      CREATE INDEX IF NOT EXISTS invites_contractor_idx ON invites (contractor_id);
+      CREATE INDEX IF NOT EXISTS contractors_domain_idx ON contractors (lower(data->'site'->>'domain'));
     `);
     console.log("db: postgres ready");
     return;
    } catch (e) {
     dbError = e.message;
-    console.error("db: POSTGRES CONNECTION FAILED — falling back to file DB. Reason:", e.message);
     try { await pool?.end(); } catch { /* ignore */ }
     pool = null;
+    // A DATABASE_URL is configured but unreachable. Do NOT silently fall back to
+    // the ephemeral file store — that loses accounts, payment status, and leads
+    // on the next restart, and diverges from the real DB. Crash so the platform
+    // restarts us and retries the connection. File store is for dev only.
+    console.error("db: POSTGRES CONNECTION FAILED and DATABASE_URL is set — refusing to start. Reason:", e.message);
+    throw new Error(`Postgres connection failed: ${e.message}`);
    }
   }
   // File fallback (no DATABASE_URL, or Postgres failed to connect)
@@ -271,6 +283,16 @@ export async function saveContractorData(id, data) {
   if (pool) { await pool.query("UPDATE contractors SET data=$2 WHERE id=$1", [id, data]); return; }
   const c = mem.contractors.find(c => c.id === id);
   if (c) { c.data = data; persistMem(); }
+}
+
+/* Shallow-merge a patch into contractors.data WITHOUT clobbering sibling keys.
+ * Atomic on Postgres (jsonb `||`), so a concurrent webhook writing billing
+ * fields can't be lost. Top-level keys in `patch` replace their counterpart;
+ * everything else (status, payStatus, stripeCustomer, site, webhook) is kept. */
+export async function mergeContractorData(id, patch) {
+  if (pool) { await pool.query("UPDATE contractors SET data = COALESCE(data,'{}'::jsonb) || $2::jsonb WHERE id=$1", [id, patch]); return; }
+  const c = mem.contractors.find(c => c.id === id);
+  if (c) { c.data = { ...(c.data || {}), ...patch }; persistMem(); }
 }
 
 /* Find a client by the custom domain they connected (host-based routing). */
