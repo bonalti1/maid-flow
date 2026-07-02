@@ -1364,6 +1364,20 @@ function forwardLead(c, lead) {
   }).catch((e) => console.error(`webhook ${c.slug} failed:`, e.message));
 }
 
+// Authed in-app lead drop: resolves the contractor from the session so the
+// cleaner's OWN quotes also become leads and fire her webhook (the widget path
+// below is for public/homeowner submissions by slug).
+app.post("/api/lead", async (req, res) => {
+  const c = await auth(req);
+  if (!c) return res.status(401).json({ error: "no session" });
+  const { name = "", phone = "", address = "", info = {} } = req.body || {};
+  const digits = String(phone).replace(/\D/g, "");
+  const clean = { name: String(name).slice(0, 80), phone: digits.slice(0, 15), address: String(address).slice(0, 160) };
+  const leadId = await db.addLead(c.id, { ...clean, info: info && typeof info === "object" ? info : {} });
+  forwardLead(c, { id: leadId, ...clean, ...(info && typeof info === "object" ? info : {}) });
+  res.json({ ok: true, id: leadId });
+});
+
 // Widget (and anything public) drops a lead for a contractor by slug
 app.post("/api/widget/lead", async (req, res) => {
   const wlIp = String(req.headers["x-forwarded-for"] || "").split(",")[0].trim() || req.socket.remoteAddress || "?";

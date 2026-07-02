@@ -177,8 +177,8 @@ const DEMO_ON = WANT_DEMO && !savedProfile.biz;
 
 /* ─── Main App ─── */
 export default function TradeTechPro() {
-  const [lang, setLang] = useState(savedProfile.lang || "es");
-  const t = TR[lang];
+  const [lang, setLang] = useState(savedProfile.lang === "en" ? "en" : "es");
+  const t = TR[lang] || TR.es;
   const welcomedInit = (() => { try { return !!localStorage.getItem("maidflow_welcomed"); } catch { return false; } })();
   const [screen, setScreen] = useState(WANT_DEMO ? "quote" : (welcomedInit ? "quote" : "welcome"));
 
@@ -217,7 +217,7 @@ export default function TradeTechPro() {
     img.src = URL.createObjectURL(file);
   };
 
-  const [customers, setCustomers] = useState(seedCustomers);
+  const [customers, setCustomers] = useState(DEMO_ON ? seedCustomers : []);
   const [savedQuotes, setSavedQuotes] = useState(() => {
     try { return JSON.parse(localStorage.getItem("maidflow_quotes") || "[]"); } catch { return []; }
   });
@@ -235,6 +235,7 @@ export default function TradeTechPro() {
     try { return localStorage.getItem("maidflow_session"); } catch { return null; }
   });
   const [cloudReady, setCloudReady] = useState(false);
+  const [netNonce, setNetNonce] = useState(0); // bumped on "online" to retry hydration
   const [hideInstall, setHideInstall] = useState(() => {
     try { return !!localStorage.getItem("maidflow_inst"); } catch { return true; }
   });
@@ -253,7 +254,7 @@ export default function TradeTechPro() {
 
   // On startup with a session: load my account + saved data
   useEffect(() => {
-    if (!session) return;
+    if (!session || cloudReady) return;
     (async () => {
       try {
         const r = await api("/api/me");
@@ -269,14 +270,28 @@ export default function TradeTechPro() {
         if (p.email) setBizEmail(p.email);
         if (p.zelle) setZelle(p.zelle);
         if (p.rates) setMyRates(p.rates);
-        setCustomers(j.state?.customers || []);
-        setSavedQuotes(j.state?.quotes || []);
+        // Merge local (pre-login / offline) data with the server copy by id so a
+        // fresh account never wipes quotes made before the invite link was opened.
+        const mergeById = (a, b) => {
+          const m = new Map();
+          [...(a || []), ...(b || [])].forEach((x) => { if (x && x.id != null && !m.has(x.id)) m.set(x.id, x); });
+          return [...m.values()].sort((x, y) => (y.ts || 0) - (x.ts || 0));
+        };
+        setCustomers((local) => mergeById(local, j.state?.customers));
+        setSavedQuotes((local) => mergeById(local, j.state?.quotes));
         if (!WANT_DEMO && welcomedInit) setScreen("quote");
         setCloudReady(true);
-      } catch { /* offline — local data keeps working */ }
+      } catch { /* offline — local data keeps working; retried when back online */ }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session]);
+  }, [session, netNonce]);
+
+  // Retry cloud hydration when connectivity returns (only if it never succeeded).
+  useEffect(() => {
+    const onOnline = () => setNetNonce((n) => n + 1);
+    window.addEventListener("online", onOnline);
+    return () => window.removeEventListener("online", onOnline);
+  }, []);
 
   // Save to the cloud shortly after anything changes. Profile (incl. rates) is
   // nested under data.profile so the same shape round-trips with the server.
@@ -289,6 +304,12 @@ export default function TradeTechPro() {
           state: { customers, quotes: savedQuotes },
           profile: { profile: { name: userName, biz: bizName, phone: userPhone, logo, lang, email: bizEmail, zelle, rates: myRates } },
         }),
+      }).then((r) => {
+        if (r && r.status === 401) { // session died server-side — stop pretending it's saved
+          try { localStorage.removeItem("maidflow_session"); } catch { /* ignore */ }
+          setSession(null); setCloudReady(false);
+          showToast(lang === "es" ? "Sesión terminada — abre tu link de invitación 🔑" : "Session ended — open your invite link 🔑");
+        }
       }).catch(() => { /* offline — retried on next change */ });
     }, 1500);
     return () => clearTimeout(id);
@@ -341,7 +362,7 @@ export default function TradeTechPro() {
     if (!session) {
       let used = 0;
       try { used = parseInt(localStorage.getItem("maidflow_demo_meas") || "0", 10) || 0; } catch { /* private mode */ }
-      if (used >= 6) { showToast("🔒 " + t.demoLimit); return; }
+      if (used >= 6) { showToast("🔒 " + t.demoLimit); setField("address", addr); setStep(1); return; }
     }
     setField("address", addr);
     setMeasuring(true);
@@ -366,7 +387,13 @@ export default function TradeTechPro() {
         res = j.found ? { addr: j.addr || addr, sqft: j.sqft ?? null, beds: j.beds ?? null, baths: j.baths ?? null, propertyType: j.propertyType || "" } : null;
       }
     } catch { /* backend unreachable */ }
-    if (!answered) res = await mockLookup(addr);
+    // Only invent property data in demo mode. For a real (logged-in) cleaner a
+    // lookup failure must NOT fabricate a house — land on manual entry instead,
+    // so she never unknowingly quotes off made-up square footage.
+    if (!answered) {
+      if (!session) res = await mockLookup(addr);
+      else showToast(lang === "es" ? "No encontramos la casa — escribe los datos 👇" : "Couldn't find the home — enter the details 👇");
+    }
     await new Promise((rs) => setTimeout(rs, Math.max(0, 1700 - (Date.now() - t0))));
     clearTimeout(p1); clearTimeout(p2);
     setMeasuring(false);
@@ -710,12 +737,13 @@ export default function TradeTechPro() {
     const waPhone = String(q.phone || "").replace(/\D/g, "");
     const waHref = `https://wa.me/${waPhone.length >= 10 ? (waPhone.length === 10 ? "1" + waPhone : waPhone) : ""}?text=${encodeURIComponent(msg)}`;
     const sendWhatsApp = () => {
+      if (waPhone.length < 10) { showToast(lang === "es" ? "Agrega el teléfono del cliente 📱" : "Add the customer's phone 📱"); return; }
       // Save the customer if new
       if (q.name && q.phone && !customers.some((c) => c.phone === q.phone)) {
         setCustomers((prev) => [{ id: Date.now(), name: q.name, phone: q.phone, addr: q.address }, ...prev]);
       }
-      // Drop a lead on the server too (so it shows in the cleaner's leads / webhook)
-      if (session) api("/api/widget/lead", { method: "POST", body: JSON.stringify({ slug: "", name: q.name, phone: q.phone, address: q.address }) }).catch(() => {});
+      // Record the lead on the server (shows in leads + fires the webhook).
+      if (session) api("/api/lead", { method: "POST", body: JSON.stringify({ name: q.name, phone: q.phone, address: q.address, info: { recommended: out.recommended, low: out.range[0], high: out.range[1], cleaningType: out.cleaningType, sqft: q.sqft, beds: q.beds, baths: q.baths } }) }).catch(() => {});
       window.open(waHref, "_blank");
     };
     const copyMsg = async () => { try { await navigator.clipboard.writeText(msg); showToast(lang === "es" ? "Mensaje copiado ✓" : "Message copied ✓"); } catch { /* ignore */ } };
@@ -824,15 +852,27 @@ export default function TradeTechPro() {
   /* ── My prices (rate editor) ── */
   const Prices = () => {
     const rates = mergeRates(myRates);
+    // Keep the raw (comma→dot) string while typing so decimals like "0.15" and
+    // Latin-American "0,15" survive; mergeRates coerces & validates numbers.
+    const cleanNum = (val) => { const s = String(val).replace(",", ".").replace(/[^0-9.]/g, ""); return s === "" ? undefined : s; };
     const setRate = (type, field, val) => {
       setMyRates((prev) => {
         const next = { ...prev, RATE: { ...(prev.RATE || {}) } };
-        next.RATE[type] = { ...(next.RATE[type] || {}), [field]: val === "" ? undefined : Number(val) };
+        const v = cleanNum(val);
+        next.RATE[type] = { ...(next.RATE[type] || {}) };
+        if (v === undefined) delete next.RATE[type][field]; else next.RATE[type][field] = v;
+        saveProfile({ rates: next });
         return next;
       });
     };
-    const setAddon = (key, val) => setMyRates((prev) => ({ ...prev, ADDON: { ...(prev.ADDON || {}), [key]: val === "" ? undefined : Number(val) } }));
-    const resetRates = () => { setMyRates({}); showToast(lang === "es" ? "Precios restablecidos ✓" : "Prices reset ✓"); };
+    const setAddon = (key, val) => setMyRates((prev) => {
+      const next = { ...prev, ADDON: { ...(prev.ADDON || {}) } };
+      const v = cleanNum(val);
+      if (v === undefined) delete next.ADDON[key]; else next.ADDON[key] = v;
+      saveProfile({ rates: next });
+      return next;
+    });
+    const resetRates = () => { setMyRates({}); saveProfile({ rates: {} }); showToast(lang === "es" ? "Precios restablecidos ✓" : "Prices reset ✓"); };
     return (
       <div className="flex-1 overflow-y-auto pb-6" style={{ background: M.bg }}>
         <div className="px-5 pt-4">
