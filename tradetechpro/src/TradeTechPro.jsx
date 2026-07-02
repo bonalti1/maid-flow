@@ -236,6 +236,7 @@ export default function TradeTechPro() {
   });
   const [cloudReady, setCloudReady] = useState(false);
   const [netNonce, setNetNonce] = useState(0); // bumped on "online" to retry hydration
+  const [leads, setLeads] = useState([]); // homeowner leads from the public widget
   const [hideInstall, setHideInstall] = useState(() => {
     try { return !!localStorage.getItem("maidflow_inst"); } catch { return true; }
   });
@@ -292,6 +293,13 @@ export default function TradeTechPro() {
     window.addEventListener("online", onOnline);
     return () => window.removeEventListener("online", onOnline);
   }, []);
+
+  // Pull homeowner leads (captured by the public widget) when viewing Clients.
+  useEffect(() => {
+    if (!session || screen !== "clients") return;
+    api("/api/leads").then((r) => (r.ok ? r.json() : null)).then((j) => { if (j && Array.isArray(j.leads)) setLeads(j.leads); }).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session, screen]);
 
   // Save to the cloud shortly after anything changes. Profile (incl. rates) is
   // nested under data.profile so the same shape round-trips with the server.
@@ -822,9 +830,25 @@ export default function TradeTechPro() {
           <p style={{ color: M.goldHi, fontSize: 11, fontWeight: 900, letterSpacing: "0.16em", textTransform: "uppercase" }}>{lang === "es" ? "Tus clientes" : "Your customers"}</p>
           <p className="text-white font-extrabold" style={{ fontSize: 26, margin: "4px 0 0" }}>{customers.length}</p>
         </div>
+        {leads.length > 0 && (
+          <>
+            <p className="mb-2" style={{ color: M.tealDeep, fontSize: 14, fontWeight: 800 }}>{lang === "es" ? "Nuevos leads (de tu página)" : "New leads (from your page)"}</p>
+            {leads.slice(0, 12).map((ld) => (
+              <Card key={ld.id} style={{ marginBottom: 8 }}>
+                <div className="flex items-center justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="font-bold truncate" style={{ color: M.navy, fontSize: 14 }}>{ld.name || (lang === "es" ? "Sin nombre" : "No name")}</p>
+                    <p className="truncate" style={{ color: M.muted2, fontSize: 11, fontWeight: 600 }}>{ld.phone || "—"}{ld.address ? ` · ${ld.address}` : ""}</p>
+                  </div>
+                  {ld.phone ? <a href={`https://wa.me/${String(ld.phone).replace(/\D/g, "").length === 10 ? "1" + String(ld.phone).replace(/\D/g, "") : String(ld.phone).replace(/\D/g, "")}`} target="_blank" rel="noreferrer" className="shrink-0 font-extrabold" style={{ color: "#fff", background: M.teal, borderRadius: 10, padding: "8px 12px", fontSize: 13, textDecoration: "none" }}>WhatsApp</a> : null}
+                </div>
+              </Card>
+            ))}
+          </>
+        )}
         {savedQuotes.length > 0 && (
           <>
-            <p className="mb-2" style={{ color: M.tealDeep, fontSize: 14, fontWeight: 800 }}>{lang === "es" ? "Cotizaciones recientes" : "Recent quotes"}</p>
+            <p className="mb-2 mt-3" style={{ color: M.tealDeep, fontSize: 14, fontWeight: 800 }}>{lang === "es" ? "Cotizaciones recientes" : "Recent quotes"}</p>
             {savedQuotes.slice(0, 8).map((sq) => (
               <Card key={sq.id} style={{ marginBottom: 8 }}>
                 <div className="flex items-center justify-between gap-2">
