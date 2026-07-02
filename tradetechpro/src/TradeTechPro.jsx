@@ -317,6 +317,8 @@ export default function TradeTechPro() {
           try { localStorage.removeItem("maidflow_session"); } catch { /* ignore */ }
           setSession(null); setCloudReady(false);
           showToast(lang === "es" ? "Sesión terminada — abre tu link de invitación 🔑" : "Session ended — open your invite link 🔑");
+        } else if (r && !r.ok) { // 413/500/etc — don't fail silently
+          showToast(lang === "es" ? "No se pudo guardar en la nube ⚠️" : "Couldn't save to the cloud ⚠️");
         }
       }).catch(() => { /* offline — retried on next change */ });
     }, 1500);

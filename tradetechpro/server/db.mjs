@@ -327,6 +327,13 @@ export async function useInvite(token) {
   return session;
 }
 
+/* Delete sessions older than maxAgeDays to bound table growth. Invites are the
+ * durable key, so an aged-out session just means re-opening the invite link.
+ * (File store keeps no session timestamps — dev only — so this is a no-op there.) */
+export async function cleanupSessions(maxAgeDays = 365) {
+  if (pool) { await pool.query(`DELETE FROM sessions WHERE created_at < now() - ($1 || ' days')::interval`, [String(maxAgeDays)]); }
+}
+
 export async function getSessionContractor(token) {
   if (!token) return null;
   let id = null;

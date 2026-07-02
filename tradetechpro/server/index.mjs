@@ -177,7 +177,9 @@ app.post("/api/stripe/webhook", express.raw({ type: "application/json" }), async
   res.json({ ok: true });
 });
 
-app.use(express.json({ limit: "300kb" }));
+// 1mb: /api/state carries the profile incl. a base64 logo (~120kb) plus saved
+// quotes/customers — 300kb could silently 413 a heavy account's autosave.
+app.use(express.json({ limit: "1mb" }));
 app.use(express.urlencoded({ extended: false }));
 
 // The bare brand domain shows the sales landing page; the app lives on the
@@ -4625,6 +4627,7 @@ async function graceSweep() {
         console.log(`grace expired → paused ${c.slug}`);
       }
     }
+    await db.cleanupSessions(365).catch(() => {});
   } catch (e) { console.error("grace sweep failed:", e.message); }
 }
 graceSweep();
