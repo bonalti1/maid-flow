@@ -127,6 +127,14 @@ check("/admin 200 with key", (await fetch(B + "/admin?key=regadmin", { redirect:
   check("backup 403 w/o key + excludes sessions/invites", no.status === 403 && !("sessions" in bak) && !("invites" in bak) && Array.isArray(bak.contractors));
 }
 
+// 15. Web push endpoints (dormant without VAPID, but endpoints must respond + store)
+{
+  const key = await J("/api/push/key");
+  const sr = await J("/api/push/subscribe", { method: "POST", headers: AH, body: JSON.stringify({ subscription: { endpoint: "https://x.example/1", keys: { p256dh: "a", auth: "b" } } }) });
+  const c = await db.getContractor(cleaner.id);
+  check("push key + subscribe stores device", typeof key.enabled === "boolean" && sr.ok === true && (c.data.push || []).some((s) => s.endpoint === "https://x.example/1"));
+}
+
 console.log("\n" + results.join("\n"));
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

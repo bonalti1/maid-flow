@@ -275,6 +275,26 @@ export default function TradeTechPro() {
   };
   const canInstall = !IS_STANDALONE; // hide once installed/running as an app
 
+  // Web push ("lead buzz"): subscribe this device to new-lead notifications.
+  const [pushOn, setPushOn] = useState(() => typeof Notification !== "undefined" && Notification.permission === "granted");
+  const subscribePush = async (interactive) => {
+    try {
+      if (!("serviceWorker" in navigator) || !("PushManager" in window) || typeof Notification === "undefined") return;
+      const cfg = await api("/api/push/key").then((r) => (r.ok ? r.json() : null));
+      if (!cfg || !cfg.enabled || !cfg.key) { if (interactive) showToast(lang === "es" ? "Avisos aún no disponibles" : "Alerts not available yet"); return; }
+      if (Notification.permission === "denied") { if (interactive) showToast(lang === "es" ? "Activa las notificaciones en ajustes" : "Enable notifications in settings"); return; }
+      if (Notification.permission !== "granted") { if (!interactive) return; if ((await Notification.requestPermission()) !== "granted") return; }
+      const reg = await navigator.serviceWorker.ready;
+      const b64 = (s) => { const pad = "=".repeat((4 - (s.length % 4)) % 4); const raw = atob((s + pad).replace(/-/g, "+").replace(/_/g, "/")); return Uint8Array.from([...raw].map((c) => c.charCodeAt(0))); };
+      const sub = (await reg.pushManager.getSubscription()) || (await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64(cfg.key) }));
+      await api("/api/push/subscribe", { method: "POST", body: JSON.stringify({ subscription: sub }) });
+      setPushOn(true);
+      if (interactive) showToast(lang === "es" ? "Avisos de leads activados 🔔" : "Lead alerts on 🔔");
+    } catch { if (interactive) showToast(lang === "es" ? "No se pudo activar" : "Couldn't enable"); }
+  };
+  // Silently re-subscribe on load if already granted (keeps the token fresh).
+  useEffect(() => { if (session && cloudReady && typeof Notification !== "undefined" && Notification.permission === "granted") subscribePush(false); /* eslint-disable-next-line */ }, [session, cloudReady]);
+
   const api = (path, opts = {}) => fetch(path, {
     ...opts,
     headers: {
@@ -1010,6 +1030,11 @@ export default function TradeTechPro() {
         {canInstall && (
           <button onClick={doInstall} className="w-full active:translate-y-px transition-transform mb-3" style={{ background: M.teal, color: "#fff", border: "none", borderRadius: 12, padding: 14, fontSize: 15, fontWeight: 800, boxShadow: "0 4px 14px rgba(14,140,114,0.3)" }}>
             📲 {lang === "es" ? "Instalar la app en tu teléfono" : "Install the app on your phone"}
+          </button>
+        )}
+        {session && typeof Notification !== "undefined" && !pushOn && (
+          <button onClick={() => subscribePush(true)} className="w-full active:translate-y-px transition-transform mb-3" style={{ background: "#fff", color: M.teal, border: `1.5px solid ${M.line}`, borderRadius: 12, padding: 13, fontSize: 14, fontWeight: 800 }}>
+            🔔 {lang === "es" ? "Activar avisos de leads" : "Turn on lead alerts"}
           </button>
         )}
         <Card>

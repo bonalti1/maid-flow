@@ -17,6 +17,30 @@ import Anthropic from "@anthropic-ai/sdk";
 import * as db from "./db.mjs";
 import { renderSite } from "./templates.mjs";
 import { quote as priceQuote, mergeRates, DEFAULTS as RATE_DEFAULTS } from "./pricing.mjs";
+import webpush from "web-push";
+
+// Web push ("lead buzz") — dormant until VAPID keys are set. Generate once:
+//   npx web-push generate-vapid-keys
+const VAPID_PUBLIC = process.env.VAPID_PUBLIC_KEY || "";
+const VAPID_PRIVATE = process.env.VAPID_PRIVATE_KEY || "";
+const PUSH_ON = !!(VAPID_PUBLIC && VAPID_PRIVATE);
+if (PUSH_ON) { try { webpush.setVapidDetails(process.env.VAPID_SUBJECT || "mailto:hola@maidflow.app", VAPID_PUBLIC, VAPID_PRIVATE); } catch (e) { console.error("vapid setup:", e.message); } }
+
+// Push a new-lead notification to the cleaner's subscribed devices. Best effort;
+// prunes subscriptions the browser has expired (404/410).
+async function notifyLead(c, lead) {
+  if (!PUSH_ON) return;
+  const subs = Array.isArray(c.data?.push) ? c.data.push : [];
+  if (!subs.length) return;
+  const payload = JSON.stringify({
+    title: "🧼 Nuevo lead — Maid Flow",
+    body: `${lead.name || "Cliente"}${lead.phone ? " · " + lead.phone : ""}${lead.recommended ? " · $" + lead.recommended : ""}`,
+    url: "/",
+  });
+  const dead = new Set();
+  await Promise.all(subs.map((s) => webpush.sendNotification(s, payload).catch((e) => { if (e.statusCode === 404 || e.statusCode === 410) dead.add(s.endpoint); })));
+  if (dead.size) { try { await db.mergeContractorData(c.id, { push: subs.filter((s) => !dead.has(s.endpoint)) }); } catch { /* ignore */ } }
+}
 
 const PORT = process.env.PORT || 8787;
 const GOOGLE_KEY = process.env.GOOGLE_MAPS_API_KEY || "";
@@ -1421,7 +1445,22 @@ app.post("/api/lead", async (req, res) => {
   const leadInfo = { source: "app", company: String(company).slice(0, 80), ...(info && typeof info === "object" ? info : {}) };
   const leadId = await db.addLead(c.id, { ...clean, info: leadInfo });
   forwardLead(c, { id: leadId, ...clean, ...leadInfo });
+  notifyLead(c, { name: clean.name, phone: clean.phone, recommended: leadInfo.recommended });
   res.json({ ok: true, id: leadId });
+});
+
+// Web-push: the client fetches the VAPID public key, then registers a device.
+app.get("/api/push/key", (_req, res) => res.json({ key: VAPID_PUBLIC, enabled: PUSH_ON }));
+app.post("/api/push/subscribe", async (req, res) => {
+  const c = await auth(req);
+  if (!c) return res.status(401).json({ error: "no session" });
+  const sub = req.body?.subscription || req.body;
+  if (!sub || !sub.endpoint) return res.status(400).json({ error: "bad subscription" });
+  const cur = Array.isArray(c.data?.push) ? c.data.push : [];
+  if (!cur.some((s) => s.endpoint === sub.endpoint)) {
+    await db.mergeContractorData(c.id, { push: [...cur, sub].slice(-10) }); // keep her last 10 devices
+  }
+  res.json({ ok: true });
 });
 
 // Widget (and anything public) drops a lead for a contractor by slug
@@ -1437,6 +1476,7 @@ app.post("/api/widget/lead", async (req, res) => {
   const leadInfo = { source: inf.src || "landing", company: inf.biz || "", ...inf };
   const id = await db.addLead(c.id, { name, phone, address, info: leadInfo });
   forwardLead(c, { id, name, phone, address, ...leadInfo });
+  notifyLead(c, { name, phone });
   res.json({ ok: true, id });
 });
 
@@ -1629,6 +1669,7 @@ app.post("/api/widget/quote", async (req, res) => {
     address: String(m?.addr || address).slice(0, 160),
     recommended: q?.recommended ?? null, low: q?.range?.[0] ?? null, high: q?.range?.[1] ?? null,
   });
+  if (!priorLeadId) notifyLead(c, { name: String(name).slice(0, 80), phone: digits.slice(0, 15), recommended: q?.recommended });
 
   res.json({
     ok: true, id: leadId, addr: m?.addr || address, quoted: !!q,
