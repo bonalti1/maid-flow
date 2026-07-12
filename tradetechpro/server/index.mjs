@@ -1415,11 +1415,12 @@ function forwardLead(c, lead) {
 app.post("/api/lead", async (req, res) => {
   const c = await auth(req);
   if (!c) return res.status(401).json({ error: "no session" });
-  const { name = "", phone = "", address = "", info = {} } = req.body || {};
+  const { name = "", phone = "", address = "", company = "", info = {} } = req.body || {};
   const digits = String(phone).replace(/\D/g, "");
   const clean = { name: String(name).slice(0, 80), phone: digits.slice(0, 15), address: String(address).slice(0, 160) };
-  const leadId = await db.addLead(c.id, { ...clean, info: info && typeof info === "object" ? info : {} });
-  forwardLead(c, { id: leadId, ...clean, ...(info && typeof info === "object" ? info : {}) });
+  const leadInfo = { source: "app", company: String(company).slice(0, 80), ...(info && typeof info === "object" ? info : {}) };
+  const leadId = await db.addLead(c.id, { ...clean, info: leadInfo });
+  forwardLead(c, { id: leadId, ...clean, ...leadInfo });
   res.json({ ok: true, id: leadId });
 });
 
@@ -1432,23 +1433,46 @@ app.post("/api/widget/lead", async (req, res) => {
   if (!c) return res.status(404).json({ error: "unknown contractor" });
   if (c.data?.status === "paused") return res.status(403).json({ error: "paused" });
   if (!phone) return res.status(400).json({ error: "phone required" });
-  const id = await db.addLead(c.id, { name, phone, address, info });
-  forwardLead(c, { id, name, phone, address, ...info });
+  const inf = info && typeof info === "object" ? info : {};
+  const leadInfo = { source: inf.src || "landing", company: inf.biz || "", ...inf };
+  const id = await db.addLead(c.id, { name, phone, address, info: leadInfo });
+  forwardLead(c, { id, name, phone, address, ...leadInfo });
   res.json({ ok: true, id });
 });
+
+// The 5-stage mini-CRM pipeline.
+const LEAD_STAGES = ["new", "contacted", "quoted", "won", "lost"];
 
 app.get("/api/leads", async (req, res) => {
   const c = await auth(req);
   if (!c) return res.status(401).json({ error: "no session" });
-  res.json({ leads: await db.listLeads(c.id) });
+  res.json({ leads: await db.listLeads(c.id), stages: LEAD_STAGES });
 });
 
 app.post("/api/leads/:id", async (req, res) => {
   const c = await auth(req);
   if (!c) return res.status(401).json({ error: "no session" });
-  const status = String(req.body?.status || "contacted").slice(0, 20);
-  await db.updateLeadStatus(c.id, String(req.params.id), status);
+  const status = LEAD_STAGES.includes(req.body?.status) ? req.body.status : undefined;
+  const note = req.body?.note != null ? String(req.body.note).slice(0, 1000) : undefined;
+  if (status === undefined && note === undefined) return res.status(400).json({ error: "nothing to update" });
+  await db.setLeadFields(c.id, String(req.params.id), { status, note });
   res.json({ ok: true });
+});
+
+// CSV export of the cleaner's leads (mini-CRM → spreadsheet).
+app.get("/api/leads.csv", async (req, res) => {
+  const c = await auth(req);
+  if (!c) return res.status(401).send("no session");
+  const leads = await db.listLeads(c.id);
+  const cell = (v) => { const s = String(v == null ? "" : v); return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
+  const head = ["date", "name", "phone", "company", "address", "source", "stage", "recommended", "note"];
+  const rows = leads.map((l) => [
+    (l.created_at || "").slice(0, 10), l.name, l.phone, l.info?.company || "", l.address,
+    l.info?.source || "", l.status || "new", l.info?.recommended ?? "", l.info?.note || "",
+  ].map(cell).join(","));
+  res.setHeader("Content-Type", "text/csv; charset=utf-8");
+  res.setHeader("Content-Disposition", `attachment; filename="maidflow-leads-${new Date().toISOString().slice(0, 10)}.csv"`);
+  res.send([head.join(","), ...rows].join("\n"));
 });
 
 /* ── Instant-quote widget ──
@@ -1532,7 +1556,7 @@ app.post("/api/widget/quote", async (req, res) => {
     cleaningType = "regular", condition = "normal", pets = "none",
     furnished = "partial", frequency = "one_time", addOns = [],
     beds: bedsIn = null, baths: bathsIn = null, sqft: sqftIn = null,
-    leadId: priorLeadId = null,
+    leadId: priorLeadId = null, company = "",
   } = req.body || {};
   const c = slug && (await db.getContractorBySlug(String(slug)));
   if (!c) return res.status(404).json({ error: "unknown contractor" });
@@ -1588,8 +1612,8 @@ app.post("/api/widget/quote", async (req, res) => {
     : null;
 
   const leadInfo = q
-    ? { recommended: q.recommended, low: q.range[0], high: q.range[1], cleaningType: q.cleaningType, condition: q.condition, frequency: q.frequency, sqft, beds, baths }
-    : { unquoted: true };
+    ? { source: "widget", company: String(company).slice(0, 80), recommended: q.recommended, low: q.range[0], high: q.range[1], cleaningType: q.cleaningType, condition: q.condition, frequency: q.frequency, sqft, beds, baths }
+    : { source: "widget", company: String(company).slice(0, 80), unquoted: true };
   const leadAddr = String(m?.addr || address).slice(0, 160);
   // On a manual-sqft re-submit the widget sends the first leadId — enrich that
   // lead instead of creating a duplicate.

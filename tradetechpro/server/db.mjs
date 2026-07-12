@@ -473,6 +473,19 @@ export async function updateLeadStatus(contractorId, leadId, status) {
   if (l) { l.status = status; persistMem(); }
 }
 
+/* Set a lead's pipeline stage and/or merge a note into its info (mini-CRM). */
+export async function setLeadFields(contractorId, leadId, { status, note }) {
+  if (pool) {
+    await pool.query(
+      "UPDATE leads SET status=COALESCE($3,status), info = COALESCE(info,'{}'::jsonb) || $4::jsonb WHERE id=$1 AND contractor_id=$2",
+      [leadId, contractorId, status ?? null, JSON.stringify(note == null ? {} : { note })]
+    );
+    return;
+  }
+  const l = mem.leads.find((x) => x.id === leadId && x.contractor_id === contractorId);
+  if (l) { if (status != null) l.status = status; if (note != null) l.info = { ...(l.info || {}), note }; persistMem(); }
+}
+
 /* Full data export for the owner's backup button. Includes contractors, app
  * states, leads, meetings and tasks; deliberately EXCLUDES sessions and invites
  * (login tokens). The code rebuilds; the data does not. */

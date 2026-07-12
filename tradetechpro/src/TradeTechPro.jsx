@@ -337,7 +337,7 @@ export default function TradeTechPro() {
   }, [session, cloudReady, customers, savedQuotes, userName, bizName, userPhone, logo, lang, bizEmail, zelle, myRates]);
 
   /* ── Questionnaire state ── */
-  const blankQ = { name: "", phone: "", address: "", placeId: null, sqft: "", beds: "", baths: "", propertyType: "", cleaningType: "regular", condition: "normal", pets: "none", addOns: [], frequency: "one_time", furnished: "partial", photos: [] };
+  const blankQ = { name: "", phone: "", address: "", company: "", placeId: null, sqft: "", beds: "", baths: "", propertyType: "", cleaningType: "regular", condition: "normal", pets: "none", addOns: [], frequency: "one_time", furnished: "partial", photos: [] };
   const [q, setQ] = useState(blankQ);
   const setField = (k, v) => setQ((prev) => ({ ...prev, [k]: v }));
   const [step, setStep] = useState(0);
@@ -595,6 +595,7 @@ export default function TradeTechPro() {
               <p style={{ color: M.muted2, fontSize: 10, fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", marginBottom: 8 }}>{lang === "es" ? "Datos del cliente" : "Customer details"}</p>
               <TextInput value={q.name} onChange={(v) => setField("name", v)} placeholder={lang === "es" ? "Nombre del cliente" : "Customer name"} />
               <TextInput value={q.phone} onChange={(v) => setField("phone", v)} placeholder={lang === "es" ? "Teléfono (WhatsApp)" : "Phone (WhatsApp)"} inputMode="tel" />
+              <TextInput value={q.company} onChange={(v) => setField("company", v)} placeholder={lang === "es" ? "Empresa / edificio (opcional)" : "Company / building (optional)"} />
               <p style={{ color: M.muted2, fontSize: 10, fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", margin: "6px 0 8px" }}>{lang === "es" ? "Dirección de la casa" : "Home address"}</p>
               <div className="flex gap-2">
                 <button onClick={useMyLocation} title={t.useMyLocation} className="flex items-center justify-center shrink-0 active:scale-95 transition-transform" style={{ width: 48, height: 48, background: M.bg, border: `1.5px solid ${M.line}`, borderRadius: 12, color: M.teal, fontSize: 18 }}>🧭</button>
@@ -763,7 +764,7 @@ export default function TradeTechPro() {
         setCustomers((prev) => [{ id: Date.now(), name: q.name, phone: q.phone, addr: q.address }, ...prev]);
       }
       // Record the lead on the server (shows in leads + fires the webhook).
-      if (session) api("/api/lead", { method: "POST", body: JSON.stringify({ name: q.name, phone: q.phone, address: q.address, info: { recommended: out.recommended, low: out.range[0], high: out.range[1], cleaningType: out.cleaningType, sqft: q.sqft, beds: q.beds, baths: q.baths } }) }).catch(() => {});
+      if (session) api("/api/lead", { method: "POST", body: JSON.stringify({ name: q.name, phone: q.phone, address: q.address, company: q.company, info: { recommended: out.recommended, low: out.range[0], high: out.range[1], cleaningType: out.cleaningType, sqft: q.sqft, beds: q.beds, baths: q.baths } }) }).catch(() => {});
       window.open(waHref, "_blank");
     };
     const copyMsg = async () => { try { await navigator.clipboard.writeText(msg); showToast(lang === "es" ? "Mensaje copiado ✓" : "Message copied ✓"); } catch { /* ignore */ } };
@@ -835,6 +836,19 @@ export default function TradeTechPro() {
   };
 
   /* ── Clients ── */
+  const LEAD_STAGES = ["new", "contacted", "quoted", "won", "lost"];
+  const stageLabel = (s) => (({ es: { new: "Nuevo", contacted: "Contactado", quoted: "Cotizado", won: "Ganado", lost: "Perdido" }, en: { new: "New", contacted: "Contacted", quoted: "Quoted", won: "Won", lost: "Lost" } })[lang === "es" ? "es" : "en"][s] || s);
+  const setLeadStage = (id, status) => { setLeads((prev) => prev.map((l) => (l.id === id ? { ...l, status } : l))); api("/api/leads/" + id, { method: "POST", body: JSON.stringify({ status }) }).catch(() => {}); };
+  const setLeadNote = (id, note) => { setLeads((prev) => prev.map((l) => (l.id === id ? { ...l, info: { ...(l.info || {}), note } } : l))); api("/api/leads/" + id, { method: "POST", body: JSON.stringify({ note }) }).catch(() => {}); };
+  const waLink = (p) => { const d = String(p || "").replace(/\D/g, ""); return `https://wa.me/${d.length === 10 ? "1" + d : d}`; };
+  const exportLeadsCSV = () => {
+    api("/api/leads.csv").then((r) => (r.ok ? r.blob() : null)).then((b) => {
+      if (!b) return;
+      const u = URL.createObjectURL(b); const a = document.createElement("a");
+      a.href = u; a.download = "maidflow-leads.csv"; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(u);
+    }).catch(() => showToast(lang === "es" ? "No se pudo exportar" : "Export failed"));
+  };
+
   const Clients = () => (
     <div className="flex-1 overflow-y-auto pb-6" style={{ background: M.bg }}>
       <div className="px-5 pt-4">
@@ -844,15 +858,25 @@ export default function TradeTechPro() {
         </div>
         {leads.length > 0 && (
           <>
-            <p className="mb-2" style={{ color: M.tealDeep, fontSize: 14, fontWeight: 800 }}>{lang === "es" ? "Nuevos leads (de tu página)" : "New leads (from your page)"}</p>
-            {leads.slice(0, 12).map((ld) => (
+            <div className="flex items-center justify-between mb-2">
+              <p style={{ color: M.tealDeep, fontSize: 14, fontWeight: 800 }}>Leads</p>
+              <button onClick={exportLeadsCSV} style={{ background: "#fff", color: M.teal, border: `1.5px solid ${M.line}`, borderRadius: 9, padding: "5px 11px", fontSize: 12, fontWeight: 800 }}>⬇️ CSV</button>
+            </div>
+            {leads.slice(0, 30).map((ld) => (
               <Card key={ld.id} style={{ marginBottom: 8 }}>
-                <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center justify-between gap-2 mb-2">
                   <div className="min-w-0">
-                    <p className="font-bold truncate" style={{ color: M.navy, fontSize: 14 }}>{ld.name || (lang === "es" ? "Sin nombre" : "No name")}</p>
-                    <p className="truncate" style={{ color: M.muted2, fontSize: 11, fontWeight: 600 }}>{ld.phone || "—"}{ld.address ? ` · ${ld.address}` : ""}</p>
+                    <p className="font-bold truncate" style={{ color: M.navy, fontSize: 14 }}>{ld.name || (lang === "es" ? "Sin nombre" : "No name")}
+                      {ld.info?.source ? <span style={{ marginLeft: 6, background: M.bg, border: `1px solid ${M.line}`, borderRadius: 6, padding: "1px 6px", fontSize: 9, fontWeight: 800, color: M.muted2, textTransform: "uppercase" }}>{ld.info.source}</span> : null}</p>
+                    <p className="truncate" style={{ color: M.muted2, fontSize: 11, fontWeight: 600 }}>{ld.phone || "—"}{ld.info?.company ? ` · ${ld.info.company}` : ""}{ld.address ? ` · ${ld.address}` : ""}</p>
                   </div>
-                  {ld.phone ? <a href={`https://wa.me/${String(ld.phone).replace(/\D/g, "").length === 10 ? "1" + String(ld.phone).replace(/\D/g, "") : String(ld.phone).replace(/\D/g, "")}`} target="_blank" rel="noreferrer" className="shrink-0 font-extrabold" style={{ color: "#fff", background: M.teal, borderRadius: 10, padding: "8px 12px", fontSize: 13, textDecoration: "none" }}>WhatsApp</a> : null}
+                  {ld.phone ? <a href={waLink(ld.phone)} target="_blank" rel="noreferrer" className="shrink-0 font-extrabold" style={{ color: "#fff", background: M.teal, borderRadius: 10, padding: "8px 12px", fontSize: 13, textDecoration: "none" }}>WhatsApp</a> : null}
+                </div>
+                <div className="flex items-center gap-2">
+                  <select value={ld.status || "new"} onChange={(e) => setLeadStage(ld.id, e.target.value)} style={{ background: M.bg, border: `1.5px solid ${M.line}`, borderRadius: 9, padding: "6px 8px", fontSize: 12, fontWeight: 700, color: M.navy }}>
+                    {LEAD_STAGES.map((s) => <option key={s} value={s}>{stageLabel(s)}</option>)}
+                  </select>
+                  <input defaultValue={ld.info?.note || ""} onBlur={(e) => setLeadNote(ld.id, e.target.value)} placeholder={lang === "es" ? "Nota…" : "Note…"} className="flex-1 min-w-0" style={{ background: M.bg, border: `1.5px solid ${M.line}`, borderRadius: 9, padding: "6px 8px", fontSize: 12, color: M.navy }} />
                 </div>
               </Card>
             ))}

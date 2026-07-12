@@ -90,11 +90,17 @@ await db.mergeContractorData(cleaner.id, { status: null });
   // 0.15/sqft override -> 0.15*2000 + 3*8 + 2*15 = 354 -> round 355
   check("in-app quote uses saved rates (355)", r.ok && r.quote.recommended === 355, JSON.stringify(r.quote && r.quote.recommended));
 }
-// 10. in-app lead round-trip
+// 10. in-app lead round-trip + mini-CRM (source tag, company, stage, note, CSV)
 {
-  await fetch(B + "/api/lead", { method: "POST", headers: AH, body: JSON.stringify({ name: "HO", phone: "9565553333", address: "3 St", info: { recommended: 300 } }) });
+  const lr = await J("/api/lead", { method: "POST", headers: AH, body: JSON.stringify({ name: "HO", phone: "9565553333", address: "3 St", company: "Acme", info: { recommended: 300 } }) });
+  await fetch(B + "/api/leads/" + lr.id, { method: "POST", headers: AH, body: JSON.stringify({ status: "won", note: "paid" }) });
+  await fetch(B + "/api/leads/" + lr.id, { method: "POST", headers: AH, body: JSON.stringify({ status: "BOGUS" }) }); // must be ignored
   const leads = await J("/api/leads", { headers: AH });
-  check("in-app lead recorded + retrievable", leads.leads.some((l) => l.name === "HO" && l.info.recommended === 300));
+  const l = leads.leads.find((x) => x.id === lr.id);
+  check("in-app lead recorded + retrievable", !!l && l.info.recommended === 300);
+  check("lead CRM: source/company/stage/note", l.info.source === "app" && l.info.company === "Acme" && l.status === "won" && l.info.note === "paid" && leads.stages.length === 5);
+  const csv = await fetch(B + "/api/leads.csv", { headers: AH }).then((r) => r.text());
+  check("leads CSV export", /^date,name,phone,company,address,source,stage/.test(csv) && csv.includes("Acme") && csv.includes("won"));
 }
 
 // 11. staff auth: 401 without key, 200 with query key
