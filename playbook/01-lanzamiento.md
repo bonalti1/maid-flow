@@ -1,6 +1,6 @@
-# 🚀 Lanzar Maid Flow (y portar desde ALTO)
+# 🚀 Lanzar Paulbeza (y portar desde ALTO)
 
-Maid Flow es el **caso B** del playbook de ALTO: producto/marca distinta, repo
+Paulbeza es el **caso B** del playbook de ALTO: producto/marca distinta, repo
 propio (`bonalti1/maid-flow`), base de datos propia. Se copiaron los PATRONES del
 motor de ALTO + este playbook. **ALTO siempre es el maestro**; los arreglos se
 portan de allá hacia acá, patrón por patrón (no archivos enteros).
@@ -10,7 +10,7 @@ portan de allá hacia acá, patrón por patrón (no archivos enteros).
 1. ☑ Repo propio (`bonalti1/maid-flow`, ramas `claude/gracious-einstein-2xrkht`
    y `main`; Render deploya `main`).
 2. ☐ Cuentas propias: subcuenta GHL, cuenta/links de Stripe, dominio, servicio
-   en Render (`maid-flow`) + su `DATABASE_URL` propia en Supabase (`maid-flow-db`).
+   en Render (`paulbeza`) + su `DATABASE_URL` propia en Supabase (`maid-flow-db`).
 3. ☑ Catálogo de env adaptado (05-env.md) — cada marca tiene sus llaves.
 4. ☐ Portar la lista "últimas mejoras" de ALTO: revisar el git log de ALTO desde
    la última sincronización y copiar patrón por patrón.
@@ -23,7 +23,7 @@ Un ítem por commit, el cambio más chico que funcione, probado en vivo antes de
 commitear, sin romper una pantalla viva:
 
 1. ☐ Abrir el patrón en el código de ALTO; entender qué hace, no copiar ciego.
-2. ☐ Adaptar el vocabulario al público de Maid Flow (limpiadoras, español).
+2. ☐ Adaptar el vocabulario al público de Paulbeza (limpiadoras, español).
 3. ☐ `npm test` (6 en verde) + `npm run build` + arrancar local y manejar el
    flujo afectado en un navegador real.
 4. ☐ Commit chico y descriptivo → push a ambas ramas → Render deploya `main`.

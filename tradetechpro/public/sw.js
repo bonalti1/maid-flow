@@ -1,7 +1,7 @@
-// Maid Flow service worker — offline app shell for cheap Android phones used
+// Paulbeza service worker — offline app shell for cheap Android phones used
 // inside clients' homes with no signal. Cache-first for same-origin static
 // assets (hashed by Vite), network-only for /api and /w, offline fallback to "/".
-const CACHE = "maidflow-v1";
+const CACHE = "paulbeza-v1";
 
 self.addEventListener("install", () => self.skipWaiting());
 self.addEventListener("activate", (e) => {
@@ -16,7 +16,7 @@ self.addEventListener("activate", (e) => {
 self.addEventListener("push", (e) => {
   let d = {};
   try { d = e.data ? e.data.json() : {}; } catch { d = { body: e.data && e.data.text() }; }
-  e.waitUntil(self.registration.showNotification(d.title || "Maid Flow", {
+  e.waitUntil(self.registration.showNotification(d.title || "Paulbeza", {
     body: d.body || "", icon: "/icon-192.png", badge: "/icon-192.png", data: { url: d.url || "/" },
   }));
 });

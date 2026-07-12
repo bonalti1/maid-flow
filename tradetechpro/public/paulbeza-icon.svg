@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- paulbeza "pa" monogram — mint→aqua→purple ribbon, per the brand mockup -->
+  <defs>
+    <linearGradient id="pg" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#A7E8C8"/>
+      <stop offset="45%" stop-color="#7ED6D9"/>
+      <stop offset="75%" stop-color="#8EA6E6"/>
+      <stop offset="100%" stop-color="#A971E8"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="#ffffff"/>
+  <!-- p -->
+  <path d="M96 150 a60 60 0 0 1 60 -60 h20 a90 90 0 0 1 0 180 h-20 a60 60 0 0 1 -60 -60 z
+           M96 210 v190 a30 30 0 0 0 60 0 v-130 z" fill="url(#pg)" opacity="0.95"/>
+  <circle cx="188" cy="180" r="42" fill="#ffffff"/>
+  <!-- a -->
+  <path d="M416 150 a60 60 0 0 0 -60 -60 h-20 a90 90 0 0 0 0 180 h20 a60 60 0 0 0 60 -60 z
+           M416 210 v90 a30 30 0 0 1 -60 0 v-30 z" fill="url(#pg)"/>
+  <circle cx="324" cy="180" r="42" fill="#ffffff"/>
+</svg>

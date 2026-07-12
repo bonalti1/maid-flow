@@ -1,10 +1,10 @@
-# 📖 Playbook Maid Flow — el negocio, documentado
+# 📖 Playbook Paulbeza — el negocio, documentado
 
 Este folder es la mitad del negocio que NO es código: cómo se lanza, quién hace
 qué, los guiones, las recetas de GoHighLevel, el catálogo de variables y cómo
 respaldar todo. La otra mitad (el motor) está en el `CLAUDE.md` de la raíz.
 
-Maid Flow es un **fork del motor de ALTO Pro** adaptado a **limpiadoras de casas,
+Paulbeza es un **fork del motor de ALTO Pro** adaptado a **limpiadoras de casas,
 en español**. ALTO es el maestro: los arreglos se portan de ALTO hacia acá, no al
 revés. Regla de oro: **el motor es uno; lo que cambia por producto es un paquete
 de marca** (vocabulario, precios, demos, anuncios). Si algo de este playbook se

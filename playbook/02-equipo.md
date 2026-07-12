@@ -1,6 +1,6 @@
 # 👥 El equipo de 4 y sus guiones
 
-Estructura mínima para operar Maid Flow: **closer, appointment setter,
+Estructura mínima para operar Paulbeza: **closer, appointment setter,
 onboarding, customer service.** Todos trabajan dentro de las herramientas del
 motor — nada vive en hojas sueltas.
 
@@ -15,14 +15,14 @@ bot NO vende; solo mantiene el lead tibio hasta que un humano marca.
 
 **Cadencia (los mensajes salen automáticos del workflow; el setter marca):**
 - **M1 · instantáneo (automático):**
-  > Hola {{nombre}} 👋 Soy del equipo de Maid Flow. Vi que pediste info para
+  > Hola {{nombre}} 👋 Soy del equipo de Paulbeza. Vi que pediste info para
   > {{negocio}}. Te marcamos en unos minutos de este número 📞 — contéstanos y en
   > 5 minutos te enseñamos cómo tus clientes reciben su precio de limpieza solos,
   > desde tu propia página. 🧼📲
 - **Llamada 1 (setter, ≤5 min).** Objetivo: agendar la demo con el closer (o
   pasarla en caliente si el closer está libre).
 - **M2 · tras llamada perdida:**
-  > Te acabo de marcar 📞 Soy de Maid Flow (lo de tu página y la app que cotiza).
+  > Te acabo de marcar 📞 Soy de Paulbeza (lo de tu página y la app que cotiza).
   > Te vuelvo a marcar al rato — o dime a qué hora te cae bien. 👍
 - **Llamada 2 · ~1 hora después.**
 - **M3 · a la mañana siguiente:**

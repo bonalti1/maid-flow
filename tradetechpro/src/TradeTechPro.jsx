@@ -3,32 +3,38 @@ import React, { useState, useRef, useEffect } from "react";
 // public widget. Pure JS, no node deps, so Vite bundles it for the browser.
 import { quote as priceQuote, mergeRates, DEFAULTS } from "../server/pricing.mjs";
 
-/* ─── Brand tokens (Maid Flow: fresh teal + warm gold) ─── */
+/* ─── Brand tokens (Paulbeza: mint · aqua · light blue · purple · dark blue) ─── */
 const C = {
-  teal: "#1B8FD1",       // primary — header bar, dark cards, headings
-  tealDeep: "#0E5E91",   // deepest — gradients, deep panels
-  gold: "#5BC8F0", // warm accent
-  goldSoft: "#E9F6FD",
-  bg: "#EFF7FC",
+  teal: "#1E3A8A",       // primary — header bar, dark cards, headings (Dark Blue)
+  tealDeep: "#16295F",   // deepest — gradients, deep panels
+  gold: "#7ED6D9",       // aqua accent
+  goldSoft: "#ECF9F2",   // mint tint
+  bg: "#F4F7FB",
   card: "#FFFFFF",
-  line: "#DBEAF4",
+  line: "#E3E9F4",
   slate: "#5A7488",
   green: "#1E9E5A",
   greenSoft: "#E6F5EC",
   red: "#D64545",
   redSoft: "#FBEAEA",
-  navy: "#0C2A43",       // dark text
+  navy: "#1E2A4A",       // dark text
 };
-// Scoped visual language for the quote screens.
+// Scoped visual language for the app screens.
 const M = {
-  teal: "#1B8FD1", tealDeep: "#0E5E91",
-  cardGrad: "linear-gradient(135deg,#1B8FD1,#0E5E91)",
-  headGrad: "linear-gradient(135deg,#062B22 0%,#0A4537 62%,#1B8FD1 100%)",
-  gold: "#5BC8F0", goldHi: "#82D6F5", goldSoft: "#E9F6FD",
-  bg: "#EFF7FC", line: "#DBEAF4", line2: "#CFE3F1",
+  teal: "#1E3A8A", tealDeep: "#16295F",
+  purple: "#A971E8", mint: "#A7E8C8", aqua: "#7ED6D9", lblue: "#8EA6E6",
+  cardGrad: "linear-gradient(135deg,#1E3A8A 0%,#3B4FA0 55%,#7B5BD6 100%)",
+  headGrad: "linear-gradient(135deg,#16295F 0%,#1E3A8A 62%,#5B4FA8 100%)",
+  brandGrad: "linear-gradient(90deg,#A7E8C8 0%,#7ED6D9 35%,#8EA6E6 68%,#A971E8 100%)",
+  gold: "#A971E8", goldHi: "#A7E8C8", goldSoft: "#ECF9F2",
+  bg: "#F4F7FB", line: "#E3E9F4", line2: "#D9E2F2",
   muted: "#8FA6B6", muted2: "#5A7488", body: "#324A5C",
   green: "#1E9E5A", red: "#E8442E",
 };
+/* Lowercase gradient wordmark, per the brand mockup. */
+const Wordmark = ({ size = 20 }) => (
+  <span style={{ fontWeight: 900, fontSize: size, letterSpacing: "-0.02em", background: M.brandGrad, WebkitBackgroundClip: "text", backgroundClip: "text", WebkitTextFillColor: "transparent", color: "transparent" }}>paulbeza</span>
+);
 
 /* ─── Catalogs (Spanish-first) ─── */
 const CLEANING_TYPES = [
@@ -85,8 +91,8 @@ const ADDONS = [
 const TR = {
   es: {
     demoBanner: "🧪 Modo demo — tus datos no se guardan en la nube. ¿Cliente? Entra con tu link de WhatsApp.",
-    demoLimit: "El modo demo incluye 6 búsquedas de prueba y ya las usaste. Las limpiadoras de Maid Flow cotizan sin límite.",
-    nav: { quote: "Cotizar", clients: "Clientes", prices: "Mis precios", account: "Cuenta" },
+    demoLimit: "El modo demo incluye 6 búsquedas de prueba y ya las usaste. Las limpiadoras de Paulbeza cotizan sin límite.",
+    nav: { home: "Inicio", quote: "Cotizar", clients: "Clientes", prices: "Mis precios", account: "Ajustes" },
     measuring1: "Buscando la propiedad…", measuring2: "Midiendo el trabajo…", measuring3: "Calculando tu cotización…",
     beds: "Recámaras", baths: "Baños", sqft: "pies²", builtIn: "Construida",
     useMyLocation: "Usar mi ubicación", myLocation: "Mi ubicación", locating: "Buscando tu ubicación…",
@@ -95,8 +101,8 @@ const TR = {
   },
   en: {
     demoBanner: "🧪 Demo mode — your data isn't saved to the cloud. Client? Enter with your WhatsApp link.",
-    demoLimit: "The demo includes 6 trial lookups and you've used them. Maid Flow cleaners quote with no limits.",
-    nav: { quote: "Quote", clients: "Clients", prices: "My prices", account: "Account" },
+    demoLimit: "The demo includes 6 trial lookups and you've used them. Paulbeza cleaners quote with no limits.",
+    nav: { home: "Home", quote: "Quote", clients: "Clients", prices: "My prices", account: "Settings" },
     measuring1: "Finding the property…", measuring2: "Sizing the job…", measuring3: "Calculating your quote…",
     beds: "Bedrooms", baths: "Baths", sqft: "sq ft", builtIn: "Built",
     useMyLocation: "Use my location", myLocation: "My location", locating: "Finding your location…",
@@ -198,7 +204,7 @@ export default function TradeTechPro() {
   const [lang, setLang] = useState(savedProfile.lang === "en" ? "en" : "es");
   const t = TR[lang] || TR.es;
   const welcomedInit = (() => { try { return !!localStorage.getItem("maidflow_welcomed"); } catch { return false; } })();
-  const [screen, setScreen] = useState(WANT_DEMO ? "quote" : (welcomedInit ? "quote" : "welcome"));
+  const [screen, setScreen] = useState(WANT_DEMO ? "quote" : (welcomedInit ? "home" : "welcome"));
 
   const [userName, setUserName] = useState(savedProfile.name || (DEMO_ON ? "María" : ""));
   const [bizName, setBizName] = useState(savedProfile.biz || (DEMO_ON ? "Brillo Cleaning (Demo)" : ""));
@@ -255,6 +261,11 @@ export default function TradeTechPro() {
   const [cloudReady, setCloudReady] = useState(false);
   const [netNonce, setNetNonce] = useState(0); // bumped on "online" to retry hydration
   const [leads, setLeads] = useState([]); // homeowner leads from the public widget
+  const [mySlug, setMySlug] = useState(null); // her page slug (from /api/me)
+  const [pageModal, setPageModal] = useState(false); // "Mi página web" sheet
+  const [aiMsgs, setAiMsgs] = useState([]); // Pregúntale a Paulbeza chat
+  const [aiBusy, setAiBusy] = useState(false);
+  const [housePos, setHousePos] = useState(null); // {lat,lng} for the house photo
   const [installPrompt, setInstallPrompt] = useState(null); // Android beforeinstallprompt event
   const [installOverlay, setInstallOverlay] = useState(null); // null | "ios" | "wa" | "generic"
   useEffect(() => {
@@ -314,6 +325,7 @@ export default function TradeTechPro() {
         if (!r.ok) return;
         const j = await r.json();
         const p = j.contractor?.data?.profile || {};
+        if (j.contractor?.slug) setMySlug(j.contractor.slug);
         setBizName(p.biz || j.contractor.name || "");
         setUserName(p.name || "");
         setUserPhone(p.phone || j.contractor.phone || "");
@@ -331,7 +343,7 @@ export default function TradeTechPro() {
         };
         setCustomers((local) => mergeById(local, j.state?.customers));
         setSavedQuotes((local) => mergeById(local, j.state?.quotes));
-        if (!WANT_DEMO && welcomedInit) setScreen("quote");
+        if (!WANT_DEMO && welcomedInit) setScreen("home");
         setCloudReady(true);
       } catch { /* offline — local data keeps working; retried when back online */ }
     })();
@@ -445,6 +457,7 @@ export default function TradeTechPro() {
         if (!session && j.found) {
           try { localStorage.setItem("maidflow_demo_meas", String((parseInt(localStorage.getItem("maidflow_demo_meas") || "0", 10) || 0) + 1)); } catch { /* private mode */ }
         }
+        if (Number.isFinite(j.lat) && Number.isFinite(j.lng)) setHousePos({ lat: j.lat, lng: j.lng }); else setHousePos(null);
         res = j.found ? { addr: j.addr || addr, sqft: j.sqft ?? null, beds: j.beds ?? null, baths: j.baths ?? null, propertyType: j.propertyType || "" } : null;
       }
     } catch { /* backend unreachable */ }
@@ -500,7 +513,7 @@ export default function TradeTechPro() {
     });
   };
 
-  const resetQuote = () => { setQ(blankQ); setAddrQ(""); setPlaceSugs(null); setStep(0); setResult(null); setScreen("quote"); };
+  const resetQuote = () => { setQ(blankQ); setAddrQ(""); setPlaceSugs(null); setStep(0); setResult(null); setHousePos(null); setScreen("quote"); };
 
   const toggleAddon = (key) => setQ((prev) => ({ ...prev, addOns: prev.addOns.includes(key) ? prev.addOns.filter((a) => a !== key) : [...prev.addOns, key] }));
 
@@ -529,11 +542,120 @@ export default function TradeTechPro() {
     </div>
   );
 
-  const Wordmark = ({ color = "#fff", size = 20 }) => (
-    <span style={{ fontWeight: 900, fontSize: size, letterSpacing: "-0.01em", color }}>
-      Maid<span style={{ color: M.goldHi }}>Flow</span>
-    </span>
+  /* ── Home dashboard (ALTO-Pro style: hero + leads + tiles + AI row) ── */
+  const shareUrl = mySlug ? `${window.location.origin}/w/${mySlug}` : null;
+  const Home = () => (
+    <div className="flex-1 overflow-y-auto pb-6" style={{ background: M.bg }}>
+      <div className="px-5 pt-4">
+        {/* Hero action — quote a cleaning */}
+        <button onClick={resetQuote} className="w-full text-center active:translate-y-px transition-transform mb-3"
+          style={{ background: "#fff", border: `2px solid ${M.aqua}`, borderRadius: 22, padding: "30px 20px", boxShadow: "0 10px 30px rgba(30,58,138,0.08)" }}>
+          <div style={{ fontSize: 34, marginBottom: 6 }}>🧼</div>
+          <div className="font-extrabold" style={{ color: M.teal, fontSize: 26, letterSpacing: "-0.01em" }}>{lang === "es" ? "Cotizar limpieza" : "Quote a cleaning"}</div>
+          <div style={{ color: M.muted2, fontSize: 15, fontWeight: 600, marginTop: 2 }}>{lang === "es" ? "Escribe la dirección…" : "Enter the address…"}</div>
+        </button>
+
+        {/* Leads bar */}
+        <button onClick={() => setScreen("clients")} className="w-full flex items-center gap-3 active:translate-y-px transition-transform mb-3"
+          style={{ background: "#fff", border: `1px solid ${M.line}`, borderRadius: 18, padding: "18px 18px" }}>
+          <span style={{ fontSize: 22 }}>📥</span>
+          <span className="flex-1 text-left font-extrabold" style={{ color: M.teal, fontSize: 18 }}>Leads{leads.length ? ` · ${leads.length}` : ""}</span>
+          <span style={{ color: M.muted, fontSize: 20 }}>→</span>
+        </button>
+
+        {/* 2×2 tiles */}
+        <div className="grid grid-cols-2 gap-3 mb-3">
+          {[
+            ["🌐", lang === "es" ? "Mi página web" : "My website", lang === "es" ? "Mándala — el cliente cotiza solo" : "Share it — clients self-quote", () => setPageModal(true)],
+            ["💲", lang === "es" ? "Mis precios" : "My prices", lang === "es" ? "Ajusta tus tarifas" : "Set your rates", () => setScreen("prices")],
+            ["👥", lang === "es" ? "Mis clientes" : "My clients", lang === "es" ? "Leads, historial y notas" : "Leads, history & notes", () => setScreen("clients")],
+            ["📄", lang === "es" ? "Cotización nueva" : "New quote", lang === "es" ? "Arma y manda por WhatsApp" : "Build & send on WhatsApp", () => resetQuote()],
+          ].map(([ic, title, sub, onClick], i) => (
+            <button key={i} onClick={onClick} className="text-left active:translate-y-px transition-transform"
+              style={{ background: "#fff", border: `1px solid ${M.line}`, borderRadius: 18, padding: "18px 16px", minHeight: 132 }}>
+              <div style={{ fontSize: 26, marginBottom: 10 }}>{ic}</div>
+              <div className="font-extrabold" style={{ color: M.teal, fontSize: 16, lineHeight: 1.15 }}>{title}</div>
+              <div style={{ color: M.muted2, fontSize: 12.5, fontWeight: 600, marginTop: 4, lineHeight: 1.35 }}>{sub}</div>
+            </button>
+          ))}
+        </div>
+
+        {/* AI assistant row */}
+        <button onClick={() => setScreen("ai")} className="w-full flex items-center gap-3 active:translate-y-px transition-transform"
+          style={{ background: "#fff", border: `1px solid ${M.line}`, borderRadius: 18, padding: "18px 18px" }}>
+          <span style={{ fontSize: 22 }}>💬</span>
+          <span className="flex-1 text-left">
+            <span className="block font-extrabold" style={{ color: M.teal, fontSize: 17 }}>{lang === "es" ? "Pregúntale a Paulbeza" : "Ask Paulbeza"}</span>
+            <span className="block" style={{ color: M.muted2, fontSize: 12.5, fontWeight: 600 }}>{lang === "es" ? "Tu asistente de limpieza" : "Your cleaning assistant"}</span>
+          </span>
+          <span style={{ color: M.muted, fontSize: 20 }}>→</span>
+        </button>
+      </div>
+    </div>
   );
+
+  /* ── "Mi página web" share sheet ── */
+  const PageSheet = () => (
+    <div className="absolute inset-0 flex items-end justify-center" style={{ background: "rgba(16,27,48,0.55)", zIndex: 50 }} onClick={() => setPageModal(false)}>
+      <div className="w-full" style={{ background: "#fff", borderRadius: "20px 20px 0 0", padding: "22px 20px 28px", maxWidth: 448 }} onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-1">
+          <p className="font-extrabold" style={{ color: M.teal, fontSize: 17 }}>🌐 {lang === "es" ? "Tu página web" : "Your website"}</p>
+          <button onClick={() => setPageModal(false)} style={{ background: "none", border: "none", color: M.muted2, fontSize: 22, fontWeight: 800 }}>×</button>
+        </div>
+        <p style={{ color: M.body, fontSize: 14, lineHeight: 1.6, marginBottom: 12 }}>{lang === "es" ? "Mándala a tus clientes — ellos escriben su dirección y reciben su precio de limpieza solos. Tú recibes el lead." : "Send it to clients — they enter their address and get a cleaning price on their own. You get the lead."}</p>
+        {shareUrl ? (<>
+          <div className="flex items-center gap-2 mb-2" style={{ background: M.bg, border: `1.5px solid ${M.line}`, borderRadius: 12, padding: "12px 14px" }}>
+            <span className="flex-1 min-w-0 truncate font-semibold" style={{ color: M.teal, fontSize: 13 }}>{shareUrl}</span>
+          </div>
+          <div className="flex gap-2">
+            <button onClick={() => { try { navigator.clipboard.writeText(shareUrl); showToast(lang === "es" ? "Link copiado ✓" : "Link copied ✓"); } catch { /* ignore */ } }} className="flex-1" style={{ background: "#fff", color: M.teal, border: `1.5px solid ${M.line}`, borderRadius: 12, padding: 13, fontSize: 14, fontWeight: 800 }}>📋 {lang === "es" ? "Copiar" : "Copy"}</button>
+            <a href={`https://wa.me/?text=${encodeURIComponent((lang === "es" ? "Cotiza tu limpieza aquí 👉 " : "Get your cleaning quote here 👉 ") + shareUrl)}`} target="_blank" rel="noreferrer" className="flex-1 text-center" style={{ background: "#25D366", color: "#fff", borderRadius: 12, padding: 13, fontSize: 14, fontWeight: 800, textDecoration: "none" }}>🟢 WhatsApp</a>
+          </div>
+        </>) : (
+          <p style={{ color: M.muted2, fontSize: 13, fontWeight: 600 }}>{lang === "es" ? "Tu página se activa cuando tu cuenta esté lista. Pídele a tu equipo de onboarding que la publique." : "Your website turns on once your account is set up. Ask your onboarding team to publish it."}</p>
+        )}
+      </div>
+    </div>
+  );
+
+  /* ── Pregúntale a Paulbeza (AI chat) ── */
+  const sendAi = async (text) => {
+    if (!text.trim() || aiBusy) return;
+    const next = [...aiMsgs, { role: "user", content: text }];
+    setAiMsgs(next); setAiBusy(true);
+    try {
+      const r = await api("/api/ai", { method: "POST", body: JSON.stringify({ messages: next, lang, bizName, data: { rates: myRates } }) }).then((x) => x.json());
+      setAiMsgs([...next, { role: "assistant", content: r.text || (lang === "es" ? "…" : "…") }]);
+    } catch { setAiMsgs([...next, { role: "assistant", content: lang === "es" ? "No pude responder ahora. Intenta otra vez." : "Couldn't answer right now. Try again." }]); }
+    setAiBusy(false);
+  };
+  const AiChat = () => {
+    const [draft, setDraft] = useState("");
+    return (
+      <div className="flex-1 flex flex-col" style={{ background: M.bg }}>
+        <TopBar title={lang === "es" ? "💬 Pregúntale a Paulbeza" : "💬 Ask Paulbeza"} back={() => setScreen("home")} />
+        <div className="flex-1 overflow-y-auto px-4 py-4">
+          {aiMsgs.length === 0 && (
+            <div className="text-center px-6" style={{ color: M.muted2, marginTop: 30 }}>
+              <div style={{ fontSize: 34, marginBottom: 8 }}>💬</div>
+              <p style={{ fontSize: 14, fontWeight: 600, lineHeight: 1.6 }}>{lang === "es" ? "Pregúntame cómo cobrar una limpieza, qué decirle a un cliente, o cómo conseguir más trabajos." : "Ask me how to price a cleaning, what to tell a client, or how to get more jobs."}</p>
+            </div>
+          )}
+          {aiMsgs.map((m, i) => (
+            <div key={i} className={`mb-2 flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
+              <div style={{ maxWidth: "82%", padding: "10px 13px", borderRadius: 14, fontSize: 14, lineHeight: 1.5, whiteSpace: "pre-wrap", background: m.role === "user" ? M.teal : "#fff", color: m.role === "user" ? "#fff" : M.body, border: m.role === "user" ? "none" : `1px solid ${M.line}` }}>{m.content}</div>
+            </div>
+          ))}
+          {aiBusy && <div className="mb-2 flex justify-start"><div style={{ padding: "10px 13px", borderRadius: 14, background: "#fff", border: `1px solid ${M.line}`, color: M.muted }}>…</div></div>}
+        </div>
+        <div className="flex items-center gap-2 px-3 py-3" style={{ background: "#fff", borderTop: `1px solid ${M.line}` }}>
+          <input value={draft} onChange={(e) => setDraft(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { sendAi(draft); setDraft(""); } }}
+            placeholder={lang === "es" ? "Escribe tu pregunta…" : "Type your question…"} className="flex-1 min-w-0" style={{ background: M.bg, border: `1.5px solid ${M.line}`, borderRadius: 12, padding: "12px 14px", fontSize: 15, color: M.navy }} />
+          <button onClick={() => { sendAi(draft); setDraft(""); }} disabled={aiBusy} style={{ background: M.teal, color: "#fff", border: "none", borderRadius: 12, padding: "12px 16px", fontSize: 15, fontWeight: 800 }}>➤</button>
+        </div>
+      </div>
+    );
+  };
 
   const BrandHeader = () => (
     <div className="relative flex items-center justify-center px-5 pt-4 pb-3" style={{ background: M.teal }}>
@@ -551,9 +673,8 @@ export default function TradeTechPro() {
   );
 
   const navItems = [
-    ["quote", "🧹", t.nav.quote],
-    ["clients", "👥", t.nav.clients],
-    ["prices", "💲", t.nav.prices],
+    ["home", "🏠", t.nav.home],
+    ["quote", "🧼", t.nav.quote],
     ["account", "⚙️", t.nav.account],
   ];
   const BottomNav = () => (
@@ -813,6 +934,13 @@ export default function TradeTechPro() {
     return (
       <div className="flex-1 overflow-y-auto pb-6" style={{ background: M.bg }}>
         <div className="px-5 pt-4">
+          {/* The wow factor: a real photo of the client's house */}
+          {housePos && (
+            <div className="rounded-2xl mb-3 overflow-hidden" style={{ border: `1px solid ${M.line}`, boxShadow: "0 10px 30px rgba(30,58,138,0.12)" }}>
+              <img src={`/api/housephoto?lat=${housePos.lat}&lng=${housePos.lng}`} alt="" onError={(e) => { e.currentTarget.parentNode.style.display = "none"; }}
+                style={{ width: "100%", height: 170, objectFit: "cover", display: "block", background: M.line }} />
+            </div>
+          )}
           {/* Branded hero quote card */}
           <div className="rounded-2xl p-5 mb-3" style={{ background: M.cardGrad, boxShadow: "0 18px 38px rgba(10,69,55,0.20)" }}>
             <div className="flex items-center gap-2 mb-2">
@@ -886,7 +1014,7 @@ export default function TradeTechPro() {
     api("/api/leads.csv").then((r) => (r.ok ? r.blob() : null)).then((b) => {
       if (!b) return;
       const u = URL.createObjectURL(b); const a = document.createElement("a");
-      a.href = u; a.download = "maidflow-leads.csv"; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(u);
+      a.href = u; a.download = "paulbeza-leads.csv"; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(u);
     }).catch(() => showToast(lang === "es" ? "No se pudo exportar" : "Export failed"));
   };
 
@@ -1077,7 +1205,7 @@ export default function TradeTechPro() {
       <div className="flex-1 overflow-y-auto" style={{ background: M.bg }}>
         <div className="px-6 pt-8 pb-6 text-center" style={{ background: M.headGrad }}>
           <div className="mb-3"><Wordmark size={34} /></div>
-          <p className="text-white font-extrabold" style={{ fontSize: 22, lineHeight: 1.2 }}>{lang === "es" ? "Bienvenida a Maid Flow" : "Welcome to Maid Flow"}</p>
+          <p className="text-white font-extrabold" style={{ fontSize: 22, lineHeight: 1.2 }}>{lang === "es" ? "Bienvenida a Paulbeza" : "Welcome to Paulbeza"}</p>
           <p style={{ color: "rgba(255,255,255,0.82)", fontSize: 13, fontWeight: 600, marginTop: 6 }}>{lang === "es" ? "Cotiza cualquier limpieza en minutos." : "Quote any cleaning in minutes."}</p>
         </div>
         <div className="px-5 pt-5">
@@ -1103,13 +1231,13 @@ export default function TradeTechPro() {
   };
 
   /* ── Router ── */
-  const tabScreens = ["quote", "clients", "prices", "account"];
+  const tabScreens = ["home", "quote", "clients", "prices", "account", "ai"];
   const titles = { result: lang === "es" ? "📄 Cotización" : "📄 Quote" };
 
   return (
     <div className="min-h-screen flex justify-center" style={{ background: M.tealDeep }}>
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
-        * { font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
+      <style>{`@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap');
+        * { font-family: 'Nunito', ui-rounded, sans-serif; -webkit-tap-highlight-color: transparent; }
         input::placeholder { color: #9DB0A8; }
         @keyframes ttpPulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.18); opacity: .65; } }
         @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }`}</style>
@@ -1126,11 +1254,14 @@ export default function TradeTechPro() {
         {screen === "result" && <div><TopBar title={titles.result} back={() => setScreen("quote")} /></div>}
 
         {screen === "welcome" && Welcome()}
+        {screen === "home" && Home()}
         {screen === "quote" && QuoteFlow()}
         {screen === "result" && ResultScreen()}
         {screen === "clients" && Clients()}
         {screen === "prices" && Prices()}
+        {screen === "ai" && AiChat()}
         {screen === "account" && Account()}
+        {pageModal && <PageSheet />}
 
         {tabScreens.includes(screen) && <BottomNav />}
         {toast && (
@@ -1142,7 +1273,7 @@ export default function TradeTechPro() {
           <div className="absolute inset-0 flex items-end justify-center" style={{ background: "rgba(9,20,16,0.55)", zIndex: 50 }} onClick={() => setInstallOverlay(null)}>
             <div className="w-full" style={{ background: "#fff", borderRadius: "20px 20px 0 0", padding: "22px 20px 28px", maxWidth: 448 }} onClick={(e) => e.stopPropagation()}>
               <div className="flex items-center justify-between mb-2">
-                <p className="font-extrabold" style={{ color: M.navy, fontSize: 17 }}>📲 {lang === "es" ? "Instalar Maid Flow" : "Install Maid Flow"}</p>
+                <p className="font-extrabold" style={{ color: M.navy, fontSize: 17 }}>📲 {lang === "es" ? "Instalar Paulbeza" : "Install Paulbeza"}</p>
                 <button onClick={() => setInstallOverlay(null)} style={{ background: "none", border: "none", color: M.muted2, fontSize: 22, fontWeight: 800 }}>×</button>
               </div>
               {installOverlay === "wa" ? (

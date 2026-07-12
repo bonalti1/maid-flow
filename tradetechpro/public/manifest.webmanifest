@@ -1,11 +1,11 @@
 {
-  "name": "Maid Flow",
-  "short_name": "Maid Flow",
-  "description": "Cotizaciones de limpieza al instante. Ingresa la dirección, confirma los detalles y envía un precio profesional por WhatsApp en minutos.",
+  "name": "Paulbeza",
+  "short_name": "Paulbeza",
+  "description": "Todo para tu negocio de limpieza. Cotiza al instante, manda el precio por WhatsApp y recibe clientes desde tu propia página.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#1B8FD1",
-  "theme_color": "#1B8FD1",
+  "background_color": "#1E3A8A",
+  "theme_color": "#1E3A8A",
   "lang": "es",
   "icons": [
     { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },

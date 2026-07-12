@@ -46,7 +46,7 @@ const J = (path, opts) => fetch(B + path, opts).then((r) => r.json());
 {
   const html = templates.renderSite({ template: "1", biz: "X", hero: "<img src=x onerror=alert(1)>", color: "</style><script>bad" });
   check("site template escapes hero + validates color",
-    !html.includes("<img src=x onerror") && html.includes("&lt;img src=x onerror") && !html.includes("<script>bad") && html.includes("#1B8FD1"));
+    !html.includes("<img src=x onerror") && html.includes("&lt;img src=x onerror") && !html.includes("<script>bad") && html.includes("#1E3A8A"));
 }
 // 4. Health
 check("GET /api/health ok", (await J("/api/health")).ok === true);

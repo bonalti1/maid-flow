@@ -9,8 +9,8 @@ respaldo y su dueño (tú).
   `main`; Render deploya `main`).
 - **Clon local en TU computadora** (una vez, refrescar cada mes):
   ```
-  git clone https://github.com/bonalti1/maid-flow.git maid-flow-backup
-  cd maid-flow-backup && git fetch --all
+  git clone https://github.com/bonalti1/maid-flow.git paulbeza-backup
+  cd paulbeza-backup && git fetch --all
   ```
   Con el clon local, el código existe aunque GitHub desaparezca.
 
@@ -18,7 +18,7 @@ respaldo y su dueño (tú).
 
 - NO están en git (a propósito). Viven en Render → Environment.
 - Copia de cada valor en un administrador de contraseñas (1Password/Bitwarden)
-  en una bóveda "Maid Flow — ENV". Actualizar cada vez que se agrega o rota una
+  en una bóveda "Paulbeza — ENV". Actualizar cada vez que se agrega o rota una
   variable. El catálogo de qué es cada una: `05-env.md`.
 
 ## 3) Datos (el botón)
@@ -26,7 +26,7 @@ respaldo y su dueño (tú).
 - Las clientas, leads, trabajos y pagos viven en Postgres. El código se
   reconstruye; los datos NO.
 - **Mensual, 1 clic:** /admin → Mantenimiento → **⬇️ Descargar respaldo (todos
-  los datos)** → guarda el `maidflow-respaldo-AAAA-MM-DD.json` junto al clon
+  los datos)** → guarda el `paulbeza-respaldo-AAAA-MM-DD.json` junto al clon
   local. Incluye clientas, estados de app, leads, reuniones y tareas; excluye a
   propósito tokens de sesión e invites. *(Estado: el botón de respaldo se está
   portando de ALTO — playbook/01, ítem 5.)*

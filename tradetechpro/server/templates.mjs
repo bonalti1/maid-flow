@@ -1,5 +1,5 @@
 /*
- * Maid Flow website factory — the 3 cleaning-business client templates.
+ * Paulbeza website factory — the 3 cleaning-business client templates.
  *
  * Every client site is RENDERED FROM DATA through these battle-tested
  * templates; no code is ever generated per client. Improve a template
@@ -42,16 +42,16 @@ function headBase(d, css) {
 
 function ribbonHtml(opts) {
   if (!opts.ribbon) return "";
-  return `<div style="background:#5BC8F0;color:#1B8FD1;text-align:center;font-weight:800;font-size:12.5px;padding:9px 14px;font-family:Inter,Arial,sans-serif">📋 ${esc(opts.ribbon)}</div>`;
+  return `<div style="background:#7ED6D9;color:#1E3A8A;text-align:center;font-weight:800;font-size:12.5px;padding:9px 14px;font-family:Inter,Arial,sans-serif">📋 ${esc(opts.ribbon)}</div>`;
 }
 
 function backAltoHtml(opts) {
   if (!opts.backAlto) return "";
-  return `<a style="position:fixed;bottom:18px;left:50%;transform:translateX(-50%);z-index:50;background:#1B8FD1;color:#fff;text-decoration:none;font-weight:800;font-size:14px;padding:13px 22px;border-radius:99px;box-shadow:0 14px 36px rgba(16,27,48,.5);font-family:Inter,Arial,sans-serif;white-space:nowrap" href="/ventas#precio">← Volver a <span style="color:#2AA8DE">MAID FLOW</span></a>`;
+  return `<a style="position:fixed;bottom:18px;left:50%;transform:translateX(-50%);z-index:50;background:#1E3A8A;color:#fff;text-decoration:none;font-weight:800;font-size:14px;padding:13px 22px;border-radius:99px;box-shadow:0 14px 36px rgba(16,27,48,.5);font-family:Inter,Arial,sans-serif;white-space:nowrap" href="/ventas#precio">← Volver a <span style="color:#A971E8">PAULBEZA</span></a>`;
 }
 
 function footerBits(d) {
-  return `<b>${esc(d.biz)}</b>${d.city ? ` · ${esc(d.city)}` : ""}${d.license ? ` · Lic. ${esc(d.license)}` : ""}<br>Página hecha con ⚡ Maid Flow`;
+  return `<b>${esc(d.biz)}</b>${d.city ? ` · ${esc(d.city)}` : ""}${d.license ? ` · Lic. ${esc(d.license)}` : ""}<br>Página hecha con ⚡ Paulbeza`;
 }
 
 const statsCells = (d) => [
@@ -362,12 +362,12 @@ export function renderSite(data, opts = {}) {
   const d = {
     services: DEFAULT_SERVICES,
     photos: [],
-    color: "#1B8FD1",
+    color: "#1E3A8A",
     ...data,
   };
   // Harden the brand color: it's interpolated raw into <style>, so a non-hex
   // value (e.g. "</style><script>…") would be an injection. Force a valid hex.
-  d.color = /^#[0-9a-f]{6}$/i.test(String(d.color || "").trim()) ? String(d.color).trim() : "#1B8FD1";
+  d.color = /^#[0-9a-f]{6}$/i.test(String(d.color || "").trim()) ? String(d.color).trim() : "#1E3A8A";
   const fn = TEMPLATES[String(d.template || "1")] || t1;
   return fn(d, opts);
 }
