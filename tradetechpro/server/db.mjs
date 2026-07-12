@@ -473,6 +473,29 @@ export async function updateLeadStatus(contractorId, leadId, status) {
   if (l) { l.status = status; persistMem(); }
 }
 
+/* Full data export for the owner's backup button. Includes contractors, app
+ * states, leads, meetings and tasks; deliberately EXCLUDES sessions and invites
+ * (login tokens). The code rebuilds; the data does not. */
+export async function exportAll() {
+  if (pool) {
+    const [contractors, states, leads, meetings, tasks] = await Promise.all([
+      pool.query("SELECT id, slug, name, phone, data, created_at FROM contractors ORDER BY created_at"),
+      pool.query("SELECT contractor_id, state, updated_at FROM app_state"),
+      pool.query("SELECT * FROM leads ORDER BY created_at"),
+      pool.query("SELECT * FROM meetings ORDER BY created_at"),
+      pool.query("SELECT * FROM tasks ORDER BY created_at"),
+    ]);
+    return { contractors: contractors.rows, states: states.rows, leads: leads.rows, meetings: meetings.rows, tasks: tasks.rows };
+  }
+  return {
+    contractors: mem.contractors || [],
+    states: Object.entries(mem.states || {}).map(([contractor_id, state]) => ({ contractor_id, state })),
+    leads: mem.leads || [],
+    meetings: mem.meetings || [],
+    tasks: mem.tasks || [],
+  };
+}
+
 export async function listLeads(contractorId) {
   if (pool) return (await pool.query("SELECT * FROM leads WHERE contractor_id=$1 ORDER BY created_at DESC LIMIT 200", [contractorId])).rows;
   return mem.leads.filter(l => l.contractor_id === contractorId).slice().reverse();

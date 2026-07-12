@@ -640,6 +640,19 @@ app.get("/api/admin/status", async (req, res) => {
   res.json({ ok: true, status: paused ? "paused" : "active" });
 });
 
+// One-click owner backup: all business data as a dated JSON download. Excludes
+// session tokens + invites (see db.exportAll). The code rebuilds; data doesn't.
+app.get("/api/admin/backup", async (req, res) => {
+  if (!adminOk(req)) return res.status(403).send("bad admin key");
+  try {
+    const data = await db.exportAll();
+    const stamp = new Date().toISOString().slice(0, 10);
+    res.setHeader("Content-Type", "application/json; charset=utf-8");
+    res.setHeader("Content-Disposition", `attachment; filename="maidflow-respaldo-${stamp}.json"`);
+    res.send(JSON.stringify({ product: "maid-flow", exportedAt: new Date().toISOString(), ...data }, null, 2));
+  } catch (e) { res.status(500).send("backup failed: " + e.message); }
+});
+
 // Operations dashboard: KPIs, funnel, clients with lead activity, latest leads
 /* Month/date filtering for the closer's sales numbers.
  * period = this | last | all | custom (+ from/to YYYY-MM-DD). */
@@ -866,6 +879,9 @@ td .pill{margin:2px 3px 2px 0}
       ["🧠 Centro de mando · números + IA", `${base}/admin/economics`],
       ["📲 La app (instalar/probar)", `${base}/`],
       ["🩺 Estado del sistema (health)", `${base}/api/health`],
+    ]],
+    ["MANTENIMIENTO", [
+      ["⬇️ Descargar respaldo (todos los datos)", `${base}/api/admin/backup`],
     ]],
   ].map(([group, links]) => `
     <p style="font-size:11px;font-weight:800;letter-spacing:1.5px;color:#8A94A8;margin:16px 0 6px">${group}</p>
