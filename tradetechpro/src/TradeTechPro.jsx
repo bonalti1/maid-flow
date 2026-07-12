@@ -175,6 +175,16 @@ const savedProfile = (() => {
 const WANT_DEMO = /[?&]demo=/.test(window.location.search);
 const DEMO_ON = WANT_DEMO && !savedProfile.biz;
 
+/* Unlimited-demo pass (?pass=…) — injected by the /demo deck for logged-in staff.
+ * Persisted so the sales-call device stays uncapped for the whole session. */
+const DEMO_PASS = (() => {
+  try {
+    const m = /[?&]pass=([^&]+)/.exec(window.location.search);
+    if (m) { const v = decodeURIComponent(m[1]); localStorage.setItem("maidflow_pass", v); return v; }
+    return localStorage.getItem("maidflow_pass") || "";
+  } catch { return ""; }
+})();
+
 /* ─── Main App ─── */
 export default function TradeTechPro() {
   const [lang, setLang] = useState(savedProfile.lang === "en" ? "en" : "es");
@@ -369,7 +379,7 @@ export default function TradeTechPro() {
 
   // Look up the home's details (sqft/beds/baths) to pre-fill the confirm step.
   const lookupProperty = async (addr, placeId = null, gps = null) => {
-    if (!session) {
+    if (!session && !DEMO_PASS) {
       let used = 0;
       try { used = parseInt(localStorage.getItem("maidflow_demo_meas") || "0", 10) || 0; } catch { /* private mode */ }
       if (used >= 6) { showToast("🔒 " + t.demoLimit); setField("address", addr); setStep(1); return; }
@@ -384,7 +394,7 @@ export default function TradeTechPro() {
     try {
       const r = await fetch("/api/lookup", {
         method: "POST",
-        headers: { "Content-Type": "application/json", ...(session ? { Authorization: `Bearer ${session}` } : {}) },
+        headers: { "Content-Type": "application/json", ...(session ? { Authorization: `Bearer ${session}` } : {}), ...(DEMO_PASS ? { "x-demo-pass": DEMO_PASS } : {}) },
         body: JSON.stringify(gps ? { lat: gps.lat, lng: gps.lng } : { address: addr, placeId }),
       });
       if (r.status === 429) { clearTimeout(p1); clearTimeout(p2); setMeasuring(false); showToast("🔒 " + t.demoLimit); return; }

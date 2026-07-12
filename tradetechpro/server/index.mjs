@@ -25,6 +25,9 @@ const REGRID_KEY = process.env.REGRID_API_KEY || "";
 const ADMIN_KEY = process.env.ADMIN_KEY || "";
 const CLOSER_KEY = process.env.CLOSER_KEY || "";
 const CS_KEY = process.env.CS_KEY || "";
+// Unlimited-demo pass: ?pass=<DEMO_PASS> lifts the demo caps for a device, so a
+// closer running /demo on a sales call never hits the anonymous limit.
+const DEMO_PASS = process.env.DEMO_PASS || "";
 const OPENAI_KEY = process.env.OPENAI_API_KEY || "";
 // Cloudflare for SaaS (custom client domains). Off until configured.
 const CF_API_TOKEN = process.env.CF_API_TOKEN || "";
@@ -415,12 +418,12 @@ app.post("/api/lookup", async (req, res) => {
   // wowed, not enough to freeload. Clients get a high anti-runaway ceiling.
   const me = await auth(req).catch(() => null);
   const lkIp = req.ip || req.socket.remoteAddress || "?";
-  if (!me) {
+  if (!me && !hasDemoPass(req)) {
     if (overQuota(`lk:${lkIp}`, 6)) return res.status(429).json({ error: "demo_limit" });
     // lifetime allowance per connection — survives incognito and browser wipes
     const lifetime = await db.incrCounter(`demolk:${lkIp}`).catch(() => 0);
     if (lifetime > 10) return res.status(429).json({ error: "demo_limit" });
-  } else if (overQuota(`lkc:${me.id}`, 40)) { // per-account daily measure cap — low enough that a shared link is useless as a free tool
+  } else if (me && overQuota(`lkc:${me.id}`, 40)) { // per-account daily measure cap — low enough that a shared link is useless as a free tool
     return res.status(429).json({ error: "quota" });
   }
   const address = String(req.body?.address || "").trim();
@@ -539,6 +542,11 @@ const csOk = (req) => {
   const k = req.query.key || req.body?.key || reqCookies(req).alto_cs || reqCookies(req).alto_admin;
   return keyEq(k, CS_KEY) || keyEq(k, ADMIN_KEY);
 };
+// Did this request present the valid demo pass (deck iframe, header, or body)?
+const hasDemoPass = (req) => !!DEMO_PASS && keyEq(req.query.pass || req.get("x-demo-pass") || req.body?.pass, DEMO_PASS);
+// The app-mockup iframe src for the decks — carries the pass only when a logged-in
+// staffer is viewing, so their live demo never hits the cap; public /demo stays capped.
+const demoAppSrc = (req) => "/?demo=app" + (DEMO_PASS && (closerOk(req) || adminOk(req)) ? "&pass=" + encodeURIComponent(DEMO_PASS) : "");
 
 function loginPage(title, action, wrong) {
   return `<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
@@ -3461,7 +3469,7 @@ ul.pts li b{color:var(--gold);flex-shrink:0}
         </ul>
         <p class="body" style="font-size:14px;margin-top:14px">👉 La app de la derecha está EN VIVO — tócala.</p>
       </div>
-      <div class="iphone"><div class="inotch"></div><div class="mscr"><iframe data-src="/?demo=app" title="App"></iframe></div></div>
+      <div class="iphone"><div class="inotch"></div><div class="mscr"><iframe data-src="${demoAppSrc(req)}" title="App"></iframe></div></div>
     </div>
   </div>
 </section>
@@ -4303,7 +4311,7 @@ ul.pts.big li{font-size:clamp(16px,2.2vw,22px);padding:19px 0;line-height:1.6;ga
         </ul>
         <p class="body" style="margin-top:22px;font-size:14px">${L.live5}</p>
       </div>
-      <div class="iphone big"><div class="inotch"></div><div class="mscr"><iframe data-src="/?demo=app" title="App"></iframe></div></div>
+      <div class="iphone big"><div class="inotch"></div><div class="mscr"><iframe data-src="${demoAppSrc(req)}" title="App"></iframe></div></div>
     </div>
   </div>
 </section>
