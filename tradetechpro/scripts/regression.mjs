@@ -1,0 +1,126 @@
+// Maid Flow — golden-flow regression suite. Boots the server in-process and
+// asserts the flows that must never break. Run before every commit:
+//   node scripts/regression.mjs   (exit 0 = all green)
+import { fileURLToPath } from "node:url";
+import path from "node:path";
+
+const ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
+process.env.PORT = process.env.PORT || "8999";
+process.env.ADMIN_KEY = "regadmin";
+process.env.CLOSER_KEY = "regcloser";
+process.env.CS_KEY = "regcs";
+process.env.DEMO_PASS = "regpass";
+process.env.HL_WEBHOOK_SECRET = "regsecret";
+// fresh file store each run
+process.env.DATABASE_URL = "";
+try { (await import("node:fs")).rmSync(path.join(ROOT, "server", "data", "store.json")); } catch { /* ok */ }
+
+const db = await import(path.join(ROOT, "server", "db.mjs"));
+const pricing = await import(path.join(ROOT, "server", "pricing.mjs"));
+const templates = await import(path.join(ROOT, "server", "templates.mjs"));
+await import(path.join(ROOT, "server", "index.mjs"));
+await new Promise((r) => setTimeout(r, 1500));
+
+const B = `http://localhost:${process.env.PORT}`;
+let pass = 0, fail = 0;
+const results = [];
+function check(name, ok, detail = "") { (ok ? pass++ : fail++); results.push(`${ok ? "✓" : "✗"} ${name}${ok || !detail ? "" : "  → " + detail}`); }
+const J = (path, opts) => fetch(B + path, opts).then((r) => r.json());
+
+// 1. Pricing engine acceptance (the contract that must never drift)
+{
+  const q = pricing.quote({ sqft: 2200, beds: 4, baths: 2, cleaningType: "deep", condition: "normal", pets: "heavy", addOns: ["fridge", "oven"] });
+  check("pricing acceptance 555/[485,620]/{2,1,3}",
+    q.recommended === 555 && q.range[0] === 485 && q.range[1] === 620 && q.time.cleaners === 2 && q.time.low === 1 && q.time.high === 3,
+    JSON.stringify({ r: q.recommended, range: q.range, t: q.time }));
+}
+// 2. mergeRates rejects garbage (no NaN/negative)
+{
+  const bad = pricing.mergeRates({ RATE: { regular: { perSqft: NaN, min: "x" } }, FREQ_DISCOUNT: { weekly: 5 } });
+  const q = pricing.quote({ sqft: 2000, beds: 3, baths: 2, cleaningType: "regular", frequency: "weekly" }, bad);
+  check("mergeRates NaN/negative-safe", Number.isFinite(q.recommended) && q.recommended > 0 && q.recurring >= 0, JSON.stringify(q));
+}
+// 3. Stored-XSS: hero escaped, color forced to hex
+{
+  const html = templates.renderSite({ template: "1", biz: "X", hero: "<img src=x onerror=alert(1)>", color: "</style><script>bad" });
+  check("site template escapes hero + validates color",
+    !html.includes("<img src=x onerror") && html.includes("&lt;img src=x onerror") && !html.includes("<script>bad") && html.includes("#1B8FD1"));
+}
+// 4. Health
+check("GET /api/health ok", (await J("/api/health")).ok === true);
+
+// 5. Widget quote prices from sqft
+{
+  const r = await J("/api/widget/quote", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ slug: "alto-demo", name: "A", phone: "9565551234", address: "1 St", sqft: 2200, beds: 4, baths: 2, cleaningType: "deep", pets: "heavy", addOns: ["fridge", "oven"] }) });
+  check("widget quote prices (555)", r.quoted === true && r.recommended === 555, JSON.stringify({ q: r.quoted, r: r.recommended }));
+}
+// 6. Widget sqft fallback: unquoted (no rentcast) -> sqft -> priced, ONE lead
+{
+  const r1 = await J("/api/widget/quote", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ slug: "alto-demo", name: "B", phone: "9565550001", address: "2 St", cleaningType: "regular" }) });
+  const r2 = await J("/api/widget/quote", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ slug: "alto-demo", name: "B", phone: "9565550001", address: "2 St", cleaningType: "regular", sqft: 2000, leadId: r1.id }) });
+  const demo = await db.getContractorBySlug("alto-demo");
+  const leads = await db.listLeads(demo.id);
+  const forPhone = leads.filter((l) => String(l.phone).includes("9565550001"));
+  check("widget sqft fallback prices + single lead", r1.quoted === false && r2.quoted === true && forPhone.length === 1, JSON.stringify({ q1: r1.quoted, q2: r2.quoted, n: forPhone.length }));
+}
+
+// Set up an authed cleaner for the in-app flows
+const cleaner = await db.createContractor({ name: "Reg Cleaner", phone: "9565552222" });
+await db.saveContractorData(cleaner.id, { status: "paused", payStatus: "ok", stripeCustomer: "cus_reg", webhook: "https://example.com/h", site: { domain: "z.com" }, profile: { biz: "Old" } });
+const invite = await db.createInvite(cleaner.id);
+const sess = await db.useInvite(invite);
+const AH = { "Content-Type": "application/json", Authorization: `Bearer ${sess}` };
+
+// 7. /api/state merges (never wipes billing/site/webhook)
+{
+  await fetch(B + "/api/state", { method: "PUT", headers: AH, body: JSON.stringify({ state: { customers: [], quotes: [] }, profile: { profile: { biz: "New", rates: { RATE: { regular: { perSqft: "0.15" } } } } } }) });
+  const c = await db.getContractor(cleaner.id);
+  check("/api/state merge keeps billing/site/webhook",
+    c.data.status === "paused" && c.data.payStatus === "ok" && c.data.stripeCustomer === "cus_reg" && !!c.data.webhook && !!c.data.site && c.data.profile.biz === "New" && Number(c.data.profile.rates.RATE.regular.perSqft) === 0.15,
+    JSON.stringify({ status: c.data.status, pay: c.data.payStatus, cust: c.data.stripeCustomer, wh: !!c.data.webhook, site: !!c.data.site, biz: c.data.profile.biz, rate: c.data.profile.rates?.RATE?.regular?.perSqft }));
+}
+// 8. paused account cannot generate a quote
+check("paused -> /api/quote 403", (await fetch(B + "/api/quote", { method: "POST", headers: AH, body: JSON.stringify({ sqft: 2000, cleaningType: "regular" }) })).status === 403);
+
+// unpause for the remaining authed checks
+await db.mergeContractorData(cleaner.id, { status: null });
+// 9. authed in-app quote uses her saved rates
+{
+  const r = await J("/api/quote", { method: "POST", headers: AH, body: JSON.stringify({ sqft: 2000, beds: 3, baths: 2, cleaningType: "regular" }) });
+  // 0.15/sqft override -> 0.15*2000 + 3*8 + 2*15 = 354 -> round 355
+  check("in-app quote uses saved rates (355)", r.ok && r.quote.recommended === 355, JSON.stringify(r.quote && r.quote.recommended));
+}
+// 10. in-app lead round-trip
+{
+  await fetch(B + "/api/lead", { method: "POST", headers: AH, body: JSON.stringify({ name: "HO", phone: "9565553333", address: "3 St", info: { recommended: 300 } }) });
+  const leads = await J("/api/leads", { headers: AH });
+  check("in-app lead recorded + retrievable", leads.leads.some((l) => l.name === "HO" && l.info.recommended === 300));
+}
+
+// 11. staff auth: 401 without key, 200 with query key
+check("/admin 401 without key", (await fetch(B + "/admin")).status === 401);
+check("/admin 200 with key", (await fetch(B + "/admin?key=regadmin", { redirect: "manual" })).status < 400 || (await fetch(B + "/admin?key=regadmin")).status === 200);
+
+// 12. GHL-IN dedupe by phone (24h)
+{
+  const a = await J("/api/hl/lead?key=regsecret", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: "X", phone: "+1 (956) 555-4444", channel: "whatsapp" }) });
+  const b = await J("/api/hl/lead?key=regsecret", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name: "X2", phone: "9565554444", channel: "whatsapp" }) });
+  check("GHL-IN dedupe same phone", b.deduped === true && b.id === a.id);
+}
+// 13. DEMO_PASS lifts the anonymous lookup cap
+{
+  const look = (hdr) => fetch(B + "/api/lookup", { method: "POST", headers: { "Content-Type": "application/json", ...hdr }, body: JSON.stringify({ address: "cap " + Math.random() }) }).then((r) => r.status);
+  let anon = []; for (let i = 0; i < 9; i++) anon.push(await look({}));
+  let withPass = []; for (let i = 0; i < 9; i++) withPass.push(await look({ "x-demo-pass": "regpass" }));
+  check("DEMO_PASS bypasses lookup cap", anon.includes(429) && !withPass.includes(429));
+}
+// 14. Backup: admin-gated, excludes tokens
+{
+  const no = await fetch(B + "/api/admin/backup");
+  const bak = await J("/api/admin/backup?key=regadmin");
+  check("backup 403 w/o key + excludes sessions/invites", no.status === 403 && !("sessions" in bak) && !("invites" in bak) && Array.isArray(bak.contractors));
+}
+
+console.log("\n" + results.join("\n"));
+console.log(`\n${pass} passed, ${fail} failed`);
+process.exit(fail ? 1 : 0);

@@ -8,7 +8,8 @@
     "build": "vite build",
     "preview": "vite preview",
     "server": "node --env-file-if-exists=server/.env server/index.mjs",
-    "test": "node server/pricing.test.mjs"
+    "test": "node server/pricing.test.mjs",
+    "regression": "node scripts/regression.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.104.1",
