@@ -11,6 +11,8 @@ process.env.CLOSER_KEY = "regcloser";
 process.env.CS_KEY = "regcs";
 process.env.DEMO_PASS = "regpass";
 process.env.HL_WEBHOOK_SECRET = "regsecret";
+process.env.STRIPE_WEBHOOK_SECRET = "regwh";
+const { createHmac } = await import("node:crypto");
 // fresh file store each run
 process.env.DATABASE_URL = "";
 try { (await import("node:fs")).rmSync(path.join(ROOT, "server", "data", "store.json")); } catch { /* ok */ }
@@ -133,6 +135,18 @@ check("/admin 200 with key", (await fetch(B + "/admin?key=regadmin", { redirect:
   const sr = await J("/api/push/subscribe", { method: "POST", headers: AH, body: JSON.stringify({ subscription: { endpoint: "https://x.example/1", keys: { p256dh: "a", auth: "b" } } }) });
   const c = await db.getContractor(cleaner.id);
   check("push key + subscribe stores device", typeof key.enabled === "boolean" && sr.ok === true && (c.data.push || []).some((s) => s.endpoint === "https://x.example/1"));
+}
+
+// 16. Stripe webhook tags the plan by exact amount ($197 -> widget)
+{
+  const payer = await db.createContractor({ name: "Payer", phone: "9560009999" });
+  await db.saveContractorData(payer.id, { stripeCustomer: "cus_reg9", payStatus: "pending" });
+  const body = JSON.stringify({ id: "evt_reg_" + Math.random(), type: "invoice.paid", created: Math.floor(Date.now() / 1000), data: { object: { customer: "cus_reg9", amount_paid: 19700 } } });
+  const ts = Math.floor(Date.now() / 1000);
+  const sig = createHmac("sha256", "regwh").update(ts + "." + body).digest("hex");
+  await fetch(B + "/api/stripe/webhook", { method: "POST", headers: { "Content-Type": "application/json", "stripe-signature": `t=${ts},v1=${sig}` }, body });
+  const p = await db.getContractor(payer.id);
+  check("stripe webhook tags plan by amount ($197->widget)", p.data.plan === "widget" && p.data.payStatus === "ok", JSON.stringify({ plan: p.data.plan, pay: p.data.payStatus }));
 }
 
 console.log("\n" + results.join("\n"));

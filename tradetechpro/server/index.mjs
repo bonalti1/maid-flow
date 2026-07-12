@@ -115,6 +115,15 @@ app.set("trust proxy", 1);
  * Configure in Stripe: endpoint /api/stripe/webhook, then put the signing
  * secret in Render as STRIPE_WEBHOOK_SECRET. */
 const STRIPE_WH_SECRET = process.env.STRIPE_WEBHOOK_SECRET || "";
+// The 3-tier ladder. Stripe tags the plan by the EXACT amount paid, so a new
+// price = a new Payment Link + a new entry here. Payment links live in env.
+const PLAN_BY_AMOUNT = { 67: "pro", 197: "widget", 297: "complete" };
+const STRIPE_LINKS = {
+  pro: process.env.STRIPE_LINK_PRO || "",
+  widget: process.env.STRIPE_LINK_WIDGET || "",
+  complete: process.env.STRIPE_LINK_COMPLETE || process.env.STRIPE_PAYMENT_LINK || "",
+};
+const planFromAmount = (cents) => PLAN_BY_AMOUNT[Math.round(Number(cents || 0) / 100)] || null;
 app.post("/api/stripe/webhook", express.raw({ type: "application/json" }), async (req, res) => {
   if (!STRIPE_WH_SECRET) return res.status(503).json({ error: "webhook not configured" });
   try {
@@ -137,6 +146,9 @@ app.post("/api/stripe/webhook", express.raw({ type: "application/json" }), async
   const clientRef = obj.client_reference_id || obj.metadata?.contractorId || null;
   const email = String(obj.customer_email || obj.customer_details?.email || "").toLowerCase();
   const phone = String(obj.customer_phone || obj.customer_details?.phone || "").replace(/\D/g, "").replace(/^1/, "");
+  // Tag the plan by the exact amount paid ($67 pro / $197 widget / $297 complete).
+  const amountCents = Number(obj.amount_paid || obj.amount_total || obj.amount || 0);
+  const paidPlan = planFromAmount(amountCents);
 
   const PAID_EVENTS = ["invoice.paid", "invoice.payment_succeeded", "checkout.session.completed"];
   // A "paid" event must actually represent money moving: real checkouts have
@@ -163,7 +175,7 @@ app.post("/api/stripe/webhook", express.raw({ type: "application/json" }), async
     // Payment often arrives BEFORE the account is created — remember it (30d) so
     // the new account activates itself on creation, keyed by phone AND email.
     if (PAID_EVENTS.includes(event.type) && isRealPayment) {
-      const rec = { customerId, email, phone, at: new Date().toISOString() };
+      const rec = { customerId, email, phone, plan: paidPlan, at: new Date().toISOString() };
       if (phone) await db.kvSet(`paid:${phone}`, rec).catch(() => {});
       if (email) await db.kvSet(`paid:${email}`, rec).catch(() => {});
     }
@@ -188,6 +200,7 @@ app.post("/api/stripe/webhook", express.raw({ type: "application/json" }), async
     patch.status = null;       // unpause — access back the second the card goes through
     patch.payFailedAt = null;
     patch.payStatus = "ok";
+    if (paidPlan) patch.plan = paidPlan;   // tag the tier by amount
   } else if (event.type === "invoice.payment_failed") {
     patch.payStatus = "failed";
     patch.payFailedAt = cur.payFailedAt || new Date().toISOString();
@@ -1017,7 +1030,7 @@ app.post("/api/admin/ceo", async (req, res) => {
   if (!adminOk(req)) return res.status(403).json({ error: "no auth" });
   const en = req.body?.lang === "en";
   const m = req.body?.metrics || {};
-  const system = `You are a sharp, no-nonsense fractional CEO / growth advisor for Maid Flow, a Spanish-first SaaS sold to Hispanic house cleaners at about $97-149/month (website + cleaning-quote widget + app + AI secretary + leads). Given the numbers, write a concise, PRIORITIZED action plan in ${en ? "English" : "Spanish"}, max 160 words, plain text (no markdown headers). Be direct and specific: if close rate is low, say to fix/coach/replace closers BEFORE scaling ads; if unit economics are strong (LTV:CAC >= 3, payback < 3mo), say to scale ad spend and by roughly how much; flag churn and failed payments as fires to put out first. End with the single most important next action. No fluff.`;
+  const system = `You are a sharp, no-nonsense fractional CEO / growth advisor for Maid Flow, a Spanish-first SaaS sold to Hispanic house cleaners on a 3-tier ladder — PRO $67, WIDGET $197, COMPLETE $297/mo — at about $67-149/month (website + cleaning-quote widget + app + AI secretary + leads). Given the numbers, write a concise, PRIORITIZED action plan in ${en ? "English" : "Spanish"}, max 160 words, plain text (no markdown headers). Be direct and specific: if close rate is low, say to fix/coach/replace closers BEFORE scaling ads; if unit economics are strong (LTV:CAC >= 3, payback < 3mo), say to scale ad spend and by roughly how much; flag churn and failed payments as fires to put out first. End with the single most important next action. No fluff.`;
   const user = `Numbers: ${JSON.stringify(m)}`;
   try {
     const text = await aiChat({ system, messages: [{ role: "user", content: user }], maxTokens: 380 });
@@ -1158,7 +1171,7 @@ var LIVE=${JSON.stringify(live)};
 function mm(es,eng){return EN?eng:es;}
 function money(n){return "$"+Math.round(n).toLocaleString("en-US");}
 // inputs
-var F=[["spend",1000],["price",97],["serve",25],["comm",100],["lead",8],["book",20],["close",${live.realClose != null ? live.realClose : 33}],["life",12]];
+var F=[["spend",1000],["price",297],["serve",25],["comm",100],["lead",8],["book",20],["close",${live.realClose != null ? live.realClose : 33}],["life",12]];
 var S={};try{S=JSON.parse(localStorage.getItem("alto_cockpit")||"{}")||{}}catch(e){S={}}
 F.forEach(function(f){if(S[f[0]]==null)S[f[0]]=f[1];});
 // fixed costs
@@ -1881,7 +1894,7 @@ function render(j){track('w_result');var s4=document.getElementById('s4'),h='';
 function landingPage(req) {
   const base = canonBase(req);
   const en = req.query.lang === "en";
-  const stripeLink = process.env.STRIPE_PAYMENT_LINK || "";
+  const stripeLink = STRIPE_LINKS.complete; // primary = $297 COMPLETE (P key / buy now)
   // Meta Pixel for ad tracking — only renders once META_PIXEL_ID is set
   const pixelId = (process.env.META_PIXEL_ID || "").replace(/[^0-9]/g, "");
   const pixelHead = pixelId ? `<script>!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');fbq('init','${pixelId}');fbq('track','PageView');</script><noscript><img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id=${pixelId}&ev=PageView&noscript=1"/></noscript>` : "";
@@ -1912,7 +1925,7 @@ function landingPage(req) {
     appSub: `A neighbor asks "how much to clean mine?" — you type their address (or use your GPS), answer a few questions, and send a polished quote right there.`,
     cap1: "Quoted from the home's size<br>in 60 seconds", cap2: "Set your own rates<br>and minimums", cap3: "Professional quote with your<br>brand, ready to send",
     priceT: "ONE <em>PRICE</em>", priceSub: "No fine print. No long contracts. Cancel anytime and your domain is yours.",
-    mo: "/mo", setup: "+ $97 to start (one time)", buyNow: "Start now →", orBook: "or book a call first",
+    mo: "/mo", setup: "No setup fee — cancel anytime", buyNow: "Start now →", orBook: "or book a call first",
     inc: ["Your professional website with your brand", "Instant cleaning-quote tool on your site", "The Maid Flow app: quotes, rates, leads", "Cleaning leads straight to your WhatsApp", "Your domain (yourname.com) is yours — by contract", "Bilingual support"],
     talkT: "READY? <em>LET'S TALK</em>", talkSub: "Answer 4 quick questions and schedule a call with the team. No obligation — we answer everything and you decide.",
     q1: "What do you focus on?", q1o: ["Homes", "Airbnb / rentals", "Offices", "Other"],
@@ -1947,7 +1960,7 @@ function landingPage(req) {
     appSub: `El vecino te pregunta "¿cuánto por limpiar la mía?" — pones su dirección (o usas tu GPS), contestas unas preguntas, y le mandas una cotización profesional ahí mismo.`,
     cap1: "Cotizado por el tamaño<br>de la casa en 60 segundos", cap2: "Pon tus propias tarifas<br>y mínimos", cap3: "Cotización profesional con tu<br>marca, lista para mandar",
     priceT: "UN SOLO <em>PRECIO</em>", priceSub: "Sin letras chiquitas. Sin contratos largos. Cancelas cuando quieras y tu dominio es tuyo.",
-    mo: "/mes", setup: "+ $97 para empezar (una sola vez)", buyNow: "Comenzar ahora →", orBook: "o agenda una llamada primero",
+    mo: "/mes", setup: "Sin cargo de inicio — cancela cuando quieras", buyNow: "Comenzar ahora →", orBook: "o agenda una llamada primero",
     inc: ["Tu página web profesional con tu marca", "Cotizador de limpieza instantáneo en tu página", "La app Maid Flow: cotizaciones, tarifas, clientes", "Clientes directo a tu WhatsApp", "Tu dominio (tunombre.com) es tuyo — por contrato", "Soporte en español"],
     talkT: "¿LISTA? <em>HABLEMOS</em>", talkSub: "Contesta 4 preguntas rápidas y agenda una llamada con el equipo. Sin compromiso — resolvemos todas tus dudas y tú decides.",
     q1: "¿En qué te enfocas?", q1o: ["Casas", "Airbnb / rentas", "Oficinas", "Otro"],
@@ -2104,7 +2117,7 @@ footer a{color:#8A94A8}
   <h2 class="sec-t">${L.priceT}</h2>
   <p class="sec-sub">${L.priceSub}</p>
   <div class="price-card">
-    <div class="amt">$97<small>${L.mo}</small></div>
+    <div class="amt">$297<small>${L.mo}</small></div>
     <div class="setup">${L.setup}</div>
     <ul>${L.inc.map((x) => `<li>${x}</li>`).join("")}</ul>
     ${stripeLink
@@ -3504,7 +3517,7 @@ ul.pts li b{color:var(--gold);flex-shrink:0}
       <div class="card"><div class="ic">📲</div><h3>La app Maid Flow</h3><p>Cotiza limpiezas, manda la cotización, recibe los leads.</p></div>
       <div class="card"><div class="ic">🤖</div><h3>Secretaria IA</h3><p>Contesta y agenda citas a cualquier hora.</p></div>
     </div>
-    <div class="glass"><div><b>$97</b><span>para empezar</span></div><div><b>$97</b><span>al mes</span></div></div>
+    <div class="glass"><div><b>$0</b><span>para empezar</span></div><div><b>desde $67</b><span>al mes</span></div></div>
   </div>
 </section>
 
@@ -3705,7 +3718,7 @@ app.post("/api/closer/contractors", async (req, res) => {
   const paid = (digits && await db.kvGet(`paid:${digits}`, WINDOW).catch(() => null))
     || (em && await db.kvGet(`paid:${em}`, WINDOW).catch(() => null)) || null;
   const cData = paid
-    ? { payStatus: "ok", billingEventAt: Math.floor(Date.now() / 1000), ...(paid.customerId ? { stripeCustomer: paid.customerId } : {}) }
+    ? { payStatus: "ok", billingEventAt: Math.floor(Date.now() / 1000), ...(paid.plan ? { plan: paid.plan } : {}), ...(paid.customerId ? { stripeCustomer: paid.customerId } : {}) }
     : { payStatus: "pending" };
   if (em) cData.profile = { email: em };
   await db.saveContractorData(c.id, cData);
@@ -3750,7 +3763,7 @@ app.get("/closer", async (req, res) => {
   const meetings = await db.listMeetings(40, range).catch(() => []);
   const clientCount = (await db.listContractors().catch(() => [])).filter((c) => !["alto-demo", "alto-ventas"].includes(c.slug)).length;
   const closeRate = mst.total ? Math.round((mst.closed / mst.total) * 100) : 0;
-  const stripeLink = process.env.STRIPE_PAYMENT_LINK || "";
+  const stripeLink = STRIPE_LINKS.complete; // primary = $297 COMPLETE (P key / buy now)
   const wMsg = en
     ? `Check this out 👀 — enter your details and see the cleaning price your customers would get on YOUR website:\n${base}/w/alto-demo`
     : `Mira esto 👀 — pon los detalles y ve el precio de limpieza que tus clientes recibirían en TU página web:\n${base}/w/alto-demo`;
@@ -3767,7 +3780,7 @@ app.get("/closer", async (req, res) => {
     playT: "The close, step by step (all on the same call)",
     play: ["Press <b>P</b> in the presentation → payment link copied → send it on WhatsApp.", "While they pay: <b>create their account above</b> and copy their access link.", "Press <b>B</b> → welcome message copied → paste their access link → send it.", "Book their <b>onboarding</b> before hanging up."],
     linksT: "Links & messages",
-    payT: "💳 Payment link — $97 today + $97/mo", payMissing: "Not configured yet (STRIPE_PAYMENT_LINK in Render).",
+    payT: "💳 COMPLETE — $297/mo (or PRO $67 / WIDGET $197)", payMissing: "Not configured yet (STRIPE_PAYMENT_LINK in Render).",
     welT: "👋 Welcome (paste their access link)", demoT: "🧼 Cleaning-quote demo", demoMsgT: "👀 Demo message",
     open: "Open", copy: "Copy",
     scriptT: "🎤 Talk track — what you say on each slide",
@@ -3807,7 +3820,7 @@ app.get("/closer", async (req, res) => {
     playT: "El cierre, paso a paso (todo en la misma llamada)",
     play: ["Tecla <b>P</b> en la presentación → link de pago copiado → mándalo por WhatsApp.", "Mientras paga: <b>crea su cuenta aquí arriba</b> y copia su link de acceso.", "Tecla <b>B</b> → bienvenida copiada → pega su link de acceso → envíala.", "Agenda su <b>onboarding</b> antes de colgar."],
     linksT: "Links y mensajes",
-    payT: "💳 Link de pago — $97 hoy + $97/mes", payMissing: "Aún no configurado (STRIPE_PAYMENT_LINK en Render).",
+    payT: "💳 COMPLETO — $297/mes (o PRO $67 / WIDGET $197)", payMissing: "Aún no configurado (STRIPE_PAYMENT_LINK en Render).",
     welT: "👋 Bienvenida (pega su link de acceso)", demoT: "🧼 Demo del cotizador", demoMsgT: "👀 Mensaje de demo",
     open: "Abrir", copy: "Copiar",
     scriptT: "🎤 Guion — qué dices en cada slide",
@@ -3982,9 +3995,12 @@ ${periodSeg("/closer", range, en)}
     <h2>${L.playT}</h2>
     <ol>${L.play.map((x) => `<li>${x}</li>`).join("")}</ol>
     <h2>${L.linksT}</h2>
-    ${stripeLink
-      ? `<div class="link"><span><b>${L.payT}</b><br><small>${esc(stripeLink)}</small></span><a href="${stripeLink}" target="_blank" rel="noreferrer" style="background:#1B8FD1;color:#fff;border-radius:11px;padding:9px 15px;font-weight:700;text-decoration:none;flex-shrink:0;font-size:13px">${L.open}</a><button onclick="cp(this,'${stripeLink}')">${L.copy}</button></div>`
-      : `<div class="link" style="border-style:dashed"><span><b>💳</b><br><small>${L.payMissing}</small></span></div>`}
+    ${[["complete", "COMPLETO", "$297"], ["widget", "WIDGET", "$197"], ["pro", "PRO", "$67"]].map(([plan, label, price]) => {
+      const link = STRIPE_LINKS[plan];
+      return link
+        ? `<div class="link"><span><b>💳 ${label} — ${price}/mes</b><br><small>${esc(link)}</small></span><a href="${link}" target="_blank" rel="noreferrer" style="background:#1B8FD1;color:#fff;border-radius:11px;padding:9px 15px;font-weight:700;text-decoration:none;flex-shrink:0;font-size:13px">${L.open}</a><button onclick="cp(this,'${link}')">${L.copy}</button></div>`
+        : `<div class="link" style="border-style:dashed"><span><b>💳 ${label} — ${price}/mes</b><br><small>${en ? "Not configured" : "Sin configurar"} · STRIPE_LINK_${plan.toUpperCase()}</small></span></div>`;
+    }).join("")}
     <div class="link"><span><b>${L.welT}</b><br><small>${esc(welcome.slice(0, 70))}…</small></span><button onclick='cp(this,${JSON.stringify(welcome)})'>${L.copy}</button></div>
     <div class="link"><span><b>${L.demoT}</b><br><small>${base}/w/alto-demo</small></span><button onclick="cp(this,'${base}/w/alto-demo')">${L.copy}</button></div>
     <div class="link"><span><b>${L.demoMsgT}</b><br><small>${esc(wMsg.slice(0, 70))}…</small></span><button onclick='cp(this,${JSON.stringify(wMsg)})'>${L.copy}</button></div>
@@ -4014,7 +4030,7 @@ function saveNote(id){var el=document.getElementById('note_'+id);if(!el)return;f
  * payment link, ready messages, and objection answers. */
 app.get("/cierre", (req, res) => {
   const base = canonBase(req);
-  const stripeLink = process.env.STRIPE_PAYMENT_LINK || "";
+  const stripeLink = STRIPE_LINKS.complete; // primary = $297 COMPLETE (P key / buy now)
   const wMsg = `Mira esto 👀 — pon los detalles y ve el precio de limpieza que tus clientes recibirían en TU página web:\n${base}/w/alto-demo`;
   const welcome = `¡Felicidades y bienvenido a Maid Flow! 🎉 Toca este link desde tu teléfono y guárdalo — es tu llave personal a tu app: [PEGA AQUÍ SU LINK DE ACCESO]. Hoy mismo puedes cotizar limpiezas y mandar cotizaciones. Nos vemos en tu llamada de onboarding 💪`;
   const esc = (s) => String(s).replace(/</g, "&lt;");
@@ -4038,7 +4054,7 @@ ol li{margin-bottom:10px}small{color:#67718A}
 <li>Agenda su <b>onboarding</b> antes de colgar.</li>
 </ol>
 <h2>Links y mensajes</h2>
-<div class="link"><span><b>💳 Link de pago — $97 hoy + $97/mes</b><br><small>${esc(stripeLink || "buy.stripe.com/… (ejemplo — aún sin configurar)")}</small></span><a href="${stripeLink || "#"}" ${stripeLink ? `target="_blank" rel="noreferrer"` : `onclick="alert('Aún no está configurado: crea el Payment Link en Stripe y agrégalo en Render como STRIPE_PAYMENT_LINK');return false"`} style="background:#1B8FD1;color:#fff;border-radius:8px;padding:8px 14px;font-weight:800;text-decoration:none;flex-shrink:0">Abrir</a><button onclick="${stripeLink ? `cp(this,'${stripeLink}')` : `alert('Aún no está configurado: crea el Payment Link en Stripe y agrégalo en Render como STRIPE_PAYMENT_LINK')`}">Copiar</button></div>
+<div class="link"><span><b>💳 COMPLETO — $297/mes (o PRO $67 / WIDGET $197)</b><br><small>${esc(stripeLink || "buy.stripe.com/… (ejemplo — aún sin configurar)")}</small></span><a href="${stripeLink || "#"}" ${stripeLink ? `target="_blank" rel="noreferrer"` : `onclick="alert('Aún no está configurado: crea el Payment Link en Stripe y agrégalo en Render como STRIPE_PAYMENT_LINK');return false"`} style="background:#1B8FD1;color:#fff;border-radius:8px;padding:8px 14px;font-weight:800;text-decoration:none;flex-shrink:0">Abrir</a><button onclick="${stripeLink ? `cp(this,'${stripeLink}')` : `alert('Aún no está configurado: crea el Payment Link en Stripe y agrégalo en Render como STRIPE_PAYMENT_LINK')`}">Copiar</button></div>
 <p style="font-size:12px;color:#67718A;margin:-2px 0 10px"><b>Copiar</b> → se lo mandas por WhatsApp y paga desde su teléfono. <b>Abrir</b> → si te da la tarjeta por teléfono, la escribes tú aquí mismo.${stripeLink ? "" : ` <b style="color:#D93025">⚠️ Link de ejemplo — falta configurar STRIPE_PAYMENT_LINK en Render.</b>`}</p>
 <div class="link"><span><b>👋 Bienvenida (pega su link de acceso)</b><br><small>${esc(welcome.slice(0, 70))}…</small></span><button onclick='cp(this,${JSON.stringify(welcome)})'>Copiar</button></div>
 <div class="link"><span><b>🧼 Demo del cotizador</b><br><small>${base}/w/alto-demo</small></span><button onclick="cp(this,'${base}/w/alto-demo')">Copiar</button></div>
@@ -4077,7 +4093,7 @@ app.get("/demo", (req, res) => {
   const wMsg = en
     ? `Check this out 👀 — enter your details and see the cleaning price your customers would get on YOUR website:\n${base}/w/alto-demo`
     : `Mira esto 👀 — pon los detalles y ve el precio de limpieza que tus clientes recibirían en TU página web:\n${base}/w/alto-demo`;
-  const stripeLink = process.env.STRIPE_PAYMENT_LINK || "";
+  const stripeLink = STRIPE_LINKS.complete; // primary = $297 COMPLETE (P key / buy now)
   const welcome = en
     ? `Congratulations and welcome to Maid Flow! 🎉 Tap this link from your phone and save it — it's your personal key to your app: [PASTE THEIR ACCESS LINK HERE]. You can quote cleanings and send quotes starting today. See you at your onboarding call 💪`
     : `¡Felicidades y bienvenido a Maid Flow! 🎉 Toca este link desde tu teléfono y guárdalo — es tu llave personal a tu app: [PEGA AQUÍ SU LINK DE ACCESO]. Hoy mismo puedes cotizar limpiezas y mandar cotizaciones. Nos vemos en tu llamada de onboarding 💪`;
@@ -4120,7 +4136,7 @@ app.get("/demo", (req, res) => {
     b7: "What this would cost separately (typical market prices):",
     s7a: "🌐 Professional website with your brand", s7b: "🧼 Cleaning-quote tool on your site", s7c: "🤖 AI secretary that texts and books", s7d: "📲 Quotes & leads app", s7e: "🇺🇸 Domain, hosting & bilingual support",
     s7tot: "Separately", roi7: '💰 <b style="color:#fff">One steady client is hundreds of dollars a month.</b> One single extra client pays for your whole year.',
-    pk7: "WITH MAID FLOW · ALL INCLUDED", mo: "/mo", setup7: "+ $97 to start, one time only",
+    pk7: "WITH MAID FLOW · ALL INCLUDED", mo: "/mo", setup7: "No setup fee · from $67/mo (PRO)",
     pr7a: "✓ No long contracts", pr7b: "✓ Cancel anytime", pr7c: "✓ Your domain is YOURS — by contract",
     k8: "08 · LET'S BEGIN", h8a: "Let's start", h8b: "today.",
     b8: "Getting started is this easy — everything begins on this very call:",
@@ -4160,7 +4176,7 @@ app.get("/demo", (req, res) => {
     b7: "Lo que esto costaría por separado (precios típicos del mercado):",
     s7a: "🌐 Página web profesional con tu marca", s7b: "🧼 Cotizador de limpieza en tu página", s7c: "🤖 Secretaria IA que textea y agenda", s7d: "📲 App de cotizaciones y leads", s7e: "🇺🇸 Dominio, hosting y soporte en español",
     s7tot: "Por separado", roi7: '💰 <b style="color:#fff">Un cliente fijo son cientos de dólares al mes.</b> Un solo cliente extra paga tu año entero.',
-    pk7: "CON MAID FLOW · TODO INCLUIDO", mo: "/mes", setup7: "+ $97 para empezar, una sola vez",
+    pk7: "CON MAID FLOW · TODO INCLUIDO", mo: "/mes", setup7: "Sin cargo de inicio · desde $67/mes (PRO)",
     pr7a: "✓ Sin contratos largos", pr7b: "✓ Cancelas cuando quieras", pr7c: "✓ Tu dominio es TUYO — por contrato",
     k8: "08 · EMPECEMOS", h8a: "Empecemos", h8b: "hoy mismo.",
     b8: "Así de fácil es arrancar — todo empieza en esta misma llamada:",
@@ -4449,7 +4465,7 @@ ul.pts.big li{font-size:clamp(16px,2.2vw,22px);padding:19px 0;line-height:1.6;ga
       </div>
       <div class="pcard">
         <p class="pk">${L.pk7}</p>
-        <div class="pamt">$97<small>${L.mo}</small></div>
+        <div class="pamt">$297<small>${L.mo}</small></div>
         <p class="psetup">${L.setup7}</p>
         <div class="pdiv"></div>
         <p class="prow">${L.pr7a}</p>
