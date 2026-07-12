@@ -29,21 +29,32 @@ commitear, sin romper una pantalla viva:
 4. ☐ Commit chico y descriptivo → push a ambas ramas → Render deploya `main`.
 5. ☐ Actualizar este playbook en el mismo commit si cambió un proceso.
 
-## Orden de porte pendiente (decidido)
+## Orden de porte (del playbook de ALTO) — COMPLETADO 1–10
 
 1. ☑ Docs (`CLAUDE.md` + `playbook/`).
-2. ☐ Catálogo de env: reescribir `.env.example` para este producto + `REQUIRE_DB`.
-3. ☐ Puente GHL entrada: dedupe de teléfono 10 min → 24 h.
-4. ☐ `DEMO_PASS` (pase ilimitado para el staff en el deck).
-5. ☐ Respaldo: descarga de JSON en /admin (con fecha, sin tokens de sesión).
-6. ☐ Suite de regresión `scripts/regression.mjs` (flujos dorados).
-7. ☐ Máquina de leads: pipeline 5 etapas + notas + export CSV + tags de fuente +
-   campo compañía en los formularios.
-8. ☐ Instalación: Android un toque (`beforeinstallprompt`) + aviso del navegador
-   de WhatsApp ("abre en Safari/Chrome").
-9. ☐ Notificaciones push (`notifyLead` + VAPID).
-10. ☐ **Stripe 3 niveles** ($67/$197/$297) — 3 Payment Links + `planByAmount`.
-11. ☐ (opcional) Cockpit del dueño `/hq`.
+2. ☑ Catálogo de env: `.env.example` reescrito + `REQUIRE_DB`.
+3. ☑ Puente GHL entrada: dedupe de teléfono 24 h (por últimos 10 dígitos).
+4. ☑ `DEMO_PASS` (pase ilimitado para el staff en el deck).
+5. ☑ Respaldo: `/api/admin/backup` (JSON con fecha, sin tokens de sesión).
+6. ☑ Suite de regresión `scripts/regression.mjs` (19 flujos dorados; `npm run regression`).
+7. ☑ Máquina de leads: pipeline 5 etapas + notas + export CSV + tags de fuente +
+   campo compañía.
+8. ☑ Instalación: Android un toque + guía iOS + aviso del navegador de WhatsApp.
+9. ☑ Notificaciones push (`notifyLead` + VAPID).
+10. ☑ **Stripe 3 niveles** ($67/$197/$297) — `STRIPE_LINK_*` + `planByAmount`.
+11. ☐ (opcional, no pedido) Cockpit del dueño `/hq`.
+
+### Lo que falta hacer EN LOS DASHBOARDS (el dueño, cuando pueda)
+
+El código ya está; estos son valores/llaves que viven fuera de git:
+- **Stripe:** crear 3 Payment Links ($67, $197, $297), con `client_reference_id`
+  = id de la cuenta, y pegarlos en Render como `STRIPE_LINK_PRO` /
+  `STRIPE_LINK_WIDGET` / `STRIPE_LINK_COMPLETE` + `STRIPE_WEBHOOK_SECRET`.
+- **Push:** `npx web-push generate-vapid-keys` → `VAPID_PUBLIC_KEY` /
+  `VAPID_PRIVATE_KEY` en Render.
+- **GHL:** conectar los webhooks (03-ghl.md) y poner `HL_WEBHOOK_SECRET`.
+- **APIs:** `GOOGLE_MAPS_API_KEY`, `RENTCAST_API_KEY`, `ANTHROPIC_API_KEY`.
+- **Producción:** `REQUIRE_DB=1` + `DATABASE_URL` de Supabase; `DEMO_PASS` fuerte.
 
 ## La meta operativa
 

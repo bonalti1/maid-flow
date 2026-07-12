@@ -92,12 +92,18 @@ in `playbook/` — read it before re-deriving any process.
 
 ## Current state / open items
 
-- Live in demo mode until the owner sets `GOOGLE_MAPS_API_KEY`,
-  `RENTCAST_API_KEY`, `ANTHROPIC_API_KEY`, and the Stripe keys in Render.
-- **Porting from ALTO (this playbook's mission), in order:** docs ✓ · env
-  catalog · GHL-IN 24h dedupe · `DEMO_PASS` · admin backup download · regression
-  suite · lead-CRM (pipeline/notes/CSV/source tags/company field) · install flow
-  (Android tap + WhatsApp-browser warning) · web push · **Stripe 3 tiers** ·
-  owner cockpit `/hq`. Each is one tested commit.
-- Owner action pending: regenerate the Stripe Payment Link(s) with
-  `client_reference_id` = contractor id for deterministic webhook matching.
+- **ALTO business-OS port COMPLETE (items 1–10):** docs ✓ · env catalog +
+  `REQUIRE_DB` ✓ · GHL-IN 24h dedupe ✓ · `DEMO_PASS` ✓ · admin backup download
+  ✓ · regression suite (`npm run regression`, 19 flows) ✓ · lead-CRM
+  (5-stage pipeline / notes / CSV / source tags / company field) ✓ · install
+  flow (Android one-tap + iOS overlay + WhatsApp-browser warning) ✓ · web push
+  (`notifyLead`/VAPID) ✓ · Stripe 3 tiers ($67/$197/$297 via `planByAmount`) ✓.
+  Item 11 (owner cockpit `/hq`) is optional and not built.
+- Run `npm run regression` (must be all green) before every commit, plus
+  `npm test` (pricing) and `npm run build`.
+- **Owner dashboard actions (values live outside git — set in Render):** create
+  the 3 Stripe Payment Links with `client_reference_id` = contractor id
+  (`STRIPE_LINK_PRO/WIDGET/COMPLETE` + `STRIPE_WEBHOOK_SECRET`); generate VAPID
+  keys (`npx web-push generate-vapid-keys`); set `GOOGLE_MAPS_API_KEY`,
+  `RENTCAST_API_KEY`, `ANTHROPIC_API_KEY`, `HL_WEBHOOK_SECRET`, a strong
+  `DEMO_PASS`, and `REQUIRE_DB=1` in production. Full catalog: `playbook/05`.
