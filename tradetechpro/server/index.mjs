@@ -3589,14 +3589,14 @@ app.post("/api/hl/lead", async (req, res) => {
   const phone = String(b.phone || b.phone_number || b.number || "").replace(/\D/g, "").slice(0, 15);
   const note = String(b.note || b.message || "Vino de WhatsApp").slice(0, 500);
   if (!name && !phone) return res.status(400).json({ error: "missing name/phone" });
-  // de-dupe: same phone logged in the last 10 minutes → don't create a twin
+  // de-dupe: same phone (last 10 digits) logged in the last 24h → don't create a
+  // twin. GHL can re-fire the same channel lead; match ALTO's 24h window.
   try {
-    const recent = await db.listMeetings(40);
-    const cutoff = Date.now() - 10 * 60 * 1000;
-    const dup = recent.find((m) => {
-      const mp = String(m.phone || "").replace(/\D/g, "");
-      return phone && mp === phone && new Date(m.created_at).getTime() > cutoff;
-    });
+    const recent = await db.listMeetings(80);
+    const cutoff = Date.now() - 24 * 60 * 60 * 1000;
+    const last10 = (p) => String(p || "").replace(/\D/g, "").slice(-10);
+    const pKey = last10(phone);
+    const dup = recent.find((m) => pKey && last10(m.phone) === pKey && new Date(m.created_at).getTime() > cutoff);
     if (dup) return res.json({ ok: true, deduped: true, id: dup.id });
   } catch { /* if the lookup fails, fall through and just create it */ }
   const id = await db.addMeeting({ name, phone, note });
