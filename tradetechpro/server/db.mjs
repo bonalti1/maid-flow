@@ -126,7 +126,12 @@ export async function initDb() {
     throw new Error(`Postgres connection failed: ${e.message}`);
    }
   }
-  // File fallback (no DATABASE_URL, or Postgres failed to connect)
+  // REQUIRE_DB=1 (production) refuses to run on the ephemeral file store even
+  // when DATABASE_URL isn't set at all — a guard against silent data loss.
+  if (process.env.REQUIRE_DB === "1") {
+    throw new Error("REQUIRE_DB=1 but DATABASE_URL is not set — refusing to start on the file store.");
+  }
+  // File fallback (no DATABASE_URL, dev only)
   try { mem = JSON.parse(fs.readFileSync(FILE, "utf8")); }
   catch { mem = { contractors: [], sessions: {}, invites: {}, states: {}, leads: [], metrics: {}, meetings: [], tasks: [] }; }
   mem.meetings = mem.meetings || [];
