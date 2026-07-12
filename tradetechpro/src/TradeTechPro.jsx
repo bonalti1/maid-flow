@@ -185,6 +185,14 @@ const DEMO_PASS = (() => {
   } catch { return ""; }
 })();
 
+/* Platform detection for the install flow. */
+const UA = (typeof navigator !== "undefined" && navigator.userAgent) || "";
+const IS_IOS = /iphone|ipad|ipod/i.test(UA);
+// In-app browsers (WhatsApp/Instagram/Facebook) can't install a PWA — the user
+// must reopen the link in the real browser first.
+const IS_INAPP = /WhatsApp|FBAN|FBAV|FB_IAB|Instagram|Line\//i.test(UA);
+const IS_STANDALONE = typeof window !== "undefined" && (window.matchMedia?.("(display-mode: standalone)").matches || window.navigator.standalone === true);
+
 /* ─── Main App ─── */
 export default function TradeTechPro() {
   const [lang, setLang] = useState(savedProfile.lang === "en" ? "en" : "es");
@@ -247,12 +255,25 @@ export default function TradeTechPro() {
   const [cloudReady, setCloudReady] = useState(false);
   const [netNonce, setNetNonce] = useState(0); // bumped on "online" to retry hydration
   const [leads, setLeads] = useState([]); // homeowner leads from the public widget
-  const [hideInstall, setHideInstall] = useState(() => {
-    try { return !!localStorage.getItem("maidflow_inst"); } catch { return true; }
-  });
-  const showInstallHint = !hideInstall
-    && /iphone|ipad/i.test(navigator.userAgent || "")
-    && !(window.matchMedia?.("(display-mode: standalone)").matches || window.navigator.standalone);
+  const [installPrompt, setInstallPrompt] = useState(null); // Android beforeinstallprompt event
+  const [installOverlay, setInstallOverlay] = useState(null); // null | "ios" | "wa" | "generic"
+  useEffect(() => {
+    const onBIP = (e) => { e.preventDefault(); setInstallPrompt(e); };
+    const onInstalled = () => { setInstallPrompt(null); setInstallOverlay(null); try { localStorage.setItem("maidflow_inst", "1"); } catch { /* ignore */ } };
+    window.addEventListener("beforeinstallprompt", onBIP);
+    window.addEventListener("appinstalled", onInstalled);
+    return () => { window.removeEventListener("beforeinstallprompt", onBIP); window.removeEventListener("appinstalled", onInstalled); };
+  }, []);
+  // One tap does the right thing per platform: native prompt on Android, an
+  // instructions overlay on iOS, or the "open in the real browser" warning
+  // when we're trapped inside WhatsApp/Instagram's in-app browser.
+  const doInstall = () => {
+    if (IS_INAPP) return setInstallOverlay("wa");
+    if (installPrompt) { installPrompt.prompt(); Promise.resolve(installPrompt.userChoice).finally(() => setInstallPrompt(null)); return; }
+    if (IS_IOS) return setInstallOverlay("ios");
+    return setInstallOverlay("generic");
+  };
+  const canInstall = !IS_STANDALONE; // hide once installed/running as an app
 
   const api = (path, opts = {}) => fetch(path, {
     ...opts,
@@ -986,6 +1007,11 @@ export default function TradeTechPro() {
             {userName && <span className="block truncate" style={{ color: "rgba(255,255,255,0.7)", fontSize: 12 }}>{userName}</span>}
           </span>
         </div>
+        {canInstall && (
+          <button onClick={doInstall} className="w-full active:translate-y-px transition-transform mb-3" style={{ background: M.teal, color: "#fff", border: "none", borderRadius: 12, padding: 14, fontSize: 15, fontWeight: 800, boxShadow: "0 4px 14px rgba(14,140,114,0.3)" }}>
+            📲 {lang === "es" ? "Instalar la app en tu teléfono" : "Install the app on your phone"}
+          </button>
+        )}
         <Card>
           <p style={{ color: M.gold, fontSize: 10, fontWeight: 900, letterSpacing: "0.16em", textTransform: "uppercase", marginBottom: 4 }}>{lang === "es" ? "Marca de tus cotizaciones" : "Quote branding"}</p>
           <p className="font-bold mb-3" style={{ color: M.tealDeep, fontSize: 14 }}>{lang === "es" ? "Aparece en cada cotización que envías." : "Shown on every quote you send."}</p>
@@ -1085,6 +1111,29 @@ export default function TradeTechPro() {
         {toast && (
           <div className="absolute left-0 right-0 flex justify-center" style={{ bottom: 80, pointerEvents: "none" }}>
             <span className="rounded-full px-5 py-2.5 font-bold text-sm text-white" style={{ background: M.tealDeep, boxShadow: "0 8px 20px rgba(0,0,0,.3)" }}>{toast}</span>
+          </div>
+        )}
+        {installOverlay && (
+          <div className="absolute inset-0 flex items-end justify-center" style={{ background: "rgba(9,20,16,0.55)", zIndex: 50 }} onClick={() => setInstallOverlay(null)}>
+            <div className="w-full" style={{ background: "#fff", borderRadius: "20px 20px 0 0", padding: "22px 20px 28px", maxWidth: 448 }} onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center justify-between mb-2">
+                <p className="font-extrabold" style={{ color: M.navy, fontSize: 17 }}>📲 {lang === "es" ? "Instalar Maid Flow" : "Install Maid Flow"}</p>
+                <button onClick={() => setInstallOverlay(null)} style={{ background: "none", border: "none", color: M.muted2, fontSize: 22, fontWeight: 800 }}>×</button>
+              </div>
+              {installOverlay === "wa" ? (
+                <p style={{ color: M.body, fontSize: 14, lineHeight: 1.6 }}>{lang === "es"
+                  ? "Estás dentro de WhatsApp. Toca los 3 puntos ⋮ arriba a la derecha → \"Abrir en Chrome\" (o Safari) — y ahí vuelve a tocar Instalar."
+                  : "You're inside WhatsApp. Tap the 3 dots ⋮ at the top right → \"Open in Chrome\" (or Safari) — then tap Install again there."}</p>
+              ) : installOverlay === "ios" ? (
+                <p style={{ color: M.body, fontSize: 14, lineHeight: 1.6 }}>{lang === "es"
+                  ? "En Safari: toca el botón Compartir ⬆️ (abajo al centro) → baja y toca \"Añadir a pantalla de inicio\" → Añadir. Listo, queda como app."
+                  : "In Safari: tap the Share ⬆️ button (bottom center) → scroll down and tap \"Add to Home Screen\" → Add. Done — it lives like an app."}</p>
+              ) : (
+                <p style={{ color: M.body, fontSize: 14, lineHeight: 1.6 }}>{lang === "es"
+                  ? "Abre el menú de tu navegador (⋮ o compartir) y toca \"Instalar app\" o \"Añadir a pantalla de inicio\"."
+                  : "Open your browser menu (⋮ or share) and tap \"Install app\" or \"Add to Home Screen\"."}</p>
+              )}
+            </div>
           </div>
         )}
       </div>
