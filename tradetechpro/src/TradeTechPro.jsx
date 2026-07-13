@@ -92,7 +92,7 @@ const TR = {
   es: {
     demoBanner: "🧪 Modo demo — tus datos no se guardan en la nube. ¿Cliente? Entra con tu link de WhatsApp.",
     demoLimit: "El modo demo incluye 6 búsquedas de prueba y ya las usaste. Las limpiadoras de Paulbeza cotizan sin límite.",
-    nav: { home: "Inicio", quote: "Cotizar", clients: "Clientes", prices: "Mis precios", account: "Ajustes" },
+    nav: { home: "Inicio", cobros: "Cobros", quote: "Cotizar", clients: "Clientes", prices: "Mis precios", account: "Ajustes" },
     measuring1: "Buscando la propiedad…", measuring2: "Midiendo el trabajo…", measuring3: "Calculando tu cotización…",
     beds: "Recámaras", baths: "Baños", sqft: "pies²", builtIn: "Construida",
     useMyLocation: "Usar mi ubicación", myLocation: "Mi ubicación", locating: "Buscando tu ubicación…",
@@ -102,7 +102,7 @@ const TR = {
   en: {
     demoBanner: "🧪 Demo mode — your data isn't saved to the cloud. Client? Enter with your WhatsApp link.",
     demoLimit: "The demo includes 6 trial lookups and you've used them. Paulbeza cleaners quote with no limits.",
-    nav: { home: "Home", quote: "Quote", clients: "Clients", prices: "My prices", account: "Settings" },
+    nav: { home: "Home", cobros: "Payments", quote: "Quote", clients: "Clients", prices: "My prices", account: "Settings" },
     measuring1: "Finding the property…", measuring2: "Sizing the job…", measuring3: "Calculating your quote…",
     beds: "Bedrooms", baths: "Baths", sqft: "sq ft", builtIn: "Built",
     useMyLocation: "Use my location", myLocation: "My location", locating: "Finding your location…",
@@ -266,6 +266,8 @@ export default function TradeTechPro() {
   const [aiMsgs, setAiMsgs] = useState([]); // Pregúntale a Paulbeza chat
   const [aiBusy, setAiBusy] = useState(false);
   const [housePos, setHousePos] = useState(null); // {lat,lng} for the house photo
+  const [openAcc, setOpenAcc] = useState(null); // Ajustes accordion
+  const [openMonth, setOpenMonth] = useState(null); // Cobros month expand
   const [installPrompt, setInstallPrompt] = useState(null); // Android beforeinstallprompt event
   const [installOverlay, setInstallOverlay] = useState(null); // null | "ios" | "wa" | "generic"
   useEffect(() => {
@@ -674,7 +676,7 @@ export default function TradeTechPro() {
 
   const navItems = [
     ["home", "🏠", t.nav.home],
-    ["quote", "🧼", t.nav.quote],
+    ["cobros", "💵", t.nav.cobros],
     ["account", "⚙️", t.nav.account],
   ];
   const BottomNav = () => (
@@ -1143,48 +1145,146 @@ export default function TradeTechPro() {
     );
   };
 
-  /* ── Account / branding ── */
-  const Account = () => (
-    <div className="flex-1 overflow-y-auto pb-6" style={{ background: M.bg }}>
-      <div className="px-5 pt-4">
-        <div className="rounded-2xl p-3.5 mb-3 flex items-center gap-3" style={{ background: M.headGrad }}>
-          <span className="shrink-0 flex items-center justify-center rounded-xl font-extrabold" style={{ width: 44, height: 44, background: "rgba(255,255,255,0.10)", border: "1px solid rgba(255,255,255,0.18)", color: M.goldHi, fontSize: 18 }}>{(bizName || userName || "M")[0].toUpperCase()}</span>
-          <span className="min-w-0">
-            <span className="block" style={{ color: M.goldHi, fontSize: 8, fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase" }}>{lang === "es" ? "Tu negocio" : "Your business"}</span>
-            <span className="block font-extrabold text-white truncate" style={{ fontSize: 16 }}>{bizName || (lang === "es" ? "Tu negocio" : "Your business")}</span>
-            {userName && <span className="block truncate" style={{ color: "rgba(255,255,255,0.7)", fontSize: 12 }}>{userName}</span>}
-          </span>
+  /* Shared light header for secondary screens (back to Inicio + wordmark). */
+  const ScreenHead = ({ icon, title }) => (
+    <div className="flex items-center gap-2 px-4 py-3" style={{ background: "#fff", borderBottom: `1px solid ${M.line}` }}>
+      <button onClick={() => setScreen("home")} className="shrink-0 flex items-center justify-center" style={{ width: 36, height: 36, borderRadius: 99, border: `1px solid ${M.line}`, background: "#fff", color: M.teal, fontSize: 22, fontWeight: 800, lineHeight: 1 }}>‹</button>
+      <div className="flex-1 flex items-center justify-center gap-2"><Wordmark size={15} /><span className="font-extrabold" style={{ color: M.navy, fontSize: 16 }}>{icon} {title}</span></div>
+      <span style={{ width: 36 }} />
+    </div>
+  );
+
+  /* ── Cobros / Pagos (ALTO-Pro style money tracker, from saved quotes) ── */
+  const monthKey = (ts) => { const d = new Date(ts || Date.now()); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`; };
+  const cap = (x) => (x ? x.charAt(0).toUpperCase() + x.slice(1) : x);
+  const monthName = (key) => { const [y, m] = key.split("-").map(Number); return cap(new Date(y, m - 1, 1).toLocaleDateString(lang === "es" ? "es-MX" : "en-US", { month: "long", year: "numeric", timeZone: "UTC" })); };
+  const setQuotePaid = (id, paid) => setSavedQuotes((prev) => {
+    const next = prev.map((q) => (q.id === id ? { ...q, collected: paid ? (q.recommended || 0) : 0 } : q));
+    try { localStorage.setItem("maidflow_quotes", JSON.stringify(next)); } catch { /* ignore */ }
+    return next;
+  });
+  const Cobros = () => {
+    const byMonth = {};
+    [...savedQuotes].sort((a, b) => (b.ts || 0) - (a.ts || 0)).forEach((q) => { const k = monthKey(q.ts); (byMonth[k] = byMonth[k] || []).push(q); });
+    const keys = Object.keys(byMonth).sort().reverse();
+    const nowKey = monthKey(Date.now());
+    const agg = (arr) => { const sold = arr.reduce((s, q) => s + (q.recommended || 0), 0); const col = arr.reduce((s, q) => s + (q.collected || 0), 0); return { sold, col, owe: sold - col, n: arr.length }; };
+    const cur = agg(byMonth[nowKey] || []);
+    const prevKey = keys.find((k) => k < nowKey);
+    const prev = prevKey ? agg(byMonth[prevKey]) : null;
+    const upper = { fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase" };
+    return (
+      <div className="flex-1 overflow-y-auto pb-6" style={{ background: M.bg }}>
+        <ScreenHead icon="💵" title={lang === "es" ? "Cobros / Pagos" : "Payments"} />
+        <div className="px-5 pt-4">
+          <div className="rounded-2xl p-5 mb-3" style={{ background: M.cardGrad }}>
+            <div className="flex items-center justify-between mb-3">
+              <span style={{ color: M.mint, fontSize: 13, ...upper }}>📅 {monthName(nowKey)}</span>
+              <span style={{ color: "rgba(255,255,255,0.7)", fontSize: 13, fontWeight: 700 }}>{cur.n} {lang === "es" ? "trabajos" : "jobs"}</span>
+            </div>
+            <div className="flex gap-4">
+              <div className="flex-1 min-w-0">
+                <p style={{ color: "rgba(255,255,255,0.6)", fontSize: 10.5, ...upper }}>{lang === "es" ? "Cotizado" : "Quoted"}</p>
+                <p className="text-white font-extrabold" style={{ fontSize: 29, lineHeight: 1.1 }}>{fmt(cur.sold)}</p>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p style={{ color: "rgba(255,255,255,0.6)", fontSize: 10.5, ...upper }}>{lang === "es" ? "Cobrado" : "Collected"}</p>
+                <p style={{ color: M.mint, fontWeight: 900, fontSize: 29, lineHeight: 1.1 }}>{fmt(cur.col)}</p>
+              </div>
+            </div>
+            <p style={{ color: "rgba(255,255,255,0.7)", fontSize: 13, fontWeight: 800, marginTop: 12, letterSpacing: "0.04em" }}>{lang === "es" ? "TE DEBEN: " : "OWED: "}<span className="text-white">{fmt(cur.owe)}</span></p>
+          </div>
+          {prev && (
+            <Card>
+              <p className="text-right mb-2" style={{ color: M.muted2, fontSize: 12, ...upper }}>{lang === "es" ? "Cotizado" : "Quoted"} · <span style={{ color: M.green }}>{lang === "es" ? "Cobrado" : "Collected"}</span></p>
+              <div className="flex items-center justify-between" style={{ borderTop: `1px solid ${M.line}`, paddingTop: 10 }}>
+                <span style={{ color: M.muted2, fontSize: 15, fontWeight: 700 }}>{monthName(prevKey)}</span>
+                <span style={{ fontSize: 15, fontWeight: 800, color: M.navy }}>{fmt(prev.sold)} · <span style={{ color: M.green }}>{fmt(prev.col)}</span></span>
+              </div>
+            </Card>
+          )}
+          {keys.length === 0 && <p className="text-center px-6" style={{ color: M.muted2, fontSize: 14, fontWeight: 600, marginTop: 34, lineHeight: 1.6 }}>{lang === "es" ? "Aún no tienes cotizaciones. Arma una y aparecerá aquí para llevar tus cobros." : "No quotes yet. Make one and it shows up here to track payments."}</p>}
+          {keys.map((k) => {
+            const a = agg(byMonth[k]); const open = openMonth === k;
+            return (
+              <div key={k} className="mb-2">
+                <button onClick={() => setOpenMonth(open ? null : k)} className="w-full flex items-center gap-3" style={{ background: "#fff", border: `1px solid ${M.line}`, borderRadius: 16, padding: "16px 16px" }}>
+                  <span style={{ fontSize: 20 }}>📁</span>
+                  <span className="flex-1 text-left font-extrabold" style={{ color: M.navy, fontSize: 16 }}>{monthName(k)} <span style={{ color: M.muted, fontWeight: 700 }}>· {a.n}</span></span>
+                  <span style={{ color: a.owe > 0 ? M.red : M.green, fontWeight: 900, fontSize: 16 }}>{a.owe > 0 ? fmt(a.owe) : "✓ " + fmt(a.col)}</span>
+                  <span style={{ color: M.muted, fontSize: 15 }}>{open ? "▾" : "▸"}</span>
+                </button>
+                {open && byMonth[k].map((q) => {
+                  const paid = (q.collected || 0) >= (q.recommended || 0) && (q.recommended || 0) > 0;
+                  return (
+                    <div key={q.id} className="flex items-center gap-2 mx-2 mt-1" style={{ background: M.bg, borderRadius: 12, padding: "11px 12px" }}>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate font-bold" style={{ color: M.navy, fontSize: 13 }}>{q.name || q.address || "—"}</p>
+                        <p className="truncate" style={{ color: M.muted2, fontSize: 11, fontWeight: 600 }}>{q.address || ""}</p>
+                      </div>
+                      <span className="font-extrabold" style={{ color: M.teal, fontSize: 14 }}>{fmt(q.recommended)}</span>
+                      <button onClick={() => setQuotePaid(q.id, !paid)} style={{ background: paid ? M.green : "#fff", color: paid ? "#fff" : M.muted2, border: `1.5px solid ${paid ? M.green : M.line}`, borderRadius: 9, padding: "6px 9px", fontSize: 12, fontWeight: 800, whiteSpace: "nowrap" }}>{paid ? "✓" : "○"} {lang === "es" ? "Cobrado" : "Paid"}</button>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })}
         </div>
-        {canInstall && (
-          <button onClick={doInstall} className="w-full active:translate-y-px transition-transform mb-3" style={{ background: M.teal, color: "#fff", border: "none", borderRadius: 12, padding: 14, fontSize: 15, fontWeight: 800, boxShadow: "0 4px 14px rgba(14,140,114,0.3)" }}>
-            📲 {lang === "es" ? "Instalar la app en tu teléfono" : "Install the app on your phone"}
-          </button>
-        )}
-        {session && typeof Notification !== "undefined" && !pushOn && (
-          <button onClick={() => subscribePush(true)} className="w-full active:translate-y-px transition-transform mb-3" style={{ background: "#fff", color: M.teal, border: `1.5px solid ${M.line}`, borderRadius: 12, padding: 13, fontSize: 14, fontWeight: 800 }}>
-            🔔 {lang === "es" ? "Activar avisos de leads" : "Turn on lead alerts"}
-          </button>
-        )}
-        <Card>
-          <p style={{ color: M.gold, fontSize: 10, fontWeight: 900, letterSpacing: "0.16em", textTransform: "uppercase", marginBottom: 4 }}>{lang === "es" ? "Marca de tus cotizaciones" : "Quote branding"}</p>
-          <p className="font-bold mb-3" style={{ color: M.tealDeep, fontSize: 14 }}>{lang === "es" ? "Aparece en cada cotización que envías." : "Shown on every quote you send."}</p>
+      </div>
+    );
+  };
+
+  /* ── Account / branding (Ajustes — ALTO-Pro sectioned list) ── */
+  const AccRow = ({ id, icon, title, onTap, children }) => {
+    const open = openAcc === id;
+    return (
+      <div className="mb-2.5">
+        <button onClick={() => (onTap ? onTap() : setOpenAcc(open ? null : id))} className="w-full flex items-center gap-3 active:translate-y-px transition-transform" style={{ background: "#fff", border: `1px solid ${M.line}`, borderRadius: 16, padding: "17px 16px" }}>
+          <span style={{ fontSize: 19 }}>{icon}</span>
+          <span className="flex-1 text-left font-extrabold" style={{ color: M.navy, fontSize: 15.5, letterSpacing: "0.02em" }}>{title}</span>
+          <span style={{ color: M.muted, fontSize: 15 }}>{onTap ? "▸" : open ? "▾" : "▸"}</span>
+        </button>
+        {open && children && <div className="mt-1" style={{ background: "#fff", border: `1px solid ${M.line}`, borderRadius: 16, padding: "14px 16px" }}>{children}</div>}
+      </div>
+    );
+  };
+  const Account = () => (
+    <div className="flex-1 overflow-y-auto pb-8" style={{ background: M.bg }}>
+      <ScreenHead icon="⚙️" title={lang === "es" ? "Ajustes" : "Settings"} />
+      <div className="px-5 pt-4">
+        {session && typeof Notification !== "undefined" && (pushOn
+          ? <div className="mb-2.5 flex items-center gap-3" style={{ background: M.greenSoft, border: `1.5px solid ${M.green}55`, borderRadius: 16, padding: "15px 16px" }}><span style={{ fontSize: 18 }}>✅</span><span className="flex-1 font-extrabold" style={{ color: M.green, fontSize: 15 }}>{lang === "es" ? "Avisos activados" : "Alerts on"}</span></div>
+          : <button onClick={() => subscribePush(true)} className="w-full mb-2.5 flex items-center gap-3" style={{ background: "#fff", border: `1px solid ${M.line}`, borderRadius: 16, padding: "15px 16px" }}><span style={{ fontSize: 18 }}>🔔</span><span className="flex-1 text-left font-extrabold" style={{ color: M.navy, fontSize: 15 }}>{lang === "es" ? "Activar avisos de leads" : "Turn on lead alerts"}</span></button>)}
+        {canInstall && <button onClick={doInstall} className="w-full mb-2.5 flex items-center gap-3" style={{ background: "#fff", border: `1px solid ${M.line}`, borderRadius: 16, padding: "15px 16px" }}><span style={{ fontSize: 18 }}>📲</span><span className="flex-1 text-left font-extrabold" style={{ color: M.navy, fontSize: 15 }}>{lang === "es" ? "Instalar la app" : "Install the app"}</span></button>}
+
+        <AccRow id="negocio" icon="🧑‍💼" title={lang === "es" ? "MI NEGOCIO" : "MY BUSINESS"}>
           <TextInput value={bizName} onChange={(v) => { setBizName(v); saveProfile({ biz: v }); }} placeholder={lang === "es" ? "Nombre del negocio" : "Business name"} />
           <TextInput value={userName} onChange={(v) => { setUserName(v); saveProfile({ name: v }); }} placeholder={lang === "es" ? "Tu nombre" : "Your name"} />
           <TextInput value={userPhone} onChange={(v) => { setUserPhone(v); saveProfile({ phone: v }); }} placeholder={lang === "es" ? "Teléfono (WhatsApp)" : "Phone (WhatsApp)"} inputMode="tel" />
           <TextInput value={bizEmail} onChange={(v) => { setBizEmail(v); saveProfile({ email: v }); }} placeholder="Email" inputMode="email" />
-          <TextInput value={zelle} onChange={(v) => { setZelle(v); saveProfile({ zelle: v }); }} placeholder={lang === "es" ? "Zelle / pago (opcional)" : "Zelle / payment (optional)"} />
-          <p style={{ color: M.muted2, fontSize: 11, fontWeight: 700, margin: "6px 0" }}>{lang === "es" ? "Logo (opcional)" : "Logo (optional)"}</p>
+        </AccRow>
+        <AccRow id="marca" icon="🎨" title={lang === "es" ? "TU MARCA" : "YOUR BRAND"}>
+          <p style={{ color: M.muted2, fontSize: 12, fontWeight: 700, marginBottom: 8 }}>{lang === "es" ? "Tu logo aparece en cada cotización." : "Your logo shows on every quote."}</p>
           {logo
-            ? (<div className="flex items-center gap-3">
-                <img src={logo} alt="" style={{ height: 44, maxWidth: 120, objectFit: "contain", borderRadius: 8, background: "#fff", border: `1px solid ${M.line}`, padding: 4 }} />
-                <button onClick={() => { setLogo(null); logoIdRef.current = null; saveProfile({ logo: null }); }} style={{ background: "#fff", color: M.teal, border: `1.5px solid ${M.line}`, borderRadius: 10, padding: "8px 14px", fontWeight: 700, fontSize: 13 }}>{lang === "es" ? "Quitar" : "Remove"}</button>
-              </div>)
-            : (<label className="block rounded-xl px-3.5 py-3 text-center cursor-pointer font-semibold" style={{ background: M.bg, border: `1.5px dashed ${M.line}`, color: M.muted2, fontSize: 13 }}>
-                {lang === "es" ? "＋ Subir imagen" : "＋ Upload image"}
-                <input type="file" accept="image/*" onChange={(e) => onLogoFile(e.target.files?.[0])} style={{ display: "none" }} />
-              </label>)}
-        </Card>
-        {!session && <p className="text-center" style={{ color: M.muted, fontSize: 11, fontWeight: 600 }}>{lang === "es" ? "Modo demo · entra con tu link para guardar en la nube" : "Demo mode · enter with your link to save to the cloud"}</p>}
+            ? (<div className="flex items-center gap-3"><img src={logo} alt="" style={{ height: 44, maxWidth: 120, objectFit: "contain", borderRadius: 8, background: "#fff", border: `1px solid ${M.line}`, padding: 4 }} /><button onClick={() => { setLogo(null); logoIdRef.current = null; saveProfile({ logo: null }); }} style={{ background: "#fff", color: M.teal, border: `1.5px solid ${M.line}`, borderRadius: 10, padding: "8px 14px", fontWeight: 700, fontSize: 13 }}>{lang === "es" ? "Quitar" : "Remove"}</button></div>)
+            : (<label className="block rounded-xl px-3.5 py-3 text-center cursor-pointer font-semibold" style={{ background: M.bg, border: `1.5px dashed ${M.line}`, color: M.muted2, fontSize: 13 }}>{lang === "es" ? "＋ Subir logo" : "＋ Upload logo"}<input type="file" accept="image/*" onChange={(e) => onLogoFile(e.target.files?.[0])} style={{ display: "none" }} /></label>)}
+        </AccRow>
+        <AccRow icon="💲" title={lang === "es" ? "MIS PRECIOS" : "MY PRICES"} onTap={() => setScreen("prices")} />
+        <AccRow icon="🌐" title={lang === "es" ? "MI PÁGINA WEB" : "MY WEBSITE"} onTap={() => setPageModal(true)} />
+        <AccRow id="pagos" icon="🏦" title={lang === "es" ? "PAGOS" : "PAYMENTS"}>
+          <p style={{ color: M.muted2, fontSize: 12, fontWeight: 700, marginBottom: 8 }}>{lang === "es" ? "Cómo te pagan tus clientes." : "How your clients pay you."}</p>
+          <TextInput value={zelle} onChange={(v) => { setZelle(v); saveProfile({ zelle: v }); }} placeholder={lang === "es" ? "Zelle / pago (opcional)" : "Zelle / payment (optional)"} />
+        </AccRow>
+        <AccRow icon="🛠️" title={lang === "es" ? "¿NECESITAS UN CAMBIO?" : "NEED A CHANGE?"} onTap={() => window.open(`https://wa.me/?text=${encodeURIComponent(lang === "es" ? "Hola, necesito un cambio en mi cuenta de Paulbeza" : "Hi, I need a change to my Paulbeza account")}`, "_blank")} />
+        <AccRow id="cuenta" icon="⚙️" title={lang === "es" ? "MI CUENTA" : "MY ACCOUNT"}>
+          <div className="flex items-center justify-between mb-2"><span style={{ color: M.body, fontWeight: 700, fontSize: 14 }}>{lang === "es" ? "Idioma" : "Language"}</span><LangToggle /></div>
+          {session
+            ? <button onClick={() => { try { localStorage.removeItem("maidflow_session"); } catch { /* ignore */ } setSession(null); setCloudReady(false); showToast(lang === "es" ? "Sesión cerrada" : "Signed out"); }} style={{ background: "#fff", color: M.red, border: `1.5px solid ${M.line}`, borderRadius: 10, padding: "10px 14px", fontWeight: 800, fontSize: 13 }}>{lang === "es" ? "Cerrar sesión" : "Sign out"}</button>
+            : <p style={{ color: M.muted, fontSize: 12, fontWeight: 600 }}>{lang === "es" ? "Modo demo · entra con tu link de WhatsApp para guardar en la nube." : "Demo mode · open your WhatsApp link to save to the cloud."}</p>}
+        </AccRow>
+
+        <button onClick={() => showToast(lang === "es" ? "Guardado ✓" : "Saved ✓")} className="w-full mt-2 active:translate-y-px transition-transform" style={{ background: M.teal, color: "#fff", border: "none", borderRadius: 14, padding: 16, fontSize: 16, fontWeight: 900, letterSpacing: "0.05em", boxShadow: "0 6px 18px rgba(30,58,138,0.28)" }}>{lang === "es" ? "GUARDAR" : "SAVE"}</button>
       </div>
     </div>
   );
@@ -1231,7 +1331,7 @@ export default function TradeTechPro() {
   };
 
   /* ── Router ── */
-  const tabScreens = ["home", "quote", "clients", "prices", "account", "ai"];
+  const tabScreens = ["home", "cobros", "quote", "clients", "prices", "account", "ai"];
   const titles = { result: lang === "es" ? "📄 Cotización" : "📄 Quote" };
 
   return (
@@ -1247,7 +1347,7 @@ export default function TradeTechPro() {
             <span className="text-xs font-bold" style={{ color: "#7A5A00" }}>{t.demoBanner}</span>
           </div>
         )}
-        {tabScreens.includes(screen) && screen !== "quote" && <BrandHeader />}
+        {["home", "clients", "prices"].includes(screen) && <BrandHeader />}
         {screen === "quote" && step === 0 && !measuring && <BrandHeader />}
         {/* Back returns to the questionnaire (state intact) to tweak an answer;
             "Nueva cotización" on the result screen is the destructive reset. */}
@@ -1255,6 +1355,7 @@ export default function TradeTechPro() {
 
         {screen === "welcome" && Welcome()}
         {screen === "home" && Home()}
+        {screen === "cobros" && Cobros()}
         {screen === "quote" && QuoteFlow()}
         {screen === "result" && ResultScreen()}
         {screen === "clients" && Clients()}
