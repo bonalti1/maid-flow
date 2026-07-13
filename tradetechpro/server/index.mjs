@@ -117,7 +117,11 @@ app.set("trust proxy", 1);
 const STRIPE_WH_SECRET = process.env.STRIPE_WEBHOOK_SECRET || "";
 // The 3-tier ladder. Stripe tags the plan by the EXACT amount paid, so a new
 // price = a new Payment Link + a new entry here. Payment links live in env.
-const PLAN_BY_AMOUNT = { 67: "pro", 197: "widget", 297: "complete" };
+const PLAN_BY_AMOUNT = {
+  49: "pro", 149: "widget", 249: "complete",
+  // legacy amounts (first price ladder) — old Payment Links must keep tagging correctly
+  67: "pro", 197: "widget", 297: "complete",
+};
 const STRIPE_LINKS = {
   pro: process.env.STRIPE_LINK_PRO || "",
   widget: process.env.STRIPE_LINK_WIDGET || "",
@@ -146,7 +150,7 @@ app.post("/api/stripe/webhook", express.raw({ type: "application/json" }), async
   const clientRef = obj.client_reference_id || obj.metadata?.contractorId || null;
   const email = String(obj.customer_email || obj.customer_details?.email || "").toLowerCase();
   const phone = String(obj.customer_phone || obj.customer_details?.phone || "").replace(/\D/g, "").replace(/^1/, "");
-  // Tag the plan by the exact amount paid ($67 pro / $197 widget / $297 complete).
+  // Tag the plan by the exact amount paid ($49 pro / $149 widget / $249 complete).
   const amountCents = Number(obj.amount_paid || obj.amount_total || obj.amount || 0);
   const paidPlan = planFromAmount(amountCents);
 
@@ -788,7 +792,7 @@ app.get("/admin", async (req, res) => {
   const paying = payCount("ok");
   const pendingPay = payCount("pending");
   const failedPay = payCount("failed");
-  const mrr = paying * 297;
+  const mrr = paying * 249;
   // last-7-days series for the chart (visits per day)
   const days = [...Array(7)].map((_, i) => new Date(Date.now() - (6 - i) * 864e5).toISOString().slice(0, 10));
   const get = (d, e) => Number(rows.find((r) => r.day === d && r.event === e)?.n || 0);
@@ -1055,7 +1059,7 @@ app.post("/api/admin/ceo", async (req, res) => {
   if (!adminOk(req)) return res.status(403).json({ error: "no auth" });
   const en = req.body?.lang === "en";
   const m = req.body?.metrics || {};
-  const system = `You are a sharp, no-nonsense fractional CEO / growth advisor for Paulbeza, a Spanish-first SaaS sold to Hispanic house cleaners on a 3-tier ladder — PRO $67, WIDGET $197, COMPLETE $297/mo — at about $67-149/month (website + cleaning-quote widget + app + AI secretary + leads). Given the numbers, write a concise, PRIORITIZED action plan in ${en ? "English" : "Spanish"}, max 160 words, plain text (no markdown headers). Be direct and specific: if close rate is low, say to fix/coach/replace closers BEFORE scaling ads; if unit economics are strong (LTV:CAC >= 3, payback < 3mo), say to scale ad spend and by roughly how much; flag churn and failed payments as fires to put out first. End with the single most important next action. No fluff.`;
+  const system = `You are a sharp, no-nonsense fractional CEO / growth advisor for Paulbeza, a Spanish-first SaaS sold to Hispanic house cleaners on a 3-tier ladder — PRO $49, WIDGET $149, COMPLETE $249/mo (website + cleaning-quote widget + app + AI secretary + leads). Given the numbers, write a concise, PRIORITIZED action plan in ${en ? "English" : "Spanish"}, max 160 words, plain text (no markdown headers). Be direct and specific: if close rate is low, say to fix/coach/replace closers BEFORE scaling ads; if unit economics are strong (LTV:CAC >= 3, payback < 3mo), say to scale ad spend and by roughly how much; flag churn and failed payments as fires to put out first. End with the single most important next action. No fluff.`;
   const user = `Numbers: ${JSON.stringify(m)}`;
   try {
     const text = await aiChat({ system, messages: [{ role: "user", content: user }], maxTokens: 380 });
@@ -1196,7 +1200,7 @@ var LIVE=${JSON.stringify(live)};
 function mm(es,eng){return EN?eng:es;}
 function money(n){return "$"+Math.round(n).toLocaleString("en-US");}
 // inputs
-var F=[["spend",1000],["price",297],["serve",25],["comm",100],["lead",8],["book",20],["close",${live.realClose != null ? live.realClose : 33}],["life",12]];
+var F=[["spend",1000],["price",249],["serve",25],["comm",100],["lead",8],["book",20],["close",${live.realClose != null ? live.realClose : 33}],["life",12]];
 var S={};try{S=JSON.parse(localStorage.getItem("alto_cockpit")||"{}")||{}}catch(e){S={}}
 F.forEach(function(f){if(S[f[0]]==null)S[f[0]]=f[1];});
 // fixed costs
@@ -1949,11 +1953,11 @@ function landingPage(req) {
     appSub: `A neighbor asks "how much to clean mine?" — you type their address (or use your GPS), answer a few questions, and send a polished quote right there.`,
     cap1: "Quoted from the home's size<br>in 60 seconds", cap2: "Set your own rates<br>and minimums", cap3: "Professional quote with your<br>brand, ready to send",
     priceT: "PICK YOUR <em>PLAN</em>", priceSub: "No fine print. No long contracts. Cancel anytime and your domain is yours.",
-    mo: "/mo", setup: "No setup fee — cancel anytime", buyNow: "Start now →", orBook: "or book a call first", popular: "MOST POPULAR",
+    mo: "/mo", setup: "No setup fee — cancel anytime", buyNow: "Start now →", orBook: "or book a call first",
     plans: [
-      { key: "pro", name: "PRO", amt: 67, desc: "The app in your pocket", feats: ["The Paulbeza app: quotes in 60 seconds", "Your own rates and minimums", "Branded quotes, sent by WhatsApp", "Your customer and lead list"] },
-      { key: "widget", name: "WIDGET", amt: 197, desc: "The app + the quote tool on your page", feats: ["Everything in PRO", "Instant-quote widget for your page or Facebook", "Homeowners leave name + phone to see their price", "Those leads land straight in your app"] },
-      { key: "complete", name: "COMPLETO", amt: 297, hot: true, desc: "Your whole business online", feats: ["Everything in WIDGET", "Your professional website with your brand", "AI assistant that answers your customers", "Your domain (yourname.com) is yours — by contract", "Bilingual support"] },
+      { key: "pro", name: "PRO", amt: 49, desc: "The app in your pocket", feats: ["The Paulbeza app: quotes in 60 seconds", "Your own rates and minimums", "Branded quotes, sent by WhatsApp", "Your customer and lead list"] },
+      { key: "widget", name: "WIDGET", amt: 149, hot: true, tag: "MOST POPULAR", desc: "Your quote button on your Facebook & Instagram", feats: ["Everything in PRO", "Instant-quote widget for your page, Facebook or Instagram", "Homeowners leave name + phone to see their price", "Those leads land straight in your WhatsApp"] },
+      { key: "complete", name: "COMPLETO", amt: 249, tag: "FOR CLEANERS WITH A CREW", desc: "Your whole business online", feats: ["Everything in WIDGET", "Your professional website with your brand", "AI assistant that answers your customers", "Your domain (yourname.com) is yours — by contract", "Bilingual support"] },
     ],
     talkT: "READY? <em>LET'S TALK</em>", talkSub: "Answer 4 quick questions and schedule a call with the team. No obligation — we answer everything and you decide.",
     q1: "What do you focus on?", q1o: ["Homes", "Airbnb / rentals", "Offices", "Other"],
@@ -1988,11 +1992,11 @@ function landingPage(req) {
     appSub: `El vecino te pregunta "¿cuánto por limpiar la mía?" — pones su dirección (o usas tu GPS), contestas unas preguntas, y le mandas una cotización profesional ahí mismo.`,
     cap1: "Cotizado por el tamaño<br>de la casa en 60 segundos", cap2: "Pon tus propias tarifas<br>y mínimos", cap3: "Cotización profesional con tu<br>marca, lista para mandar",
     priceT: "ELIGE TU <em>PLAN</em>", priceSub: "Sin letras chiquitas. Sin contratos largos. Cancelas cuando quieras y tu dominio es tuyo.",
-    mo: "/mes", setup: "Sin cargo de inicio — cancela cuando quieras", buyNow: "Comenzar ahora →", orBook: "o agenda una llamada primero", popular: "MÁS POPULAR",
+    mo: "/mes", setup: "Sin cargo de inicio — cancela cuando quieras", buyNow: "Comenzar ahora →", orBook: "o agenda una llamada primero",
     plans: [
-      { key: "pro", name: "PRO", amt: 67, desc: "La app en tu bolsillo", feats: ["La app Paulbeza: cotizas en 60 segundos", "Tus propias tarifas y mínimos", "Cotizaciones con tu marca, por WhatsApp", "Tu lista de clientes y leads"] },
-      { key: "widget", name: "WIDGET", amt: 197, desc: "La app + el cotizador en tu página", feats: ["Todo lo de PRO", "Cotizador instantáneo para tu página o Facebook", "Los dueños dejan nombre y teléfono para ver su precio", "Esos clientes te llegan directo a la app"] },
-      { key: "complete", name: "COMPLETO", amt: 297, hot: true, desc: "Todo tu negocio en línea", feats: ["Todo lo de WIDGET", "Tu página web profesional con tu marca", "Asistente de IA que contesta a tus clientes", "Tu dominio (tunombre.com) es tuyo — por contrato", "Soporte en español"] },
+      { key: "pro", name: "PRO", amt: 49, desc: "La app en tu bolsillo", feats: ["La app Paulbeza: cotizas en 60 segundos", "Tus propias tarifas y mínimos", "Cotizaciones con tu marca, por WhatsApp", "Tu lista de clientes y leads"] },
+      { key: "widget", name: "WIDGET", amt: 149, hot: true, tag: "MÁS POPULAR", desc: "Tu cotizador en tu Facebook e Instagram", feats: ["Todo lo de PRO", "Cotizador instantáneo para tu página, Facebook o Instagram", "Los dueños dejan nombre y teléfono para ver su precio", "Esos clientes te llegan directo a tu WhatsApp"] },
+      { key: "complete", name: "COMPLETO", amt: 249, tag: "PARA LAS QUE TIENEN EQUIPO", desc: "Todo tu negocio en línea", feats: ["Todo lo de WIDGET", "Tu página web profesional con tu marca", "Asistente de IA que contesta a tus clientes", "Tu dominio (tunombre.com) es tuyo — por contrato", "Soporte en español"] },
     ],
     talkT: "¿LISTA? <em>HABLEMOS</em>", talkSub: "Contesta 4 preguntas rápidas y agenda una llamada con el equipo. Sin compromiso — resolvemos todas tus dudas y tú decides.",
     q1: "¿En qué te enfocas?", q1o: ["Casas", "Airbnb / rentas", "Oficinas", "Otro"],
@@ -2066,6 +2070,7 @@ section{padding:64px 0}
 .plan{position:relative;background:#fff;border:1.5px solid #E8ECF3;border-radius:26px;padding:30px 26px;text-align:center;box-shadow:0 18px 50px rgba(16,27,48,.08)}
 .plan.hot{border-color:#7ED6D9;box-shadow:0 30px 80px rgba(126,214,217,.28)}
 .hotbadge{position:absolute;top:-13px;left:50%;transform:translateX(-50%);background:#7ED6D9;color:#1E3A8A;font-size:11px;font-weight:800;letter-spacing:.08em;border-radius:99px;padding:5px 16px;white-space:nowrap}
+.hotbadge.alt{background:#A971E8;color:#fff}
 .pname{font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:800;letter-spacing:.14em;color:#8A94A8}
 .plan.hot .pname{color:#1E3A8A}
 .plan .amt{font-family:'Barlow Condensed',sans-serif;font-size:56px;font-weight:800;line-height:1;margin-top:6px}
@@ -2156,7 +2161,7 @@ footer a{color:#8A94A8}
   <p class="sec-sub">${L.priceSub}</p>
   <div class="plans">
     ${L.plans.map((p) => `<div class="plan${p.hot ? " hot" : ""}">
-      ${p.hot ? `<div class="hotbadge">${L.popular}</div>` : ""}
+      ${p.tag ? `<div class="hotbadge${p.hot ? "" : " alt"}">${p.tag}</div>` : ""}
       <div class="pname">${p.name}</div>
       <div class="amt">$${p.amt}<small>${L.mo}</small></div>
       <p class="pdesc">${p.desc}</p>
@@ -3559,7 +3564,7 @@ ul.pts li b{color:var(--gold);flex-shrink:0}
       <div class="card"><div class="ic">📲</div><h3>La app Paulbeza</h3><p>Cotiza limpiezas, manda la cotización, recibe los leads.</p></div>
       <div class="card"><div class="ic">🤖</div><h3>Secretaria IA</h3><p>Contesta y agenda citas a cualquier hora.</p></div>
     </div>
-    <div class="glass"><div><b>$0</b><span>para empezar</span></div><div><b>desde $67</b><span>al mes</span></div></div>
+    <div class="glass"><div><b>$0</b><span>para empezar</span></div><div><b>desde $49</b><span>al mes</span></div></div>
   </div>
 </section>
 
@@ -3822,7 +3827,7 @@ app.get("/closer", async (req, res) => {
     playT: "The close, step by step (all on the same call)",
     play: ["Press <b>P</b> in the presentation → payment link copied → send it on WhatsApp.", "While they pay: <b>create their account above</b> and copy their access link.", "Press <b>B</b> → welcome message copied → paste their access link → send it.", "Book their <b>onboarding</b> before hanging up."],
     linksT: "Links & messages",
-    payT: "💳 COMPLETE — $297/mo (or PRO $67 / WIDGET $197)", payMissing: "Not configured yet (STRIPE_PAYMENT_LINK in Render).",
+    payT: "💳 COMPLETE — $249/mo (or PRO $49 / WIDGET $149)", payMissing: "Not configured yet (STRIPE_PAYMENT_LINK in Render).",
     welT: "👋 Welcome (paste their access link)", demoT: "🧼 Cleaning-quote demo", demoMsgT: "👀 Demo message",
     open: "Open", copy: "Copy",
     scriptT: "🎤 Talk track — what you say on each slide",
@@ -3862,7 +3867,7 @@ app.get("/closer", async (req, res) => {
     playT: "El cierre, paso a paso (todo en la misma llamada)",
     play: ["Tecla <b>P</b> en la presentación → link de pago copiado → mándalo por WhatsApp.", "Mientras paga: <b>crea su cuenta aquí arriba</b> y copia su link de acceso.", "Tecla <b>B</b> → bienvenida copiada → pega su link de acceso → envíala.", "Agenda su <b>onboarding</b> antes de colgar."],
     linksT: "Links y mensajes",
-    payT: "💳 COMPLETO — $297/mes (o PRO $67 / WIDGET $197)", payMissing: "Aún no configurado (STRIPE_PAYMENT_LINK en Render).",
+    payT: "💳 COMPLETO — $249/mes (o PRO $49 / WIDGET $149)", payMissing: "Aún no configurado (STRIPE_PAYMENT_LINK en Render).",
     welT: "👋 Bienvenida (pega su link de acceso)", demoT: "🧼 Demo del cotizador", demoMsgT: "👀 Mensaje de demo",
     open: "Abrir", copy: "Copiar",
     scriptT: "🎤 Guion — qué dices en cada slide",
@@ -4037,7 +4042,7 @@ ${periodSeg("/closer", range, en)}
     <h2>${L.playT}</h2>
     <ol>${L.play.map((x) => `<li>${x}</li>`).join("")}</ol>
     <h2>${L.linksT}</h2>
-    ${[["complete", "COMPLETO", "$297"], ["widget", "WIDGET", "$197"], ["pro", "PRO", "$67"]].map(([plan, label, price]) => {
+    ${[["complete", "COMPLETO", "$249"], ["widget", "WIDGET", "$149"], ["pro", "PRO", "$49"]].map(([plan, label, price]) => {
       const link = STRIPE_LINKS[plan];
       return link
         ? `<div class="link"><span><b>💳 ${label} — ${price}/mes</b><br><small>${esc(link)}</small></span><a href="${link}" target="_blank" rel="noreferrer" style="background:#1E3A8A;color:#fff;border-radius:11px;padding:9px 15px;font-weight:700;text-decoration:none;flex-shrink:0;font-size:13px">${L.open}</a><button onclick="cp(this,'${link}')">${L.copy}</button></div>`
@@ -4178,7 +4183,7 @@ app.get("/demo", (req, res) => {
     b7: "What this would cost separately (typical market prices):",
     s7a: "🌐 Professional website with your brand", s7b: "🧼 Cleaning-quote tool on your site", s7c: "🤖 AI secretary that texts and books", s7d: "📲 Quotes & leads app", s7e: "🇺🇸 Domain, hosting & bilingual support",
     s7tot: "Separately", roi7: '💰 <b style="color:#fff">One steady client is hundreds of dollars a month.</b> One single extra client pays for your whole year.',
-    pk7: "WITH MAID FLOW · ALL INCLUDED", mo: "/mo", setup7: "No setup fee · from $67/mo (PRO)",
+    pk7: "WITH MAID FLOW · ALL INCLUDED", mo: "/mo", setup7: "No setup fee · from $49/mo (PRO)",
     pr7a: "✓ No long contracts", pr7b: "✓ Cancel anytime", pr7c: "✓ Your domain is YOURS — by contract",
     k8: "08 · LET'S BEGIN", h8a: "Let's start", h8b: "today.",
     b8: "Getting started is this easy — everything begins on this very call:",
@@ -4218,7 +4223,7 @@ app.get("/demo", (req, res) => {
     b7: "Lo que esto costaría por separado (precios típicos del mercado):",
     s7a: "🌐 Página web profesional con tu marca", s7b: "🧼 Cotizador de limpieza en tu página", s7c: "🤖 Secretaria IA que textea y agenda", s7d: "📲 App de cotizaciones y leads", s7e: "🇺🇸 Dominio, hosting y soporte en español",
     s7tot: "Por separado", roi7: '💰 <b style="color:#fff">Un cliente fijo son cientos de dólares al mes.</b> Un solo cliente extra paga tu año entero.',
-    pk7: "CON MAID FLOW · TODO INCLUIDO", mo: "/mes", setup7: "Sin cargo de inicio · desde $67/mes (PRO)",
+    pk7: "CON MAID FLOW · TODO INCLUIDO", mo: "/mes", setup7: "Sin cargo de inicio · desde $49/mes (PRO)",
     pr7a: "✓ Sin contratos largos", pr7b: "✓ Cancelas cuando quieras", pr7c: "✓ Tu dominio es TUYO — por contrato",
     k8: "08 · EMPECEMOS", h8a: "Empecemos", h8b: "hoy mismo.",
     b8: "Así de fácil es arrancar — todo empieza en esta misma llamada:",
@@ -4507,7 +4512,7 @@ ul.pts.big li{font-size:clamp(16px,2.2vw,22px);padding:19px 0;line-height:1.6;ga
       </div>
       <div class="pcard">
         <p class="pk">${L.pk7}</p>
-        <div class="pamt">$297<small>${L.mo}</small></div>
+        <div class="pamt">$249<small>${L.mo}</small></div>
         <p class="psetup">${L.setup7}</p>
         <div class="pdiv"></div>
         <p class="prow">${L.pr7a}</p>

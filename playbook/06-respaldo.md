@@ -40,7 +40,7 @@ respaldo y su dueño (tú).
 | Render | Hosting + env vars (servicio `maid-flow`) |
 | Supabase | Base de datos (`maid-flow-db`) |
 | Cloudflare | DNS del dominio + subdominios de clientas |
-| Stripe | Cobros y Payment Links ($67/$197/$297) |
+| Stripe | Cobros y Payment Links ($49/$149/$249) |
 | GoHighLevel | Teléfono/SMS/WhatsApp, setters, calendario |
 | Google Cloud | Llaves de Maps |
 | Anthropic / OpenAI | IA |

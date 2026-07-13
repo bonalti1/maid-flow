@@ -44,8 +44,8 @@ detiene la cadencia (goal del workflow) — nunca textear tras un no.
 teléfono, el MISMO que usa en Stripe) → manda el link de acceso → agenda el
 onboarding ANTES de colgar.
 
-**Rescate si $297 duele:** "Empecemos con tu app a $67 y le agregamos la página y
-el cotizador cuando estés lista." Un $67 rescatado > un $297 perdido; el upgrade
+**Rescate si $249 duele:** "Empecemos con tu app a $49 y le agregamos la página y
+el cotizador cuando estés lista." Un $49 rescatado > un $249 perdido; el upgrade
 es natural.
 
 ## 3) Onboarding

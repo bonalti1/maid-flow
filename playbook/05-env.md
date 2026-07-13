@@ -27,7 +27,7 @@ dueño — playbook/01.)*
 
 | Var | Notas |
 |---|---|
-| `STRIPE_PAYMENT_LINK` | Payment Link actual (un solo plan). *(Portando: `STRIPE_LINK_PRO`/`STRIPE_LINK_WIDGET`/`STRIPE_LINK_COMPLETE` para $67/$197/$297 + mapa `planByAmount` en el webhook.)* |
+| `STRIPE_PAYMENT_LINK` | Payment Link actual (un solo plan). *(Portando: `STRIPE_LINK_PRO`/`STRIPE_LINK_WIDGET`/`STRIPE_LINK_COMPLETE` para $49/$149/$249 + mapa `planByAmount` en el webhook.)* |
 | `STRIPE_WEBHOOK_SECRET` | Firma del webhook `/api/stripe/webhook` (activa la cuenta y, al portar niveles, etiqueta el plan por monto). |
 
 ## APIs del producto

@@ -41,13 +41,13 @@ commitear, sin romper una pantalla viva:
    campo compañía.
 8. ☑ Instalación: Android un toque + guía iOS + aviso del navegador de WhatsApp.
 9. ☑ Notificaciones push (`notifyLead` + VAPID).
-10. ☑ **Stripe 3 niveles** ($67/$197/$297) — `STRIPE_LINK_*` + `planByAmount`.
+10. ☑ **Stripe 3 niveles** ($49/$149/$249) — `STRIPE_LINK_*` + `planByAmount` (los montos viejos $67/$197/$297 siguen reconocidos).
 11. ☐ (opcional, no pedido) Cockpit del dueño `/hq`.
 
 ### Lo que falta hacer EN LOS DASHBOARDS (el dueño, cuando pueda)
 
 El código ya está; estos son valores/llaves que viven fuera de git:
-- **Stripe:** crear 3 Payment Links ($67, $197, $297), con `client_reference_id`
+- **Stripe:** crear 3 Payment Links ($49, $149, $249), con `client_reference_id`
   = id de la cuenta, y pegarlos en Render como `STRIPE_LINK_PRO` /
   `STRIPE_LINK_WIDGET` / `STRIPE_LINK_COMPLETE` + `STRIPE_WEBHOOK_SECRET`.
 - **Push:** `npx web-push generate-vapid-keys` → `VAPID_PUBLIC_KEY` /

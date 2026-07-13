@@ -137,16 +137,22 @@ check("/admin 200 with key", (await fetch(B + "/admin?key=regadmin", { redirect:
   check("push key + subscribe stores device", typeof key.enabled === "boolean" && sr.ok === true && (c.data.push || []).some((s) => s.endpoint === "https://x.example/1"));
 }
 
-// 16. Stripe webhook tags the plan by exact amount ($197 -> widget)
+// 16. Stripe webhook tags the plan by exact amount ($149 -> widget, legacy $197 too)
 {
   const payer = await db.createContractor({ name: "Payer", phone: "9560009999" });
   await db.saveContractorData(payer.id, { stripeCustomer: "cus_reg9", payStatus: "pending" });
-  const body = JSON.stringify({ id: "evt_reg_" + Math.random(), type: "invoice.paid", created: Math.floor(Date.now() / 1000), data: { object: { customer: "cus_reg9", amount_paid: 19700 } } });
-  const ts = Math.floor(Date.now() / 1000);
-  const sig = createHmac("sha256", "regwh").update(ts + "." + body).digest("hex");
-  await fetch(B + "/api/stripe/webhook", { method: "POST", headers: { "Content-Type": "application/json", "stripe-signature": `t=${ts},v1=${sig}` }, body });
-  const p = await db.getContractor(payer.id);
-  check("stripe webhook tags plan by amount ($197->widget)", p.data.plan === "widget" && p.data.payStatus === "ok", JSON.stringify({ plan: p.data.plan, pay: p.data.payStatus }));
+  const hit = async (cents) => {
+    const body = JSON.stringify({ id: "evt_reg_" + Math.random(), type: "invoice.paid", created: Math.floor(Date.now() / 1000), data: { object: { customer: "cus_reg9", amount_paid: cents } } });
+    const ts = Math.floor(Date.now() / 1000);
+    const sig = createHmac("sha256", "regwh").update(ts + "." + body).digest("hex");
+    await fetch(B + "/api/stripe/webhook", { method: "POST", headers: { "Content-Type": "application/json", "stripe-signature": `t=${ts},v1=${sig}` }, body });
+    return db.getContractor(payer.id);
+  };
+  const p1 = await hit(14900);
+  check("stripe webhook tags plan by amount ($149->widget)", p1.data.plan === "widget" && p1.data.payStatus === "ok", JSON.stringify({ plan: p1.data.plan, pay: p1.data.payStatus }));
+  await db.saveContractorData(payer.id, { stripeCustomer: "cus_reg9", plan: null, payStatus: "pending" });
+  const p2 = await hit(19700);
+  check("stripe webhook tags legacy amount ($197->widget)", p2.data.plan === "widget" && p2.data.payStatus === "ok", JSON.stringify({ plan: p2.data.plan, pay: p2.data.payStatus }));
 }
 
 console.log("\n" + results.join("\n"));

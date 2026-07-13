@@ -68,7 +68,7 @@ WhatsApp / IG / Messenger nacen en GHL; un workflow los empuja al panel:
 > REGLAS: (1) Solo puedes afirmar esto: Paulbeza le da a la limpiadora su propia
 > app que cotiza limpiezas al instante, una página web profesional con IA que
 > contesta a sus clientes 24/7, y los leads le llegan directo a su teléfono;
-> planes desde $67/mes, sin cargo de inicio. (2) A CUALQUIER otra pregunta
+> planes desde $49/mes, sin cargo de inicio. (2) A CUALQUIER otra pregunta
 > (precios exactos, detalles): responde que justo eso se lo enseñan en la llamada
 > con una demostración en vivo, y pregunta a qué hora le marcamos. (3) Nunca
 > inventes datos, nunca prometas fechas, nunca des la demo completa por chat.

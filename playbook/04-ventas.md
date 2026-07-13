@@ -36,9 +36,9 @@
 
 | Plan | Precio | Qué incluye | Para quién |
 |---|---|---|---|
-| PRO | **$67/mes** | Solo la app (su cotizador instantáneo) | Cualquier limpiadora |
-| WIDGET | **$197/mes** | App + cotizador de limpieza en SU página existente | Ya tiene página |
-| COMPLETO | **$297/mes** | Todo hecho: página + IA + dominio + app + cotizador | La que empieza de cero |
+| PRO | **$49/mes** | Solo la app (su cotizador instantáneo) | Cualquier limpiadora |
+| WIDGET | **$149/mes** | App + cotizador en su página, Facebook o Instagram | Ya tiene página o redes |
+| COMPLETO | **$249/mes** | Todo hecho: página + IA + dominio + app + cotizador | La que tiene equipo o empieza de cero |
 
 Sin cargo de inicio en ninguno. Stripe etiqueta el plan por el **monto exacto**
 pagado — un precio nuevo = Payment Link nuevo + monto en el mapa `planByAmount`
@@ -49,7 +49,7 @@ link; los 3 niveles se están portando — playbook/01, ítem 10.)*
 
 - **ROI:** "Una limpieza promedio te deja $120–$300 — un par de trabajos extra al
   mes pagan tu plan completo."
-- **Rescate del $297:** bajar a PRO **$67** ("y la página se agrega cuando
+- **Rescate del $249:** bajar a PRO **$49** ("y la página se agrega cuando
   quieras") en vez de perder la venta.
 - **Objeción "el precio final puede cambiar":** la app es una MÁQUINA DE LEADS y
   cotizador instantáneo — la clienta ve su precio en 60 segundos y te deja su

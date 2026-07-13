@@ -81,10 +81,11 @@ in `playbook/` — read it before re-deriving any process.
   stale `event.created`), gates on a real payment (`payment_status=paid` /
   `amount_paid>0`), matches the account by `client_reference_id` → stored
   customer → editable email/phone, and handles pay-before-account via
-  `paid:<phone|email>` (30-day window). **DECIDED, implementing:** 3 tiers —
-  PRO **$67** (app only) · WIDGET **$197** (app + widget on her page) · COMPLETO
-  **$297** (page + AI bot + domain + app + widget) — via `STRIPE_LINK_*` env vars
-  + a `planByAmount` map in the webhook. See `playbook/04`.
+  `paid:<phone|email>` (30-day window). **3 tiers (LIVE):**
+  PRO **$49** (app only) · WIDGET **$149** (app + widget on her page/Facebook/IG)
+  · COMPLETO **$249** (page + AI bot + domain + app + widget) — via `STRIPE_LINK_*`
+  env vars + a `planByAmount` map in the webhook (legacy $67/$197/$297 amounts
+  still recognized). See `playbook/04`.
 - **Images** (logos + site photos): stored in the DB (`kv` table, base64) so they
   survive redeploys — never on the ephemeral disk.
 - **Staff auth**: `/admin?key=…` sets a `SameSite=Strict; Secure` cookie
@@ -94,15 +95,15 @@ in `playbook/` — read it before re-deriving any process.
 
 - **ALTO business-OS port COMPLETE (items 1–10):** docs ✓ · env catalog +
   `REQUIRE_DB` ✓ · GHL-IN 24h dedupe ✓ · `DEMO_PASS` ✓ · admin backup download
-  ✓ · regression suite (`npm run regression`, 19 flows) ✓ · lead-CRM
+  ✓ · regression suite (`npm run regression`, 20 checks) ✓ · lead-CRM
   (5-stage pipeline / notes / CSV / source tags / company field) ✓ · install
   flow (Android one-tap + iOS overlay + WhatsApp-browser warning) ✓ · web push
-  (`notifyLead`/VAPID) ✓ · Stripe 3 tiers ($67/$197/$297 via `planByAmount`) ✓.
+  (`notifyLead`/VAPID) ✓ · Stripe 3 tiers ($49/$149/$249 via `planByAmount`, legacy amounts aliased) ✓.
   Item 11 (owner cockpit `/hq`) is optional and not built.
 - Run `npm run regression` (must be all green) before every commit, plus
   `npm test` (pricing) and `npm run build`.
 - **Owner dashboard actions (values live outside git — set in Render):** create
-  the 3 Stripe Payment Links with `client_reference_id` = contractor id
+  the 3 Stripe Payment Links ($49/$149/$249) with `client_reference_id` = contractor id
   (`STRIPE_LINK_PRO/WIDGET/COMPLETE` + `STRIPE_WEBHOOK_SECRET`); generate VAPID
   keys (`npx web-push generate-vapid-keys`); set `GOOGLE_MAPS_API_KEY`,
   `RENTCAST_API_KEY`, `ANTHROPIC_API_KEY`, `HL_WEBHOOK_SECRET`, a strong
