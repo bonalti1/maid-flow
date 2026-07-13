@@ -526,13 +526,16 @@ app.get("/api/housephoto", async (req, res) => {
   const lat = parseFloat(req.query.lat), lng = parseFloat(req.query.lng);
   if (!GOOGLE_KEY || !Number.isFinite(lat) || !Number.isFinite(lng)) return res.status(404).end();
   const loc = `${lat},${lng}`;
-  const streetview = `https://maps.googleapis.com/maps/api/streetview?size=640x360&location=${loc}&fov=72&pitch=8&source=outdoor&key=${GOOGLE_KEY}`;
-  const satellite = `https://maps.googleapis.com/maps/api/staticmap?center=${loc}&zoom=19&size=640x360&maptype=satellite&markers=color:0x7ED6D9%7C${loc}&key=${GOOGLE_KEY}`;
+  const view = String(req.query.view || "street");
+  const satellite = `https://maps.googleapis.com/maps/api/staticmap?center=${loc}&zoom=20&size=640x400&maptype=satellite&key=${GOOGLE_KEY}`;
+  const streetview = `https://maps.googleapis.com/maps/api/streetview?size=640x400&location=${loc}&fov=74&pitch=6&source=outdoor&key=${GOOGLE_KEY}`;
   try {
-    // Prefer Street View when coverage exists (metadata is free & quota-light).
-    let url = satellite;
-    const meta = await fetch(`https://maps.googleapis.com/maps/api/streetview/metadata?location=${loc}&source=outdoor&key=${GOOGLE_KEY}`).then((r) => r.json()).catch(() => null);
-    if (meta && meta.status === "OK") url = streetview;
+    let url;
+    if (view === "satellite") { url = satellite; } // aerial (the scan + the wow card)
+    else { // front elevation — Street View when Google has coverage, else satellite
+      const meta = await fetch(`https://maps.googleapis.com/maps/api/streetview/metadata?location=${loc}&source=outdoor&key=${GOOGLE_KEY}`).then((r) => r.json()).catch(() => null);
+      url = meta && meta.status === "OK" ? streetview : satellite;
+    }
     const img = await fetch(url);
     if (!img.ok) return res.status(404).end();
     res.set("Content-Type", img.headers.get("content-type") || "image/jpeg");

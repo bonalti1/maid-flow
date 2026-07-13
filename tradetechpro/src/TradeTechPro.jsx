@@ -93,7 +93,7 @@ const TR = {
     demoBanner: "🧪 Modo demo — tus datos no se guardan en la nube. ¿Cliente? Entra con tu link de WhatsApp.",
     demoLimit: "El modo demo incluye 6 búsquedas de prueba y ya las usaste. Las limpiadoras de Paulbeza cotizan sin límite.",
     nav: { home: "Inicio", cobros: "Cobros", quote: "Cotizar", clients: "Clientes", prices: "Mis precios", account: "Ajustes" },
-    measuring1: "Buscando la propiedad…", measuring2: "Midiendo el trabajo…", measuring3: "Calculando tu cotización…",
+    measuring1: "Buscando imagen satelital…", measuring2: "Midiendo la casa…", measuring3: "Calculando el tamaño…",
     beds: "Recámaras", baths: "Baños", sqft: "pies²", builtIn: "Construida",
     useMyLocation: "Usar mi ubicación", myLocation: "Mi ubicación", locating: "Buscando tu ubicación…",
     locErr: "No pude obtener tu ubicación. Activa el GPS y permite el acceso.",
@@ -103,7 +103,7 @@ const TR = {
     demoBanner: "🧪 Demo mode — your data isn't saved to the cloud. Client? Enter with your WhatsApp link.",
     demoLimit: "The demo includes 6 trial lookups and you've used them. Paulbeza cleaners quote with no limits.",
     nav: { home: "Home", cobros: "Payments", quote: "Quote", clients: "Clients", prices: "My prices", account: "Settings" },
-    measuring1: "Finding the property…", measuring2: "Sizing the job…", measuring3: "Calculating your quote…",
+    measuring1: "Finding satellite image…", measuring2: "Measuring the home…", measuring3: "Calculating the size…",
     beds: "Bedrooms", baths: "Baths", sqft: "sq ft", builtIn: "Built",
     useMyLocation: "Use my location", myLocation: "My location", locating: "Finding your location…",
     locErr: "Couldn't get your location. Turn on GPS and allow access.",
@@ -727,14 +727,25 @@ export default function TradeTechPro() {
   const QuoteFlow = () => {
     if (measuring) {
       const phases = [t.measuring1, t.measuring2, t.measuring3];
+      const satUrl = housePos ? `/api/housephoto?view=satellite&lat=${housePos.lat}&lng=${housePos.lng}` : null;
       return (
-        <div className="flex-1 flex flex-col items-center justify-center px-7 text-center" style={{ background: M.bg }}>
-          <span className="text-5xl mb-4" style={{ animation: "ttpPulse 1.2s ease-in-out infinite" }}>🧽</span>
-          <p className="font-extrabold mb-1" style={{ color: M.tealDeep, fontSize: 20 }}>{q.address}</p>
-          <p className="mb-6" style={{ color: M.gold, fontSize: 11, fontWeight: 900, letterSpacing: "0.18em", textTransform: "uppercase" }}>{lang === "es" ? "Preparando tu cotización" : "Preparing your quote"}</p>
-          <div className="text-left">
+        <div className="flex-1 flex flex-col justify-center px-6" style={{ background: M.tealDeep }}>
+          {/* Aerial card with a sweeping scan beam — the "wow" moment */}
+          <div className="relative mx-auto w-full overflow-hidden" style={{ maxWidth: 360, aspectRatio: "16 / 11", borderRadius: 22, border: "1.5px solid rgba(167,232,200,0.35)", background: "linear-gradient(135deg,#16295F,#243b7a)", boxShadow: "0 20px 50px rgba(0,0,0,0.4)" }}>
+            {satUrl && <img src={satUrl} alt="" onError={(e) => { e.currentTarget.style.display = "none"; }} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />}
+            {/* scan beam */}
+            <div className="absolute left-0 right-0" style={{ height: 3, background: `linear-gradient(90deg,transparent,${M.goldHi},transparent)`, boxShadow: `0 0 18px 4px ${M.goldHi}`, animation: "ttpScan 1.7s ease-in-out infinite" }} />
+            {/* grid overlay */}
+            <div className="absolute inset-0" style={{ backgroundImage: "linear-gradient(rgba(167,232,200,0.12) 1px,transparent 1px),linear-gradient(90deg,rgba(167,232,200,0.12) 1px,transparent 1px)", backgroundSize: "28px 28px" }} />
+            <span className="absolute" style={{ top: 12, left: 14, fontSize: 22, animation: "ttpBlink 1.4s ease-in-out infinite" }}>🛰️</span>
+            <div className="absolute" style={{ bottom: 10, left: 12, right: 12, background: "rgba(0,0,0,0.42)", backdropFilter: "blur(2px)", borderRadius: 12, padding: "7px 12px" }}>
+              <p className="truncate" style={{ color: "#fff", fontSize: 12, fontWeight: 800 }}>📍 {q.address}</p>
+            </div>
+          </div>
+          <p className="text-center mt-5 mb-4" style={{ color: M.goldHi, fontSize: 11, fontWeight: 900, letterSpacing: "0.18em", textTransform: "uppercase" }}>{lang === "es" ? "Analizando la propiedad" : "Analyzing the property"}</p>
+          <div className="mx-auto text-left" style={{ maxWidth: 360, width: "100%" }}>
             {phases.map((ph, i) => (
-              <p key={ph} className="py-1 font-semibold" style={{ color: i < measurePhase ? M.green : i === measurePhase ? M.teal : M.line }}>{i < measurePhase ? "✓ " : i === measurePhase ? "● " : "○ "}{ph}</p>
+              <p key={ph} className="py-1 font-semibold" style={{ fontSize: 14, color: i < measurePhase ? M.goldHi : i === measurePhase ? "#fff" : "rgba(255,255,255,0.4)" }}>{i < measurePhase ? "✓ " : i === measurePhase ? "● " : "○ "}{ph}</p>
             ))}
           </div>
         </div>
@@ -752,15 +763,12 @@ export default function TradeTechPro() {
         <div className="flex-1 overflow-y-auto pb-6" style={{ background: M.bg }}>
           <div className="px-5 py-4" style={{ background: M.headGrad, borderBottom: `2px solid ${M.gold}` }}>
             <p className="text-center" style={{ color: M.goldHi, fontSize: 11, fontWeight: 900, letterSpacing: "0.18em", textTransform: "uppercase" }}>{lang === "es" ? "Cotización de limpieza" : "Cleaning quote"}</p>
-            <p className="text-center font-extrabold text-white mt-0.5" style={{ fontSize: 18 }}>{lang === "es" ? "Cotiza un trabajo en segundos" : "Quote a job in seconds"}</p>
+            <p className="text-center font-extrabold text-white mt-0.5" style={{ fontSize: 18 }}>{lang === "es" ? "¿Cuál es la dirección?" : "What's the address?"}</p>
           </div>
           <div className="px-5 pt-3">
+            <div className="text-center mb-3" style={{ fontSize: 44 }}>📍</div>
             <Card>
-              <p style={{ color: M.muted2, fontSize: 10, fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", marginBottom: 8 }}>{lang === "es" ? "Datos del cliente" : "Customer details"}</p>
-              <TextInput value={q.name} onChange={(v) => setField("name", v)} placeholder={lang === "es" ? "Nombre del cliente" : "Customer name"} />
-              <TextInput value={q.phone} onChange={(v) => setField("phone", v)} placeholder={lang === "es" ? "Teléfono (WhatsApp)" : "Phone (WhatsApp)"} inputMode="tel" />
-              <TextInput value={q.company} onChange={(v) => setField("company", v)} placeholder={lang === "es" ? "Empresa / edificio (opcional)" : "Company / building (optional)"} />
-              <p style={{ color: M.muted2, fontSize: 10, fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", margin: "6px 0 8px" }}>{lang === "es" ? "Dirección de la casa" : "Home address"}</p>
+              <p style={{ color: M.muted2, fontSize: 10, fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", marginBottom: 8 }}>{lang === "es" ? "Dirección de la casa" : "Home address"}</p>
               <div className="flex gap-2">
                 <button onClick={useMyLocation} title={t.useMyLocation} className="flex items-center justify-center shrink-0 active:scale-95 transition-transform" style={{ width: 48, height: 48, background: M.bg, border: `1.5px solid ${M.line}`, borderRadius: 12, color: M.teal, fontSize: 18 }}>🧭</button>
                 <div className="flex-1 flex items-center gap-2 rounded-xl px-3" style={{ background: M.bg, border: `1.5px solid ${M.line}` }}>
@@ -769,6 +777,7 @@ export default function TradeTechPro() {
                   {hasVoice && <button onClick={() => startVoice(onAddrInput)} className="text-xl active:scale-90 transition-transform" style={{ background: "none", border: "none", opacity: listening ? 1 : 0.6 }}>{listening ? "🔴" : "🎤"}</button>}
                 </div>
               </div>
+              <button onClick={useMyLocation} className="w-full mt-2 flex items-center justify-center gap-1.5 active:opacity-80" style={{ background: "transparent", border: "none", color: M.teal, fontSize: 13, fontWeight: 800 }}>🧭 {t.useMyLocation}</button>
               {(custom || matches.length > 0) && (
                 <div className="rounded-xl mt-2 overflow-hidden" style={{ border: `1.5px solid ${M.line}` }}>
                   {custom && (
@@ -784,8 +793,8 @@ export default function TradeTechPro() {
                 </div>
               )}
             </Card>
-            <PrimaryBtn onClick={go} disabled={!canGo}>{lang === "es" ? "Buscar la casa →" : "Find the home →"}</PrimaryBtn>
-            <p className="text-center mt-3" style={{ color: M.muted, fontSize: 11, fontWeight: 600 }}>{lang === "es" ? "Buscamos el tamaño de la casa automáticamente" : "We auto-find the home size"}</p>
+            <PrimaryBtn onClick={go} disabled={!canGo}>{lang === "es" ? "🛰️ Escanear la casa →" : "🛰️ Scan the home →"}</PrimaryBtn>
+            <p className="text-center mt-3" style={{ color: M.muted, fontSize: 11, fontWeight: 600 }}>{lang === "es" ? "Detectamos recámaras, baños y tamaño automáticamente" : "We auto-detect beds, baths and size"}</p>
           </div>
         </div>
       );
@@ -793,20 +802,70 @@ export default function TradeTechPro() {
 
     if (curStepKey === "confirm") {
       const canNext = Number(q.sqft) > 0;
+      const stepField = (key, delta, min, step) => setField(key, String(Math.max(min, (Number(q[key]) || 0) + delta * step)));
+      const Stepper = ({ icon, label, value, unit, onMinus, onPlus }) => (
+        <div className="flex items-center justify-between" style={{ background: M.bg, border: `1.5px solid ${M.line}`, borderRadius: 12, padding: "10px 12px" }}>
+          <div className="flex items-center gap-2 min-w-0">
+            <span style={{ fontSize: 18 }}>{icon}</span>
+            <div className="min-w-0">
+              <p className="font-extrabold truncate" style={{ color: M.tealDeep, fontSize: 15 }}>{value || "—"}{unit ? <span style={{ color: M.muted2, fontSize: 12, fontWeight: 700 }}> {unit}</span> : null}</p>
+              <p style={{ color: M.muted2, fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase" }}>{label}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <button onClick={onMinus} className="active:scale-90 transition-transform" style={{ width: 34, height: 34, borderRadius: 10, background: "#fff", border: `1.5px solid ${M.line}`, color: M.teal, fontSize: 20, fontWeight: 800, lineHeight: 1 }}>−</button>
+            <button onClick={onPlus} className="active:scale-90 transition-transform" style={{ width: 34, height: 34, borderRadius: 10, background: M.teal, border: "none", color: "#fff", fontSize: 20, fontWeight: 800, lineHeight: 1 }}>+</button>
+          </div>
+        </div>
+      );
       return (
-        <StepFrame kicker={lang === "es" ? "Paso 2 · Confirma la casa" : "Step 2 · Confirm the home"} title={lang === "es" ? "¿Estos datos están bien?" : "Does this look right?"} canNext={canNext}>
+        <StepFrame kicker={lang === "es" ? "Paso 2 · Tu casa escaneada" : "Step 2 · Your scanned home"} title={lang === "es" ? "Esto detectamos 🛰️" : "Here's what we found 🛰️"} canNext={canNext}>
+          {/* Aerial "LIVE" wow card */}
+          {housePos && (
+            <div className="rounded-2xl overflow-hidden mb-3" style={{ background: M.tealDeep, boxShadow: "0 18px 38px rgba(10,20,55,0.22)" }}>
+              <div className="relative">
+                <img src={`/api/housephoto?view=satellite&lat=${housePos.lat}&lng=${housePos.lng}`} alt="" onError={(e) => { e.currentTarget.style.display = "none"; }}
+                  style={{ width: "100%", height: 170, objectFit: "cover", display: "block", background: M.tealDeep }} />
+                <span className="absolute flex items-center gap-1" style={{ top: 10, right: 10, background: "rgba(232,68,46,0.92)", color: "#fff", fontSize: 10, fontWeight: 900, letterSpacing: "0.1em", padding: "3px 8px", borderRadius: 8 }}>
+                  <span style={{ width: 6, height: 6, borderRadius: 3, background: "#fff", display: "inline-block", animation: "ttpBlink 1.2s ease-in-out infinite" }} /> LIVE
+                </span>
+                <span className="absolute" style={{ top: 10, left: 10, background: "rgba(0,0,0,0.4)", color: "#fff", fontSize: 11, fontWeight: 800, padding: "3px 9px", borderRadius: 8 }}>🛰️ {lang === "es" ? "Vista aérea" : "Aerial view"}</span>
+              </div>
+              <div className="px-3 py-3">
+                <p className="text-white font-bold truncate mb-2" style={{ fontSize: 13 }}>📍 {q.address}</p>
+                <div className="grid grid-cols-3 gap-2">
+                  {[["📐", q.sqft ? num(q.sqft) : "—", t.sqft], ["🛏️", q.beds || "—", t.beds], ["🛁", q.baths || "—", t.baths]].map(([icon, v, label]) => (
+                    <div key={label} style={{ background: "rgba(255,255,255,0.10)", border: "1px solid rgba(167,232,200,0.22)", borderRadius: 10, padding: "8px 4px", textAlign: "center" }}>
+                      <p className="font-extrabold text-white" style={{ fontSize: 16 }}>{v}</p>
+                      <p style={{ color: M.goldHi, fontSize: 8, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", marginTop: 2 }}>{icon} {label}</p>
+                    </div>
+                  ))}
+                </div>
+                <p className="mt-2" style={{ color: "rgba(255,255,255,0.62)", fontSize: 10, fontWeight: 600, textAlign: "center" }}>🛰️ {lang === "es" ? "Datos reales · Verifica en sitio" : "Real data · Verify on site"}</p>
+              </div>
+            </div>
+          )}
+
+          {/* Front-elevation photo */}
+          {housePos && (
+            <div className="rounded-2xl overflow-hidden mb-3" style={{ border: `1px solid ${M.line}`, boxShadow: "0 10px 26px rgba(30,58,138,0.10)" }}>
+              <img src={`/api/housephoto?view=street&lat=${housePos.lat}&lng=${housePos.lng}`} alt="" onError={(e) => { e.currentTarget.parentNode.style.display = "none"; }}
+                style={{ width: "100%", height: 150, objectFit: "cover", display: "block", background: M.line }} />
+              <p className="px-3 py-2" style={{ color: M.muted2, fontSize: 11, fontWeight: 800 }}>🏠 {lang === "es" ? "Foto del exterior" : "Front photo"}</p>
+            </div>
+          )}
+
+          {/* Adjust if needed */}
           <Card>
-            <p className="font-bold mb-3" style={{ color: M.tealDeep, fontSize: 14 }}>{q.address}</p>
-            <label className="block mb-2"><span style={{ color: M.muted2, fontSize: 11, fontWeight: 700 }}>{t.sqft}</span>
-              <TextInput value={q.sqft} onChange={(v) => setField("sqft", v.replace(/[^0-9]/g, ""))} placeholder="1500" inputMode="numeric" /></label>
-            <div className="grid grid-cols-2 gap-2">
-              <label className="block"><span style={{ color: M.muted2, fontSize: 11, fontWeight: 700 }}>{t.beds}</span>
-                <TextInput value={q.beds} onChange={(v) => setField("beds", v.replace(/[^0-9]/g, ""))} placeholder="3" inputMode="numeric" /></label>
-              <label className="block"><span style={{ color: M.muted2, fontSize: 11, fontWeight: 700 }}>{t.baths}</span>
-                <TextInput value={q.baths} onChange={(v) => setField("baths", v.replace(/[^0-9.]/g, ""))} placeholder="2" inputMode="decimal" /></label>
+            <p style={{ color: M.muted2, fontSize: 10, fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", marginBottom: 10 }}>{lang === "es" ? "Ajusta si hace falta" : "Adjust if needed"}</p>
+            <div className="flex flex-col gap-2">
+              <Stepper icon="📐" label={t.sqft} value={q.sqft ? num(q.sqft) : ""} onMinus={() => stepField("sqft", -1, 0, 100)} onPlus={() => stepField("sqft", 1, 0, 100)} />
+              <Stepper icon="🛏️" label={t.beds} value={q.beds} onMinus={() => stepField("beds", -1, 0, 1)} onPlus={() => stepField("beds", 1, 0, 1)} />
+              <Stepper icon="🛁" label={t.baths} value={q.baths} onMinus={() => stepField("baths", -1, 0, 1)} onPlus={() => stepField("baths", 1, 0, 1)} />
             </div>
           </Card>
-          {!canNext && <p style={{ color: M.red, fontSize: 12, fontWeight: 600 }}>{lang === "es" ? "Pon los pies cuadrados para continuar." : "Enter the square footage to continue."}</p>}
+          <p className="text-center" style={{ color: M.muted, fontSize: 11, fontWeight: 600 }}>{lang === "es" ? "≈ Estimado — puedes ajustar los cuadros arriba" : "≈ Estimate — tune the numbers above"}</p>
+          {!canNext && <p className="mt-1" style={{ color: M.red, fontSize: 12, fontWeight: 600 }}>{lang === "es" ? "Pon los pies cuadrados para continuar." : "Enter the square footage to continue."}</p>}
         </StepFrame>
       );
     }
@@ -939,7 +998,7 @@ export default function TradeTechPro() {
           {/* The wow factor: a real photo of the client's house */}
           {housePos && (
             <div className="rounded-2xl mb-3 overflow-hidden" style={{ border: `1px solid ${M.line}`, boxShadow: "0 10px 30px rgba(30,58,138,0.12)" }}>
-              <img src={`/api/housephoto?lat=${housePos.lat}&lng=${housePos.lng}`} alt="" onError={(e) => { e.currentTarget.parentNode.style.display = "none"; }}
+              <img src={`/api/housephoto?view=street&lat=${housePos.lat}&lng=${housePos.lng}`} alt="" onError={(e) => { e.currentTarget.parentNode.style.display = "none"; }}
                 style={{ width: "100%", height: 170, objectFit: "cover", display: "block", background: M.line }} />
             </div>
           )}
@@ -990,6 +1049,13 @@ export default function TradeTechPro() {
           <Card>
             <p style={{ color: M.gold, fontSize: 10, fontWeight: 900, letterSpacing: "0.16em", textTransform: "uppercase", marginBottom: 8 }}>{lang === "es" ? "Mensaje para el cliente" : "Message for the customer"}</p>
             <p style={{ color: M.body, fontSize: 13, lineHeight: 1.55, whiteSpace: "pre-wrap" }}>{msg}</p>
+          </Card>
+
+          {/* Customer contact — captured here (not at the address step) */}
+          <Card>
+            <p style={{ color: M.gold, fontSize: 10, fontWeight: 900, letterSpacing: "0.16em", textTransform: "uppercase", marginBottom: 8 }}>{lang === "es" ? "¿A quién le mandas el precio?" : "Who's this quote for?"}</p>
+            <TextInput value={q.name} onChange={(v) => setField("name", v)} placeholder={lang === "es" ? "Nombre del cliente" : "Customer name"} />
+            <TextInput value={q.phone} onChange={(v) => setField("phone", v)} placeholder={lang === "es" ? "Teléfono (WhatsApp)" : "Phone (WhatsApp)"} inputMode="tel" />
           </Card>
 
           <p className="mb-3" style={{ color: M.muted2, fontSize: 11, fontWeight: 600, lineHeight: 1.5 }}>⚠️ {lang === "es" ? "El precio final puede cambiar después de ver fotos o la casa si está más sucia de lo descrito." : "Final price may change after photos/walkthrough if the home is heavier than described."}</p>
@@ -1340,7 +1406,9 @@ export default function TradeTechPro() {
         * { font-family: 'Nunito', ui-rounded, sans-serif; -webkit-tap-highlight-color: transparent; }
         input::placeholder { color: #9DB0A8; }
         @keyframes ttpPulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.18); opacity: .65; } }
-        @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }`}</style>
+        @keyframes ttpScan { 0% { top: -8%; } 100% { top: 108%; } }
+        @keyframes ttpBlink { 0%, 100% { opacity: 1; } 50% { opacity: .25; } }
+        @media (prefers-reduced-motion: reduce) { * { transition: none !important; } [style*="ttpScan"] { animation: none !important; } }`}</style>
       <div className="w-full max-w-md flex flex-col relative" style={{ background: M.bg, minHeight: "100vh" }}>
         {!session && screen !== "welcome" && (
           <div className="px-4 py-2 text-center" style={{ background: M.goldSoft, borderBottom: `1.5px solid ${M.gold}` }}>
