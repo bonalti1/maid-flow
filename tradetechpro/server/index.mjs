@@ -1919,7 +1919,6 @@ function render(j){track('w_result');var s4=document.getElementById('s4'),h='';
 function landingPage(req) {
   const base = canonBase(req);
   const en = req.query.lang === "en";
-  const stripeLink = STRIPE_LINKS.complete; // primary = $297 COMPLETE (P key / buy now)
   // Meta Pixel for ad tracking — only renders once META_PIXEL_ID is set
   const pixelId = (process.env.META_PIXEL_ID || "").replace(/[^0-9]/g, "");
   const pixelHead = pixelId ? `<script>!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');fbq('init','${pixelId}');fbq('track','PageView');</script><noscript><img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id=${pixelId}&ev=PageView&noscript=1"/></noscript>` : "";
@@ -1949,9 +1948,13 @@ function landingPage(req) {
     appT: "AND ON YOUR PHONE, <em>THE APP</em>",
     appSub: `A neighbor asks "how much to clean mine?" — you type their address (or use your GPS), answer a few questions, and send a polished quote right there.`,
     cap1: "Quoted from the home's size<br>in 60 seconds", cap2: "Set your own rates<br>and minimums", cap3: "Professional quote with your<br>brand, ready to send",
-    priceT: "ONE <em>PRICE</em>", priceSub: "No fine print. No long contracts. Cancel anytime and your domain is yours.",
-    mo: "/mo", setup: "No setup fee — cancel anytime", buyNow: "Start now →", orBook: "or book a call first",
-    inc: ["Your professional website with your brand", "Instant cleaning-quote tool on your site", "The Paulbeza app: quotes, rates, leads", "Cleaning leads straight to your WhatsApp", "Your domain (yourname.com) is yours — by contract", "Bilingual support"],
+    priceT: "PICK YOUR <em>PLAN</em>", priceSub: "No fine print. No long contracts. Cancel anytime and your domain is yours.",
+    mo: "/mo", setup: "No setup fee — cancel anytime", buyNow: "Start now →", orBook: "or book a call first", popular: "MOST POPULAR",
+    plans: [
+      { key: "pro", name: "PRO", amt: 67, desc: "The app in your pocket", feats: ["The Paulbeza app: quotes in 60 seconds", "Your own rates and minimums", "Branded quotes, sent by WhatsApp", "Your customer and lead list"] },
+      { key: "widget", name: "WIDGET", amt: 197, desc: "The app + the quote tool on your page", feats: ["Everything in PRO", "Instant-quote widget for your page or Facebook", "Homeowners leave name + phone to see their price", "Those leads land straight in your app"] },
+      { key: "complete", name: "COMPLETO", amt: 297, hot: true, desc: "Your whole business online", feats: ["Everything in WIDGET", "Your professional website with your brand", "AI assistant that answers your customers", "Your domain (yourname.com) is yours — by contract", "Bilingual support"] },
+    ],
     talkT: "READY? <em>LET'S TALK</em>", talkSub: "Answer 4 quick questions and schedule a call with the team. No obligation — we answer everything and you decide.",
     q1: "What do you focus on?", q1o: ["Homes", "Airbnb / rentals", "Offices", "Other"],
     q2: "How long have you been cleaning?", q2o: ["Just starting", "1–3 years", "3–10 years", "10+ years"],
@@ -1984,9 +1987,13 @@ function landingPage(req) {
     appT: "Y EN TU TELÉFONO, <em>LA APP</em>",
     appSub: `El vecino te pregunta "¿cuánto por limpiar la mía?" — pones su dirección (o usas tu GPS), contestas unas preguntas, y le mandas una cotización profesional ahí mismo.`,
     cap1: "Cotizado por el tamaño<br>de la casa en 60 segundos", cap2: "Pon tus propias tarifas<br>y mínimos", cap3: "Cotización profesional con tu<br>marca, lista para mandar",
-    priceT: "UN SOLO <em>PRECIO</em>", priceSub: "Sin letras chiquitas. Sin contratos largos. Cancelas cuando quieras y tu dominio es tuyo.",
-    mo: "/mes", setup: "Sin cargo de inicio — cancela cuando quieras", buyNow: "Comenzar ahora →", orBook: "o agenda una llamada primero",
-    inc: ["Tu página web profesional con tu marca", "Cotizador de limpieza instantáneo en tu página", "La app Paulbeza: cotizaciones, tarifas, clientes", "Clientes directo a tu WhatsApp", "Tu dominio (tunombre.com) es tuyo — por contrato", "Soporte en español"],
+    priceT: "ELIGE TU <em>PLAN</em>", priceSub: "Sin letras chiquitas. Sin contratos largos. Cancelas cuando quieras y tu dominio es tuyo.",
+    mo: "/mes", setup: "Sin cargo de inicio — cancela cuando quieras", buyNow: "Comenzar ahora →", orBook: "o agenda una llamada primero", popular: "MÁS POPULAR",
+    plans: [
+      { key: "pro", name: "PRO", amt: 67, desc: "La app en tu bolsillo", feats: ["La app Paulbeza: cotizas en 60 segundos", "Tus propias tarifas y mínimos", "Cotizaciones con tu marca, por WhatsApp", "Tu lista de clientes y leads"] },
+      { key: "widget", name: "WIDGET", amt: 197, desc: "La app + el cotizador en tu página", feats: ["Todo lo de PRO", "Cotizador instantáneo para tu página o Facebook", "Los dueños dejan nombre y teléfono para ver su precio", "Esos clientes te llegan directo a la app"] },
+      { key: "complete", name: "COMPLETO", amt: 297, hot: true, desc: "Todo tu negocio en línea", feats: ["Todo lo de WIDGET", "Tu página web profesional con tu marca", "Asistente de IA que contesta a tus clientes", "Tu dominio (tunombre.com) es tuyo — por contrato", "Soporte en español"] },
+    ],
     talkT: "¿LISTA? <em>HABLEMOS</em>", talkSub: "Contesta 4 preguntas rápidas y agenda una llamada con el equipo. Sin compromiso — resolvemos todas tus dudas y tú decides.",
     q1: "¿En qué te enfocas?", q1o: ["Casas", "Airbnb / rentas", "Oficinas", "Otro"],
     q2: "¿Cuánto llevas limpiando?", q2o: ["Empezando", "1–3 años", "3–10 años", "10+ años"],
@@ -2055,13 +2062,19 @@ section{padding:64px 0}
 .shots{display:flex;gap:28px;justify-content:center;flex-wrap:wrap;margin-bottom:10px}
 .shot img{width:240px;border-radius:26px;border:1px solid #E6EBF3;display:block;box-shadow:0 22px 56px rgba(16,27,48,.14)}
 .shot p{text-align:center;color:#5A6478;font-size:13px;font-weight:700;margin-top:13px;line-height:1.45}
-.price-card{background:#fff;border:1px solid #E8ECF3;border-radius:28px;max-width:440px;margin:0 auto;padding:38px;text-align:center;box-shadow:0 30px 80px rgba(16,27,48,.12)}
-.price-card .amt{font-family:'Barlow Condensed',sans-serif;font-size:68px;font-weight:800;line-height:1}
-.price-card .amt small{font-size:22px;color:#67718A;font-weight:700}
-.price-card .setup{color:#67718A;font-weight:700;font-size:14px;margin-top:6px}
-.price-card ul{text-align:left;margin:24px 0 0;padding:0}
-.price-card li{list-style:none;padding:8px 0;font-weight:600;font-size:14px}
-.price-card li::before{content:"✓ ";color:#34A853;font-weight:800}
+.plans{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:20px;max-width:960px;margin:0 auto;align-items:start}
+.plan{position:relative;background:#fff;border:1.5px solid #E8ECF3;border-radius:26px;padding:30px 26px;text-align:center;box-shadow:0 18px 50px rgba(16,27,48,.08)}
+.plan.hot{border-color:#7ED6D9;box-shadow:0 30px 80px rgba(126,214,217,.28)}
+.hotbadge{position:absolute;top:-13px;left:50%;transform:translateX(-50%);background:#7ED6D9;color:#1E3A8A;font-size:11px;font-weight:800;letter-spacing:.08em;border-radius:99px;padding:5px 16px;white-space:nowrap}
+.pname{font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:800;letter-spacing:.14em;color:#8A94A8}
+.plan.hot .pname{color:#1E3A8A}
+.plan .amt{font-family:'Barlow Condensed',sans-serif;font-size:56px;font-weight:800;line-height:1;margin-top:6px}
+.plan .amt small{font-size:20px;color:#67718A;font-weight:700}
+.pdesc{color:#5A6478;font-weight:700;font-size:14px;margin-top:8px}
+.plan ul{text-align:left;margin:18px 0 0;padding:0}
+.plan li{list-style:none;padding:7px 0;font-weight:600;font-size:13.5px;line-height:1.45}
+.plan li::before{content:"✓ ";color:#34A853;font-weight:800}
+.plan-cta{margin-top:22px;width:100%;text-align:center;display:block;box-sizing:border-box}
 .quiz{max-width:480px;margin:0 auto;position:relative}
 .qbar{height:6px;background:#EDF0F5;border-radius:99px;margin-bottom:26px;overflow:hidden}
 .qfill{height:100%;width:20%;background:#7ED6D9;border-radius:99px;transition:width .3s ease}
@@ -2132,24 +2145,28 @@ footer a{color:#8A94A8}
   <h2 class="sec-t">${L.appT}</h2>
   <p class="sec-sub">${L.appSub}</p>
   <div class="shots">
-    <div class="shot"><div style="width:240px;height:380px;border-radius:26px;border:1px solid #E6EBF3;display:flex;align-items:center;justify-content:center;font-size:84px;background:linear-gradient(160deg,#F4F7FB,#E9EEF6)">📍</div><p>${L.cap1}</p></div>
-    <div class="shot"><div style="width:240px;height:380px;border-radius:26px;border:1px solid #E6EBF3;display:flex;align-items:center;justify-content:center;font-size:84px;background:linear-gradient(160deg,#F4F7FB,#E9EEF6)">💲</div><p>${L.cap2}</p></div>
-    <div class="shot"><div style="width:240px;height:380px;border-radius:26px;border:1px solid #E6EBF3;display:flex;align-items:center;justify-content:center;font-size:84px;background:linear-gradient(160deg,#F4F7FB,#E9EEF6)">🧾</div><p>${L.cap3}</p></div>
+    <div class="shot"><img src="/landing/app-scan.png" alt="" loading="lazy"><p>${L.cap1}</p></div>
+    <div class="shot"><img src="/landing/app-rates.png" alt="" loading="lazy"><p>${L.cap2}</p></div>
+    <div class="shot"><img src="/landing/app-quote.png" alt="" loading="lazy"><p>${L.cap3}</p></div>
   </div>
 </section></div>
 
 <div class="band"><div class="wrap"><section id="precio">
   <h2 class="sec-t">${L.priceT}</h2>
   <p class="sec-sub">${L.priceSub}</p>
-  <div class="price-card">
-    <div class="amt">$297<small>${L.mo}</small></div>
-    <div class="setup">${L.setup}</div>
-    <ul>${L.inc.map((x) => `<li>${x}</li>`).join("")}</ul>
-    ${stripeLink
-      ? `<a class="cta" style="margin-top:26px;width:100%;text-align:center" href="${stripeLink}" target="_blank" rel="noreferrer">${L.buyNow}</a>
-         <a href="#contacto" style="display:block;text-align:center;margin-top:14px;color:#67718A;font-weight:700;font-size:13px;text-decoration:none">${L.orBook}</a>`
-      : `<a class="cta" style="margin-top:26px;width:100%;text-align:center" href="#contacto">${L.cta2}</a>`}
+  <div class="plans">
+    ${L.plans.map((p) => `<div class="plan${p.hot ? " hot" : ""}">
+      ${p.hot ? `<div class="hotbadge">${L.popular}</div>` : ""}
+      <div class="pname">${p.name}</div>
+      <div class="amt">$${p.amt}<small>${L.mo}</small></div>
+      <p class="pdesc">${p.desc}</p>
+      <ul>${p.feats.map((f) => `<li>${f}</li>`).join("")}</ul>
+      ${STRIPE_LINKS[p.key]
+        ? `<a class="cta plan-cta" href="${STRIPE_LINKS[p.key]}" target="_blank" rel="noreferrer">${L.buyNow}</a>`
+        : `<a class="cta plan-cta" href="#contacto">${L.buyNow}</a>`}
+    </div>`).join("")}
   </div>
+  <p style="text-align:center;color:#67718A;font-weight:700;font-size:14px;margin-top:26px">${L.setup} · <a href="#contacto" style="color:#67718A">${L.orBook}</a></p>
 </section></div></div>
 
 <div class="wrap"><section id="contacto">
