@@ -129,9 +129,9 @@ const hashAddr = (s) => { let h = 7; for (const ch of s) h = (h * 31 + ch.charCo
 const mockLookup = (addr) => new Promise((resolve) => {
   setTimeout(() => {
     const known = MOCK_PROPERTIES.find((p) => p.addr.toLowerCase() === addr.toLowerCase());
-    if (known) { resolve({ found: true, source: "demo", addr, sqft: known.sqft, beds: known.beds, baths: known.baths }); return; }
+    if (known) { resolve({ found: true, source: "demo", addr, sqft: known.sqft, beds: known.beds, baths: known.baths, yearBuilt: known.yearBuilt || 1998 }); return; }
     const h = hashAddr(addr.toLowerCase());
-    resolve({ found: true, source: "demo", addr, sqft: 1400 + (h % 1600), beds: 2 + (h % 3), baths: 1 + (h % 3) });
+    resolve({ found: true, source: "demo", addr, sqft: 1400 + (h % 1600), beds: 2 + (h % 3), baths: 1 + (h % 3), yearBuilt: 1975 + (h % 48) });
   }, 1800);
 });
 
@@ -392,7 +392,7 @@ export default function TradeTechPro() {
   }, [session, cloudReady, customers, savedQuotes, userName, bizName, userPhone, logo, lang, bizEmail, zelle, myRates]);
 
   /* ── Questionnaire state ── */
-  const blankQ = { name: "", phone: "", address: "", company: "", placeId: null, sqft: "", beds: "", baths: "", propertyType: "", cleaningType: "regular", condition: "normal", pets: "none", addOns: [], frequency: "one_time", furnished: "partial", photos: [] };
+  const blankQ = { name: "", phone: "", address: "", company: "", placeId: null, sqft: "", beds: "", baths: "", yearBuilt: "", propertyType: "", cleaningType: "regular", condition: "normal", pets: "none", addOns: [], frequency: "one_time", furnished: "partial", photos: [] };
   const [q, setQ] = useState(blankQ);
   const setField = (k, v) => setQ((prev) => ({ ...prev, [k]: v }));
   const [step, setStep] = useState(0);
@@ -460,14 +460,14 @@ export default function TradeTechPro() {
           try { localStorage.setItem("maidflow_demo_meas", String((parseInt(localStorage.getItem("maidflow_demo_meas") || "0", 10) || 0) + 1)); } catch { /* private mode */ }
         }
         if (Number.isFinite(j.lat) && Number.isFinite(j.lng)) setHousePos({ lat: j.lat, lng: j.lng }); else setHousePos(null);
-        res = j.found ? { addr: j.addr || addr, sqft: j.sqft ?? null, beds: j.beds ?? null, baths: j.baths ?? null, propertyType: j.propertyType || "" } : null;
+        res = j.found ? { addr: j.addr || addr, sqft: j.sqft ?? null, beds: j.beds ?? null, baths: j.baths ?? null, yearBuilt: j.yearBuilt ?? null, propertyType: j.propertyType || "" } : null;
       }
     } catch { /* backend unreachable */ }
     // Only invent property data in demo mode. For a real (logged-in) cleaner a
     // lookup failure must NOT fabricate a house — land on manual entry instead,
     // so she never unknowingly quotes off made-up square footage.
-    if (!answered) {
-      if (!session) res = await mockLookup(addr);
+    if (!res) {
+      if (!session) res = await mockLookup(addr); // demo may invent a home; a real cleaner never gets fabricated data
       else showToast(lang === "es" ? "No encontramos la casa — escribe los datos 👇" : "Couldn't find the home — enter the details 👇");
     }
     await new Promise((rs) => setTimeout(rs, Math.max(0, 1700 - (Date.now() - t0))));
@@ -480,6 +480,7 @@ export default function TradeTechPro() {
         sqft: res.sqft != null ? String(res.sqft) : prev.sqft,
         beds: res.beds != null ? String(res.beds) : prev.beds,
         baths: res.baths != null ? String(res.baths) : prev.baths,
+        yearBuilt: res.yearBuilt != null ? String(res.yearBuilt) : prev.yearBuilt,
         propertyType: res.propertyType || prev.propertyType,
       }));
     }
@@ -833,10 +834,10 @@ export default function TradeTechPro() {
               </div>
               <div className="px-3 py-3">
                 <p className="text-white font-bold truncate mb-2" style={{ fontSize: 13 }}>📍 {q.address}</p>
-                <div className="grid grid-cols-3 gap-2">
-                  {[["📐", q.sqft ? num(q.sqft) : "—", t.sqft], ["🛏️", q.beds || "—", t.beds], ["🛁", q.baths || "—", t.baths]].map(([icon, v, label]) => (
+                <div className={`grid gap-2 ${q.yearBuilt ? "grid-cols-4" : "grid-cols-3"}`}>
+                  {[["📐", q.sqft ? num(q.sqft) : "—", t.sqft], ["🛏️", q.beds || "—", t.beds], ["🛁", q.baths || "—", t.baths], ...(q.yearBuilt ? [["🏗️", q.yearBuilt, t.builtIn]] : [])].map(([icon, v, label]) => (
                     <div key={label} style={{ background: "rgba(255,255,255,0.10)", border: "1px solid rgba(167,232,200,0.22)", borderRadius: 10, padding: "8px 4px", textAlign: "center" }}>
-                      <p className="font-extrabold text-white" style={{ fontSize: 16 }}>{v}</p>
+                      <p className="font-extrabold text-white" style={{ fontSize: q.yearBuilt ? 14 : 16 }}>{v}</p>
                       <p style={{ color: M.goldHi, fontSize: 8, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", marginTop: 2 }}>{icon} {label}</p>
                     </div>
                   ))}

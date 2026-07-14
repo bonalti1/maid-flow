@@ -505,7 +505,9 @@ app.post("/api/lookup", async (req, res) => {
     // so the cleaner can confirm them before quoting. No market valuation.
     const lookupAddr = (geo && geo.formatted) || address;
     if (!lookupAddr) return res.json({ found: false, source: "live" });
-    if (!RENTCAST_KEY) return res.json({ found: false, source: "demo" });
+    // No property data without RentCast — but if Google resolved the address we
+    // still return the location so the satellite/street photos work.
+    if (!RENTCAST_KEY) return res.json({ found: false, source: "demo", addr: (geo && geo.formatted) || address, lat: geo?.lat ?? null, lng: geo?.lng ?? null });
     const prop = await propertyLookup(lookupAddr);
     // We may know where the house is even when no property record is found.
     if (!prop) {
