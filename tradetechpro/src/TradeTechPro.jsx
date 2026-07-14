@@ -392,7 +392,7 @@ export default function TradeTechPro() {
   }, [session, cloudReady, customers, savedQuotes, userName, bizName, userPhone, logo, lang, bizEmail, zelle, myRates]);
 
   /* ── Questionnaire state ── */
-  const blankQ = { name: "", phone: "", address: "", company: "", placeId: null, sqft: "", beds: "", baths: "", yearBuilt: "", propertyType: "", cleaningType: "regular", condition: "normal", pets: "none", addOns: [], frequency: "one_time", furnished: "partial", photos: [] };
+  const blankQ = { name: "", phone: "", address: "", company: "", placeId: null, propKind: "home", sqft: "", beds: "", baths: "", yearBuilt: "", propertyType: "", cleaningType: "regular", condition: "normal", pets: "none", addOns: [], frequency: "one_time", furnished: "partial", photos: [] };
   const [q, setQ] = useState(blankQ);
   const setField = (k, v) => setQ((prev) => ({ ...prev, [k]: v }));
   const [step, setStep] = useState(0);
@@ -529,10 +529,12 @@ export default function TradeTechPro() {
     const ti = out.time;
     if (lang === "es") {
       const ct = TYPE_ES[out.cleaningType] || "regular";
-      return `Hola ${name} 👋 Le saluda ${business}. Según su casa de ${sqft} pies² (${beds} rec / ${baths} baños) y la limpieza ${ct} solicitada, el precio estimado es $${out.recommended} (rango $${low}–$${high}). Incluye cocina, baños, pisos, sacudido y los detalles de una limpieza ${ct}. Tiempo estimado: ${ti.cleaners} persona(s), ${ti.low}–${ti.high} hrs. El precio final puede cambiar si hay mucha acumulación, pelo de mascota o extras no mostrados en fotos. ¿Le aparto su cita?`;
+      const lugar = q.propKind === "commercial" ? `su local de ${sqft} pies² (${baths} baños)` : `su casa de ${sqft} pies² (${beds} rec / ${baths} baños)`;
+      return `Hola ${name} 👋 Le saluda ${business}. Según ${lugar} y la limpieza ${ct} solicitada, el precio estimado es $${out.recommended} (rango $${low}–$${high}). Incluye cocina, baños, pisos, sacudido y los detalles de una limpieza ${ct}. Tiempo estimado: ${ti.cleaners} persona(s), ${ti.low}–${ti.high} hrs. El precio final puede cambiar si hay mucha acumulación, pelo de mascota o extras no mostrados en fotos. ¿Le aparto su cita?`;
     }
     const ct = TYPE_EN[out.cleaningType] || "regular";
-    return `Hi ${name} 👋 This is ${business}. Based on your ${sqft} sqft home (${beds} bed / ${baths} bath) and the ${ct} cleaning requested, your estimated price is $${out.recommended} (range $${low}–$${high}). It includes kitchen, bathrooms, floors, dusting and standard ${ct} details. Estimated time: ${ti.cleaners} cleaner(s), ${ti.low}–${ti.high} hrs. Final price may change if there's heavy buildup, pet hair, or extras not shown in photos. Want me to book you in?`;
+    const place = q.propKind === "commercial" ? `your ${sqft} sqft space (${baths} bath)` : `your ${sqft} sqft home (${beds} bed / ${baths} bath)`;
+    return `Hi ${name} 👋 This is ${business}. Based on ${place} and the ${ct} cleaning requested, your estimated price is $${out.recommended} (range $${low}–$${high}). It includes kitchen, bathrooms, floors, dusting and standard ${ct} details. Estimated time: ${ti.cleaners} cleaner(s), ${ti.low}–${ti.high} hrs. Final price may change if there's heavy buildup, pet hair, or extras not shown in photos. Want me to book you in?`;
   };
 
   /* ── Shell pieces ── */
@@ -700,7 +702,9 @@ export default function TradeTechPro() {
     "customer", "confirm", "type", "condition", "pets", "addons", "frequency", "furnished", "photos",
   ];
   // Furnished step only matters for move-in/move-out.
-  const visibleSteps = STEPS.filter((s) => s !== "furnished" || ["move_in", "move_out"].includes(q.cleaningType));
+  const visibleSteps = STEPS.filter((s) =>
+    (s !== "furnished" || ["move_in", "move_out"].includes(q.cleaningType)) &&
+    (s !== "pets" || q.propKind !== "commercial"));
   const curStepKey = visibleSteps[Math.min(step, visibleSteps.length - 1)];
   const goNext = () => { if (step < visibleSteps.length - 1) setStep(step + 1); else computeQuote(); };
   const goBack = () => { if (step > 0) setStep(step - 1); };
@@ -761,7 +765,16 @@ export default function TradeTechPro() {
       const showRecentsLabel = placeSugs === null && matches.length > 0;
       const custom = addrQ.trim() && !matches.some((m) => m.text.toLowerCase() === query) ? addrQ.trim() : null;
       const canGo = !!(addrQ.trim());
-      const go = () => { if (!canGo) return; if (custom) lookupProperty(custom); else if (matches[0]) lookupProperty(matches[0].text, matches[0].placeId); };
+      const isCom = q.propKind === "commercial";
+      // Commercial: no satellite lookup — suites aren't in any property record.
+      // She asks the manager for the sqft (it's on the lease) and types it.
+      const goCommercial = (addr) => {
+        setHousePos(null);
+        setQ((prev) => ({ ...prev, address: addr, cleaningType: ["regular", "deep"].includes(prev.cleaningType) ? "office" : prev.cleaningType }));
+        setStep(1);
+      };
+      const pick = (text, placeId) => { if (isCom) goCommercial(text); else lookupProperty(text, placeId); };
+      const go = () => { if (!canGo) return; if (custom) pick(custom, null); else if (matches[0]) pick(matches[0].text, matches[0].placeId); };
       return (
         <div className="flex-1 overflow-y-auto pb-6" style={{ background: M.bg }}>
           <div className="px-5 py-4" style={{ background: M.headGrad, borderBottom: `2px solid ${M.gold}` }}>
@@ -769,17 +782,29 @@ export default function TradeTechPro() {
             <p className="text-center font-extrabold text-white mt-0.5" style={{ fontSize: 18 }}>{lang === "es" ? "¿Cuál es la dirección?" : "What's the address?"}</p>
           </div>
           <div className="px-5 pt-3">
-            {/* Satellite radar — the flow's visual signature, from the first screen */}
+            {/* Casa vs Comercial — commercial suites aren't in property records, so that path asks instead of scans */}
+            <div className="flex gap-2 mb-3">
+              {[["home", "🏠", lang === "es" ? "Casa" : "Home"], ["commercial", "🏢", lang === "es" ? "Comercial" : "Commercial"]].map(([k, ic, label]) => (
+                <button key={k} onClick={() => setField("propKind", k)} className="flex-1 active:scale-[0.98] transition-transform"
+                  style={{ background: q.propKind === k ? M.teal : "#fff", color: q.propKind === k ? "#fff" : M.teal, border: `1.5px solid ${q.propKind === k ? M.teal : M.line}`, borderRadius: 13, padding: "11px 10px", fontSize: 14.5, fontWeight: 800 }}>{ic} {label}</button>
+              ))}
+            </div>
+            {/* Hero — satellite radar for homes; walkthrough promise for commercial */}
             <div className="relative overflow-hidden mb-3" style={{ height: 150, borderRadius: 22, background: "linear-gradient(160deg,#16295F 0%,#24387A 70%,#37418F 100%)", border: "1.5px solid rgba(167,232,200,0.28)", boxShadow: "0 18px 40px rgba(22,41,95,0.28)" }}>
               <div className="absolute inset-0" style={{ backgroundImage: "linear-gradient(rgba(167,232,200,0.10) 1px,transparent 1px),linear-gradient(90deg,rgba(167,232,200,0.10) 1px,transparent 1px)", backgroundSize: "26px 26px" }} />
-              <div className="absolute" style={{ left: "50%", top: "50%", width: 84, height: 84, margin: "-42px 0 0 -42px", borderRadius: 999, border: `2px solid ${M.aqua}`, animation: "ttpRipple 2.2s ease-out infinite" }} />
-              <div className="absolute" style={{ left: "50%", top: "50%", width: 84, height: 84, margin: "-42px 0 0 -42px", borderRadius: 999, border: `2px solid ${M.mint}`, animation: "ttpRipple 2.2s ease-out 1.1s infinite" }} />
-              <span className="absolute" style={{ left: "50%", top: "50%", transform: "translate(-50%,-58%)", fontSize: 30 }}>📍</span>
-              <span className="absolute" style={{ top: 12, left: 14, fontSize: 18, animation: "ttpBlink 1.6s ease-in-out infinite" }}>🛰️</span>
-              <span className="absolute" style={{ bottom: 10, left: "50%", transform: "translateX(-50%)", whiteSpace: "nowrap", background: "rgba(0,0,0,0.35)", color: "#fff", fontSize: 11, fontWeight: 800, borderRadius: 99, padding: "5px 13px" }}>{lang === "es" ? "Buscamos la casa por satélite" : "We find the home by satellite"}</span>
+              {isCom ? (<>
+                <span className="absolute" style={{ left: "50%", top: "50%", transform: "translate(-50%,-62%)", fontSize: 34 }}>🏢</span>
+                <span className="absolute" style={{ bottom: 10, left: "50%", transform: "translateX(-50%)", whiteSpace: "nowrap", background: "rgba(0,0,0,0.35)", color: "#fff", fontSize: 11, fontWeight: 800, borderRadius: 99, padding: "5px 13px" }}>{lang === "es" ? "Oficinas, locales y plazas" : "Offices, suites & retail"}</span>
+              </>) : (<>
+                <div className="absolute" style={{ left: "50%", top: "50%", width: 84, height: 84, margin: "-42px 0 0 -42px", borderRadius: 999, border: `2px solid ${M.aqua}`, animation: "ttpRipple 2.2s ease-out infinite" }} />
+                <div className="absolute" style={{ left: "50%", top: "50%", width: 84, height: 84, margin: "-42px 0 0 -42px", borderRadius: 999, border: `2px solid ${M.mint}`, animation: "ttpRipple 2.2s ease-out 1.1s infinite" }} />
+                <span className="absolute" style={{ left: "50%", top: "50%", transform: "translate(-50%,-58%)", fontSize: 30 }}>📍</span>
+                <span className="absolute" style={{ top: 12, left: 14, fontSize: 18, animation: "ttpBlink 1.6s ease-in-out infinite" }}>🛰️</span>
+                <span className="absolute" style={{ bottom: 10, left: "50%", transform: "translateX(-50%)", whiteSpace: "nowrap", background: "rgba(0,0,0,0.35)", color: "#fff", fontSize: 11, fontWeight: 800, borderRadius: 99, padding: "5px 13px" }}>{lang === "es" ? "Buscamos la casa por satélite" : "We find the home by satellite"}</span>
+              </>)}
             </div>
             <Card style={{ borderRadius: 20, boxShadow: "0 14px 34px rgba(30,58,138,0.10)", padding: 18 }}>
-              <p style={{ color: M.muted2, fontSize: 10, fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", marginBottom: 8 }}>{lang === "es" ? "Dirección de la casa" : "Home address"}</p>
+              <p style={{ color: M.muted2, fontSize: 10, fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", marginBottom: 8 }}>{isCom ? (lang === "es" ? "Dirección del local" : "Business address") : (lang === "es" ? "Dirección de la casa" : "Home address")}</p>
               <div className="addrin flex items-center gap-2 px-3.5 transition-shadow" style={{ background: M.bg, border: `1.5px solid ${M.line}`, borderRadius: 14 }}>
                 <span style={{ fontSize: 16 }}>🔍</span>
                 <input value={addrQ} onChange={(e) => onAddrInput(e.target.value)} placeholder={lang === "es" ? "Escribe una dirección…" : "Enter an address…"} onKeyDown={(e) => e.key === "Enter" && go()}
@@ -791,20 +816,20 @@ export default function TradeTechPro() {
               {(custom || matches.length > 0) && (
                 <div className="rounded-xl mt-2 overflow-hidden" style={{ border: `1.5px solid ${M.line}` }}>
                   {custom && (
-                    <button onClick={() => lookupProperty(custom)} className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-left active:opacity-80" style={{ background: "#fff", borderBottom: matches.length ? `1px solid ${M.bg}` : "none" }}>
+                    <button onClick={() => pick(custom, null)} className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-left active:opacity-80" style={{ background: "#fff", borderBottom: matches.length ? `1px solid ${M.bg}` : "none" }}>
                       <span style={{ color: M.teal }}>📍</span><span className="font-bold truncate" style={{ color: M.navy, fontSize: 13 }}>{custom}</span>
                     </button>
                   )}
                   {matches.map((m, i) => (
-                    <button key={m.text} onClick={() => lookupProperty(m.text, m.placeId)} className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-left active:opacity-80" style={{ background: "#fff", borderBottom: i < matches.length - 1 ? `1px solid ${M.bg}` : "none" }}>
+                    <button key={m.text} onClick={() => pick(m.text, m.placeId)} className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-left active:opacity-80" style={{ background: "#fff", borderBottom: i < matches.length - 1 ? `1px solid ${M.bg}` : "none" }}>
                       <span style={{ color: M.teal }}>{placeSugs === null ? "🕘" : "📍"}</span><span className="font-semibold truncate" style={{ color: M.navy, fontSize: 13 }}>{m.text}</span>
                     </button>
                   ))}
                 </div>
               )}
             </Card>
-            {canGo && <PrimaryBtn onClick={go}>{lang === "es" ? "🛰️ Escanear la casa →" : "🛰️ Scan the home →"}</PrimaryBtn>}
-            <p className="text-center mt-3" style={{ color: M.muted, fontSize: 11, fontWeight: 600 }}>{lang === "es" ? "Detectamos recámaras, baños y tamaño automáticamente" : "We auto-detect beds, baths and size"}</p>
+            {canGo && <PrimaryBtn onClick={go}>{isCom ? (lang === "es" ? "Continuar →" : "Continue →") : (lang === "es" ? "🛰️ Escanear la casa →" : "🛰️ Scan the home →")}</PrimaryBtn>}
+            <p className="text-center mt-3" style={{ color: M.muted, fontSize: 11, fontWeight: 600 }}>{isCom ? (lang === "es" ? "El precio se confirma con una visita al local" : "Price is confirmed on a walkthrough") : (lang === "es" ? "Detectamos recámaras, baños y tamaño automáticamente" : "We auto-detect beds, baths and size")}</p>
           </div>
         </div>
       );
@@ -828,10 +853,11 @@ export default function TradeTechPro() {
           </div>
         </div>
       );
+      const isCom = q.propKind === "commercial";
       return (
-        <StepFrame kicker={lang === "es" ? "Paso 2 · Tu casa escaneada" : "Step 2 · Your scanned home"} title={lang === "es" ? "Esto detectamos 🛰️" : "Here's what we found 🛰️"} canNext={canNext}>
+        <StepFrame kicker={isCom ? (lang === "es" ? "Paso 2 · Tu local" : "Step 2 · The space") : (lang === "es" ? "Paso 2 · Tu casa escaneada" : "Step 2 · Your scanned home")} title={isCom ? (lang === "es" ? "Datos del local 🏢" : "About the space 🏢") : (lang === "es" ? "Esto detectamos 🛰️" : "Here's what we found 🛰️")} canNext={canNext}>
           {/* Aerial "LIVE" wow card */}
-          {housePos && (
+          {!isCom && housePos && (
             <div className="rounded-2xl overflow-hidden mb-3" style={{ background: M.tealDeep, boxShadow: "0 18px 38px rgba(10,20,55,0.22)" }}>
               <div className="relative">
                 <img src={`/api/housephoto?view=satellite&lat=${housePos.lat}&lng=${housePos.lng}`} alt="" onError={(e) => { e.currentTarget.style.display = "none"; }}
@@ -857,7 +883,7 @@ export default function TradeTechPro() {
           )}
 
           {/* Front-elevation photo */}
-          {housePos && (
+          {!isCom && housePos && (
             <div className="rounded-2xl overflow-hidden mb-3" style={{ border: `1px solid ${M.line}`, boxShadow: "0 10px 26px rgba(30,58,138,0.10)" }}>
               <img src={`/api/housephoto?view=street&lat=${housePos.lat}&lng=${housePos.lng}`} alt="" onError={(e) => { e.currentTarget.parentNode.style.display = "none"; }}
                 style={{ width: "100%", height: 150, objectFit: "cover", display: "block", background: M.line }} />
@@ -867,14 +893,15 @@ export default function TradeTechPro() {
 
           {/* Adjust if needed */}
           <Card>
-            <p style={{ color: M.muted2, fontSize: 10, fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", marginBottom: 10 }}>{lang === "es" ? "Ajusta si hace falta" : "Adjust if needed"}</p>
+            <p style={{ color: M.muted2, fontSize: 10, fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", marginBottom: 10 }}>{isCom ? (lang === "es" ? "Tamaño del local" : "Size of the space") : (lang === "es" ? "Ajusta si hace falta" : "Adjust if needed")}</p>
+            {isCom && <p style={{ color: M.body, fontSize: 13, fontWeight: 600, lineHeight: 1.55, marginBottom: 10 }}>💡 {lang === "es" ? "Pregúntale al encargado cuántos pies cuadrados tiene — el contrato de renta lo dice." : "Ask the manager for the square footage — it's on the lease."}</p>}
             <div className="flex flex-col gap-2">
               <Stepper icon="📐" label={t.sqft} value={q.sqft ? num(q.sqft) : ""} onMinus={() => stepField("sqft", -1, 0, 100)} onPlus={() => stepField("sqft", 1, 0, 100)} />
-              <Stepper icon="🛏️" label={t.beds} value={q.beds} onMinus={() => stepField("beds", -1, 0, 1)} onPlus={() => stepField("beds", 1, 0, 1)} />
+              {!isCom && <Stepper icon="🛏️" label={t.beds} value={q.beds} onMinus={() => stepField("beds", -1, 0, 1)} onPlus={() => stepField("beds", 1, 0, 1)} />}
               <Stepper icon="🛁" label={t.baths} value={q.baths} onMinus={() => stepField("baths", -1, 0, 1)} onPlus={() => stepField("baths", 1, 0, 1)} />
             </div>
           </Card>
-          <p className="text-center" style={{ color: M.muted, fontSize: 11, fontWeight: 600 }}>{lang === "es" ? "≈ Estimado — puedes ajustar los cuadros arriba" : "≈ Estimate — tune the numbers above"}</p>
+          <p className="text-center" style={{ color: M.muted, fontSize: 11, fontWeight: 600 }}>{isCom ? (lang === "es" ? "≈ Estimado — el precio se confirma con una visita" : "≈ Estimate — price is confirmed on a walkthrough") : (lang === "es" ? "≈ Estimado — puedes ajustar los cuadros arriba" : "≈ Estimate — tune the numbers above")}</p>
           {!canNext && <p className="mt-1" style={{ color: M.red, fontSize: 12, fontWeight: 600 }}>{lang === "es" ? "Pon los pies cuadrados para continuar." : "Enter the square footage to continue."}</p>}
         </StepFrame>
       );
@@ -883,7 +910,7 @@ export default function TradeTechPro() {
     if (curStepKey === "type") {
       const opts = CLEANING_TYPES.map(([key, icon, es, en]) => ({ key, icon, title: lang === "es" ? es : en }));
       return (
-        <StepFrame kicker={lang === "es" ? "Paso 3 · Tipo de limpieza" : "Step 3 · Cleaning type"} title={lang === "es" ? "¿Qué limpieza necesita?" : "What cleaning is needed?"}>
+        <StepFrame kicker={lang === "es" ? `Paso ${step + 1} · Tipo de limpieza` : `Step ${step + 1} · Cleaning type`} title={lang === "es" ? "¿Qué limpieza necesita?" : "What cleaning is needed?"}>
           <OptionGrid options={opts} value={q.cleaningType} onChange={(v) => setField("cleaningType", v)} />
         </StepFrame>
       );
@@ -892,7 +919,7 @@ export default function TradeTechPro() {
     if (curStepKey === "condition") {
       const opts = CONDITIONS.map(([key, icon, es, en, esS, enS]) => ({ key, icon, title: lang === "es" ? es : en, sub: lang === "es" ? esS : enS }));
       return (
-        <StepFrame kicker={lang === "es" ? "Paso 4 · Condición" : "Step 4 · Condition"} title={lang === "es" ? "¿Cómo está la casa?" : "What condition is it in?"}>
+        <StepFrame kicker={lang === "es" ? `Paso ${step + 1} · Condición` : `Step ${step + 1} · Condition`} title={lang === "es" ? (q.propKind === "commercial" ? "¿Cómo está el local?" : "¿Cómo está la casa?") : "What condition is it in?"}>
           <OptionGrid options={opts} value={q.condition} onChange={(v) => setField("condition", v)} />
           {q.condition === "very_heavy" && <p className="mt-3" style={{ color: "#8A6A00", fontSize: 12, fontWeight: 700, background: "#FFF8E6", border: "1px solid #ffe08a", borderRadius: 10, padding: "10px 12px" }}>⚠️ {lang === "es" ? "Recomendamos cotización personalizada después de ver fotos o la casa." : "We recommend a custom quote after seeing photos or the home."}</p>}
         </StepFrame>
@@ -902,7 +929,7 @@ export default function TradeTechPro() {
     if (curStepKey === "pets") {
       const opts = PETS.map(([key, icon, es, en]) => ({ key, icon, title: lang === "es" ? es : en }));
       return (
-        <StepFrame kicker={lang === "es" ? "Paso 5 · Mascotas" : "Step 5 · Pets"} title={lang === "es" ? "¿Hay mascotas?" : "Any pets?"}>
+        <StepFrame kicker={lang === "es" ? `Paso ${step + 1} · Mascotas` : `Step ${step + 1} · Pets`} title={lang === "es" ? "¿Hay mascotas?" : "Any pets?"}>
           <OptionGrid options={opts} value={q.pets} onChange={(v) => setField("pets", v)} />
         </StepFrame>
       );
@@ -910,7 +937,7 @@ export default function TradeTechPro() {
 
     if (curStepKey === "addons") {
       return (
-        <StepFrame kicker={lang === "es" ? "Paso 6 · Extras" : "Step 6 · Add-ons"} title={lang === "es" ? "¿Algún extra?" : "Any add-ons?"} nextLabel={t.next + " →"}>
+        <StepFrame kicker={lang === "es" ? `Paso ${step + 1} · Extras` : `Step ${step + 1} · Add-ons`} title={lang === "es" ? "¿Algún extra?" : "Any add-ons?"} nextLabel={t.next + " →"}>
           <div className="grid grid-cols-2 gap-2">
             {ADDONS.map(([key, icon, es, en]) => {
               const on = q.addOns.includes(key);
@@ -930,7 +957,7 @@ export default function TradeTechPro() {
 
     if (curStepKey === "frequency") {
       return (
-        <StepFrame kicker={lang === "es" ? "Paso 7 · Frecuencia" : "Step 7 · Frequency"} title={lang === "es" ? "¿Cada cuánto?" : "How often?"}>
+        <StepFrame kicker={lang === "es" ? `Paso ${step + 1} · Frecuencia` : `Step ${step + 1} · Frequency`} title={lang === "es" ? "¿Cada cuánto?" : "How often?"}>
           <div className="grid grid-cols-2 gap-2">
             {FREQUENCIES.map(([key, es, en, badge]) => {
               const on = q.frequency === key;
@@ -950,7 +977,7 @@ export default function TradeTechPro() {
     if (curStepKey === "furnished") {
       const opts = FURNISHED.map(([key, es, en]) => ({ key, icon: key === "empty" ? "📭" : key === "full" ? "🛋️" : "🪑", title: lang === "es" ? es : en }));
       return (
-        <StepFrame kicker={lang === "es" ? "Paso 8 · Mobiliario" : "Step 8 · Furnishing"} title={lang === "es" ? "¿Vacía o amueblada?" : "Empty or furnished?"}>
+        <StepFrame kicker={lang === "es" ? `Paso ${step + 1} · Mobiliario` : `Step ${step + 1} · Furnishing`} title={lang === "es" ? "¿Vacía o amueblada?" : "Empty or furnished?"}>
           <OptionGrid options={opts} value={q.furnished} onChange={(v) => setField("furnished", v)} cols={3} />
         </StepFrame>
       );
@@ -1085,7 +1112,7 @@ export default function TradeTechPro() {
             <TextInput value={q.phone} onChange={(v) => setField("phone", v)} placeholder={lang === "es" ? "Teléfono (WhatsApp)" : "Phone (WhatsApp)"} inputMode="tel" />
           </Card>
 
-          <p className="mb-3" style={{ color: M.muted2, fontSize: 11, fontWeight: 600, lineHeight: 1.5 }}>⚠️ {lang === "es" ? "El precio final puede cambiar después de ver fotos o la casa si está más sucia de lo descrito." : "Final price may change after photos/walkthrough if the home is heavier than described."}</p>
+          <p className="mb-3" style={{ color: M.muted2, fontSize: 11, fontWeight: 600, lineHeight: 1.5 }}>⚠️ {q.propKind === "commercial" ? (lang === "es" ? "Precio estimado — se confirma con una visita al local." : "Estimated price — confirmed on a walkthrough of the space.") : (lang === "es" ? "El precio final puede cambiar después de ver fotos o la casa si está más sucia de lo descrito." : "Final price may change after photos/walkthrough if the home is heavier than described.")}</p>
 
           <button onClick={sendWhatsApp} className="w-full active:translate-y-px transition-transform mb-2.5" style={{ background: "#25D366", color: "#fff", border: "none", borderRadius: 12, padding: 15, fontSize: 16, fontWeight: 800, boxShadow: "0 4px 14px rgba(37,211,102,0.35)" }}>
             🟢 {lang === "es" ? "Enviar por WhatsApp" : "Send on WhatsApp"}
