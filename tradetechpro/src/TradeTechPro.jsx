@@ -553,7 +553,7 @@ export default function TradeTechPro() {
         {/* Hero action — quote a cleaning */}
         <button onClick={resetQuote} className="w-full text-center active:translate-y-px transition-transform mb-3"
           style={{ background: "#fff", border: `2px solid ${M.aqua}`, borderRadius: 22, padding: "30px 20px", boxShadow: "0 10px 30px rgba(30,58,138,0.08)" }}>
-          <div style={{ fontSize: 34, marginBottom: 6 }}>🧼</div>
+          <div style={{ fontSize: 34, marginBottom: 6 }}>🛰️</div>
           <div className="font-extrabold" style={{ color: M.teal, fontSize: 26, letterSpacing: "-0.01em" }}>{lang === "es" ? "Cotizar limpieza" : "Quote a cleaning"}</div>
           <div style={{ color: M.muted2, fontSize: 15, fontWeight: 600, marginTop: 2 }}>{lang === "es" ? "Escribe la dirección…" : "Enter the address…"}</div>
         </button>
@@ -755,8 +755,10 @@ export default function TradeTechPro() {
 
     if (curStepKey === "customer") {
       const query = addrQ.trim().toLowerCase();
-      const localPool = [...new Set([...MOCK_PROPERTIES.map((p) => p.addr), ...customers.map((c) => c.addr).filter(Boolean)])];
-      const matches = placeSugs !== null ? placeSugs : localPool.filter((a) => !query || a.toLowerCase().includes(query)).map((a) => ({ text: a, placeId: null }));
+      // Only HER history — recent quotes + saved customers. No seeded demo addresses.
+      const recents = [...new Set([...savedQuotes.map((s) => s.address), ...customers.map((c) => c.addr)].filter(Boolean))].slice(0, 5);
+      const matches = placeSugs !== null ? placeSugs : recents.filter((a) => !query || a.toLowerCase().includes(query)).map((a) => ({ text: a, placeId: null }));
+      const showRecentsLabel = placeSugs === null && matches.length > 0;
       const custom = addrQ.trim() && !matches.some((m) => m.text.toLowerCase() === query) ? addrQ.trim() : null;
       const canGo = !!(addrQ.trim());
       const go = () => { if (!canGo) return; if (custom) lookupProperty(custom); else if (matches[0]) lookupProperty(matches[0].text, matches[0].placeId); };
@@ -770,15 +772,13 @@ export default function TradeTechPro() {
             <div className="text-center mb-3" style={{ fontSize: 44 }}>📍</div>
             <Card>
               <p style={{ color: M.muted2, fontSize: 10, fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", marginBottom: 8 }}>{lang === "es" ? "Dirección de la casa" : "Home address"}</p>
-              <div className="flex gap-2">
-                <button onClick={useMyLocation} title={t.useMyLocation} className="flex items-center justify-center shrink-0 active:scale-95 transition-transform" style={{ width: 48, height: 48, background: M.bg, border: `1.5px solid ${M.line}`, borderRadius: 12, color: M.teal, fontSize: 18 }}>🧭</button>
-                <div className="flex-1 flex items-center gap-2 rounded-xl px-3" style={{ background: M.bg, border: `1.5px solid ${M.line}` }}>
-                  <input value={addrQ} onChange={(e) => onAddrInput(e.target.value)} placeholder={lang === "es" ? "Escribe una dirección…" : "Enter an address…"} onKeyDown={(e) => e.key === "Enter" && go()}
-                    className="flex-1 py-3 text-base font-semibold outline-none bg-transparent" style={{ color: M.navy }} />
-                  {hasVoice && <button onClick={() => startVoice(onAddrInput)} className="text-xl active:scale-90 transition-transform" style={{ background: "none", border: "none", opacity: listening ? 1 : 0.6 }}>{listening ? "🔴" : "🎤"}</button>}
-                </div>
+              <div className="flex items-center gap-2 rounded-xl px-3" style={{ background: M.bg, border: `1.5px solid ${M.line}` }}>
+                <input value={addrQ} onChange={(e) => onAddrInput(e.target.value)} placeholder={lang === "es" ? "Escribe una dirección…" : "Enter an address…"} onKeyDown={(e) => e.key === "Enter" && go()}
+                  className="flex-1 py-3 text-base font-semibold outline-none bg-transparent" style={{ color: M.navy }} />
+                {hasVoice && <button onClick={() => startVoice(onAddrInput)} className="text-xl active:scale-90 transition-transform" style={{ background: "none", border: "none", opacity: listening ? 1 : 0.6 }}>{listening ? "🔴" : "🎤"}</button>}
               </div>
-              <button onClick={useMyLocation} className="w-full mt-2 flex items-center justify-center gap-1.5 active:opacity-80" style={{ background: "transparent", border: "none", color: M.teal, fontSize: 13, fontWeight: 800 }}>🧭 {t.useMyLocation}</button>
+              <button onClick={useMyLocation} className="w-full mt-2.5 flex items-center justify-center gap-1.5 active:scale-[0.99] transition-transform" style={{ background: M.bg, border: `1.5px solid ${M.line}`, borderRadius: 12, padding: "12px 14px", color: M.teal, fontSize: 14, fontWeight: 800 }}>📍 {t.useMyLocation}</button>
+              {showRecentsLabel && <p style={{ color: M.muted2, fontSize: 10, fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", margin: "12px 0 0" }}>{lang === "es" ? "Recientes" : "Recent"}</p>}
               {(custom || matches.length > 0) && (
                 <div className="rounded-xl mt-2 overflow-hidden" style={{ border: `1.5px solid ${M.line}` }}>
                   {custom && (
@@ -788,13 +788,13 @@ export default function TradeTechPro() {
                   )}
                   {matches.map((m, i) => (
                     <button key={m.text} onClick={() => lookupProperty(m.text, m.placeId)} className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-left active:opacity-80" style={{ background: "#fff", borderBottom: i < matches.length - 1 ? `1px solid ${M.bg}` : "none" }}>
-                      <span style={{ color: M.teal }}>📍</span><span className="font-semibold truncate" style={{ color: M.navy, fontSize: 13 }}>{m.text}</span>
+                      <span style={{ color: M.teal }}>{placeSugs === null ? "🕘" : "📍"}</span><span className="font-semibold truncate" style={{ color: M.navy, fontSize: 13 }}>{m.text}</span>
                     </button>
                   ))}
                 </div>
               )}
             </Card>
-            <PrimaryBtn onClick={go} disabled={!canGo}>{lang === "es" ? "🛰️ Escanear la casa →" : "🛰️ Scan the home →"}</PrimaryBtn>
+            {canGo && <PrimaryBtn onClick={go}>{lang === "es" ? "🛰️ Escanear la casa →" : "🛰️ Scan the home →"}</PrimaryBtn>}
             <p className="text-center mt-3" style={{ color: M.muted, fontSize: 11, fontWeight: 600 }}>{lang === "es" ? "Detectamos recámaras, baños y tamaño automáticamente" : "We auto-detect beds, baths and size"}</p>
           </div>
         </div>
