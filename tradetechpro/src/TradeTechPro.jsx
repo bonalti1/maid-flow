@@ -769,15 +769,24 @@ export default function TradeTechPro() {
             <p className="text-center font-extrabold text-white mt-0.5" style={{ fontSize: 18 }}>{lang === "es" ? "¿Cuál es la dirección?" : "What's the address?"}</p>
           </div>
           <div className="px-5 pt-3">
-            <div className="text-center mb-3" style={{ fontSize: 44 }}>📍</div>
-            <Card>
+            {/* Satellite radar — the flow's visual signature, from the first screen */}
+            <div className="relative overflow-hidden mb-3" style={{ height: 150, borderRadius: 22, background: "linear-gradient(160deg,#16295F 0%,#24387A 70%,#37418F 100%)", border: "1.5px solid rgba(167,232,200,0.28)", boxShadow: "0 18px 40px rgba(22,41,95,0.28)" }}>
+              <div className="absolute inset-0" style={{ backgroundImage: "linear-gradient(rgba(167,232,200,0.10) 1px,transparent 1px),linear-gradient(90deg,rgba(167,232,200,0.10) 1px,transparent 1px)", backgroundSize: "26px 26px" }} />
+              <div className="absolute" style={{ left: "50%", top: "50%", width: 84, height: 84, margin: "-42px 0 0 -42px", borderRadius: 999, border: `2px solid ${M.aqua}`, animation: "ttpRipple 2.2s ease-out infinite" }} />
+              <div className="absolute" style={{ left: "50%", top: "50%", width: 84, height: 84, margin: "-42px 0 0 -42px", borderRadius: 999, border: `2px solid ${M.mint}`, animation: "ttpRipple 2.2s ease-out 1.1s infinite" }} />
+              <span className="absolute" style={{ left: "50%", top: "50%", transform: "translate(-50%,-58%)", fontSize: 30 }}>📍</span>
+              <span className="absolute" style={{ top: 12, left: 14, fontSize: 18, animation: "ttpBlink 1.6s ease-in-out infinite" }}>🛰️</span>
+              <span className="absolute" style={{ bottom: 10, left: "50%", transform: "translateX(-50%)", whiteSpace: "nowrap", background: "rgba(0,0,0,0.35)", color: "#fff", fontSize: 11, fontWeight: 800, borderRadius: 99, padding: "5px 13px" }}>{lang === "es" ? "Buscamos la casa por satélite" : "We find the home by satellite"}</span>
+            </div>
+            <Card style={{ borderRadius: 20, boxShadow: "0 14px 34px rgba(30,58,138,0.10)", padding: 18 }}>
               <p style={{ color: M.muted2, fontSize: 10, fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", marginBottom: 8 }}>{lang === "es" ? "Dirección de la casa" : "Home address"}</p>
-              <div className="flex items-center gap-2 rounded-xl px-3" style={{ background: M.bg, border: `1.5px solid ${M.line}` }}>
+              <div className="addrin flex items-center gap-2 px-3.5 transition-shadow" style={{ background: M.bg, border: `1.5px solid ${M.line}`, borderRadius: 14 }}>
+                <span style={{ fontSize: 16 }}>🔍</span>
                 <input value={addrQ} onChange={(e) => onAddrInput(e.target.value)} placeholder={lang === "es" ? "Escribe una dirección…" : "Enter an address…"} onKeyDown={(e) => e.key === "Enter" && go()}
-                  className="flex-1 py-3 text-base font-semibold outline-none bg-transparent" style={{ color: M.navy }} />
+                  className="flex-1 text-base font-semibold outline-none bg-transparent" style={{ color: M.navy, padding: "15px 0" }} />
                 {hasVoice && <button onClick={() => startVoice(onAddrInput)} className="text-xl active:scale-90 transition-transform" style={{ background: "none", border: "none", opacity: listening ? 1 : 0.6 }}>{listening ? "🔴" : "🎤"}</button>}
               </div>
-              <button onClick={useMyLocation} className="w-full mt-2.5 flex items-center justify-center gap-1.5 active:scale-[0.99] transition-transform" style={{ background: M.bg, border: `1.5px solid ${M.line}`, borderRadius: 12, padding: "12px 14px", color: M.teal, fontSize: 14, fontWeight: 800 }}>📍 {t.useMyLocation}</button>
+              <button onClick={useMyLocation} className="w-full mt-2.5 flex items-center justify-center gap-1.5 active:scale-[0.99] transition-transform" style={{ background: "#fff", border: `1.5px solid ${M.line}`, borderRadius: 14, padding: "13px 14px", color: M.teal, fontSize: 14.5, fontWeight: 800, boxShadow: "0 3px 10px rgba(30,58,138,0.07)" }}>📍 {t.useMyLocation}</button>
               {showRecentsLabel && <p style={{ color: M.muted2, fontSize: 10, fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", margin: "12px 0 0" }}>{lang === "es" ? "Recientes" : "Recent"}</p>}
               {(custom || matches.length > 0) && (
                 <div className="rounded-xl mt-2 overflow-hidden" style={{ border: `1.5px solid ${M.line}` }}>
@@ -1431,6 +1440,8 @@ export default function TradeTechPro() {
         @keyframes ttpPulse { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.18); opacity: .65; } }
         @keyframes ttpScan { 0% { top: -8%; } 100% { top: 108%; } }
         @keyframes ttpBlink { 0%, 100% { opacity: 1; } 50% { opacity: .25; } }
+        @keyframes ttpRipple { 0% { transform: scale(0.45); opacity: .9; } 100% { transform: scale(2.4); opacity: 0; } }
+        .addrin:focus-within { border-color: #7ED6D9 !important; box-shadow: 0 0 0 3px rgba(126,214,217,0.22); }
         @media (prefers-reduced-motion: reduce) { * { transition: none !important; } [style*="ttpScan"] { animation: none !important; } }`}</style>
       <div className="w-full max-w-md flex flex-col relative" style={{ background: M.bg, minHeight: "100vh" }}>
         {!session && screen !== "welcome" && (
