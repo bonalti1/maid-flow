@@ -40,10 +40,17 @@
 | WIDGET | **$149/mes** | App + cotizador en su página, Facebook o Instagram | Ya tiene página o redes |
 | COMPLETO | **$249/mes** | Todo hecho: página + IA + dominio + app + cotizador | La que tiene equipo o empieza de cero |
 
-Sin cargo de inicio en ninguno. Stripe etiqueta el plan por el **monto exacto**
-pagado — un precio nuevo = Payment Link nuevo + monto en el mapa `planByAmount`
-del webhook (`server/index.mjs`). *(Nota de estado: el motor hoy tiene un solo
-link; los 3 niveles se están portando — playbook/01, ítem 10.)*
+> La página de ventas NO tiene botones de pago: todos los planes cierran con
+> una llamada (los botones llevan al quiz). Los Payment Links viven en el
+> deck del closer (tecla P) y en /admin. Pon `/bienvenida` como página de
+> redirección de los 3 Payment Links en Stripe.
+
+Sin cargo de inicio en ninguno. Stripe etiqueta el plan por el monto pagado
+(con tolerancia de ±$10 por impuestos/redondeo) — un precio nuevo = Payment
+Link nuevo + monto en el mapa `planByAmount` del webhook (`server/index.mjs`).
+Los montos viejos ($67/$197/$297) siguen reconocidos. Si llega un pago que no
+coincide con ninguna cuenta, el webhook deja una tarea en /cs para crear la
+cuenta y mandar el acceso — un pago sin entregar no puede pasar desapercibido.
 
 ## Jugadas de cierre
 

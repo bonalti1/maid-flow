@@ -155,6 +155,63 @@ check("/admin 200 with key", (await fetch(B + "/admin?key=regadmin", { redirect:
   check("stripe webhook tags legacy amount ($197->widget)", p2.data.plan === "widget" && p2.data.payStatus === "ok", JSON.stringify({ plan: p2.data.plan, pay: p2.data.payStatus }));
 }
 
+// 17. Legal + bienvenida pages exist (Meta ads need the privacy URL)
+{
+  const legal = await fetch(B + "/legal").then((r) => r.text());
+  const wel = await fetch(B + "/bienvenida").then((r) => r.text());
+  check("/legal + /bienvenida serve", legal.includes("Privacidad") && wel.includes("Pago recibido"));
+}
+
+// 18. Stripe amount tolerance: $251 (tax drift) still tags COMPLETE
+{
+  const payer = await db.createContractor({ name: "Tol Payer", phone: "9560008888" });
+  await db.saveContractorData(payer.id, { stripeCustomer: "cus_tol", payStatus: "pending" });
+  const body = JSON.stringify({ id: "evt_tol_" + Math.random(), type: "invoice.paid", created: Math.floor(Date.now() / 1000), data: { object: { customer: "cus_tol", amount_paid: 25100 } } });
+  const ts = Math.floor(Date.now() / 1000);
+  const sig = createHmac("sha256", "regwh").update(ts + "." + body).digest("hex");
+  await fetch(B + "/api/stripe/webhook", { method: "POST", headers: { "Content-Type": "application/json", "stripe-signature": `t=${ts},v1=${sig}` }, body });
+  const p = await db.getContractor(payer.id);
+  check("stripe tolerance ($251->complete)", p.data.plan === "complete", JSON.stringify({ plan: p.data.plan }));
+}
+
+// 19. Unmatched real payment leaves a CS task (paid-but-undelivered is impossible)
+{
+  const body = JSON.stringify({ id: "evt_nomatch_" + Math.random(), type: "checkout.session.completed", created: Math.floor(Date.now() / 1000), data: { object: { customer: "cus_ghost", payment_status: "paid", amount_total: 14900, customer_details: { email: "ghost@example.com" } } } });
+  const ts = Math.floor(Date.now() / 1000);
+  const sig = createHmac("sha256", "regwh").update(ts + "." + body).digest("hex");
+  await fetch(B + "/api/stripe/webhook", { method: "POST", headers: { "Content-Type": "application/json", "stripe-signature": `t=${ts},v1=${sig}` }, body });
+  const tasks = await db.listTasks(50);
+  check("unmatched payment creates CS task", tasks.some((t) => String(t.title).includes("Pago recibido SIN cuenta") && String(t.note).includes("ghost@example.com")));
+}
+
+// 20. Backup restore round-trip (upsert via /api/admin/restore)
+{
+  const dump = { contractors: [{ id: "rest0001", slug: "rest-1", name: "Restaurada", phone: "9560007777", data: { payStatus: "ok" } }] };
+  const r = await J("/api/admin/restore?key=regadmin", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ confirm: "RESTAURAR", dump }) });
+  const c = await db.getContractor("rest0001");
+  check("admin restore upserts backup", r.ok === true && c && c.slug === "rest-1", JSON.stringify(r));
+}
+
+// 21. Revoke access: old session dies, fresh invite works
+{
+  const vic = await db.createContractor({ name: "Revocada", phone: "9560006666" });
+  const inv = await db.createInvite(vic.id);
+  const tok = await db.useInvite(inv);
+  const before = await fetch(B + "/api/me", { headers: { Authorization: `Bearer ${tok}` } });
+  await fetch(B + "/api/admin/revoke?key=regadmin&id=" + vic.id, { method: "POST" });
+  const after = await fetch(B + "/api/me", { headers: { Authorization: `Bearer ${tok}` } });
+  const oldInvite = await db.useInvite(inv);
+  check("admin revoke kills sessions + invites", before.status === 200 && after.status === 401 && oldInvite === null, JSON.stringify({ before: before.status, after: after.status, oldInvite }));
+}
+
+// 22. Shared quote link: create -> hosted page renders the price
+{
+  const r = await J("/api/quote/share", { method: "POST", headers: AH, body: JSON.stringify({ name: "Carlos", address: "1 Oak St", sqft: 2200, beds: 4, baths: 2, cleaningType: "deep", recommended: 555, low: 485, high: 620, cleaners: 2, hoursLow: 1, hoursHigh: 3, lang: "es" }) });
+  const page = r.url ? await fetch(r.url).then((x) => x.text()) : "";
+  const anon = await fetch(B + "/api/quote/share", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ recommended: 555 }) });
+  check("shared quote page renders + requires session", r.ok === true && page.includes("$555") && page.includes("1 Oak St") && anon.status === 401, JSON.stringify({ ok: r.ok, url: r.url, anon: anon.status }));
+}
+
 console.log("\n" + results.join("\n"));
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

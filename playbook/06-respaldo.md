@@ -28,8 +28,9 @@ respaldo y su dueño (tú).
 - **Mensual, 1 clic:** /admin → Mantenimiento → **⬇️ Descargar respaldo (todos
   los datos)** → guarda el `paulbeza-respaldo-AAAA-MM-DD.json` junto al clon
   local. Incluye clientas, estados de app, leads, reuniones y tareas; excluye a
-  propósito tokens de sesión e invites. *(Estado: el botón de respaldo se está
-  portando de ALTO — playbook/01, ítem 5.)*
+  propósito tokens de sesión e invites. Para restaurar: /admin →
+  Mantenimiento → **⬆️ Subir un respaldo** (agrega/actualiza, nunca borra;
+  pide escribir RESTAURAR).
 - Supabase además hace backups automáticos, pero el JSON es TU copia en TUS manos.
 
 ## 4) Inventario de cuentas (todas a nombre del dueño)

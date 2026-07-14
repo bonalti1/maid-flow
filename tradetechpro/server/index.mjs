@@ -127,7 +127,17 @@ const STRIPE_LINKS = {
   widget: process.env.STRIPE_LINK_WIDGET || "",
   complete: process.env.STRIPE_LINK_COMPLETE || process.env.STRIPE_PAYMENT_LINK || "",
 };
-const planFromAmount = (cents) => PLAN_BY_AMOUNT[Math.round(Number(cents || 0) / 100)] || null;
+// Nearest tier within $10 — Stripe tax/rounding drift must not untag the plan.
+const planFromAmount = (cents) => {
+  const d = Number(cents || 0) / 100;
+  if (!Number.isFinite(d) || d <= 0) return null;
+  let best = null, bestDiff = Infinity;
+  for (const [amt, plan] of Object.entries(PLAN_BY_AMOUNT)) {
+    const diff = Math.abs(d - Number(amt));
+    if (diff < bestDiff) { bestDiff = diff; best = plan; }
+  }
+  return bestDiff <= 10 ? best : null;
+};
 app.post("/api/stripe/webhook", express.raw({ type: "application/json" }), async (req, res) => {
   if (!STRIPE_WH_SECRET) return res.status(503).json({ error: "webhook not configured" });
   try {
@@ -150,8 +160,9 @@ app.post("/api/stripe/webhook", express.raw({ type: "application/json" }), async
   const clientRef = obj.client_reference_id || obj.metadata?.contractorId || null;
   const email = String(obj.customer_email || obj.customer_details?.email || "").toLowerCase();
   const phone = String(obj.customer_phone || obj.customer_details?.phone || "").replace(/\D/g, "").replace(/^1/, "");
-  // Tag the plan by the exact amount paid ($49 pro / $149 widget / $249 complete).
-  const amountCents = Number(obj.amount_paid || obj.amount_total || obj.amount || 0);
+  // Tag the plan by the amount paid ($49 pro / $149 widget / $249 complete).
+  // Whichever Stripe object this event carries, find the money in it.
+  const amountCents = Number(obj.amount_paid ?? obj.amount_total ?? obj.amount ?? obj.amount_due ?? obj.plan?.amount ?? obj.lines?.data?.[0]?.amount ?? 0);
   const paidPlan = planFromAmount(amountCents);
 
   const PAID_EVENTS = ["invoice.paid", "invoice.payment_succeeded", "checkout.session.completed"];
@@ -182,6 +193,14 @@ app.post("/api/stripe/webhook", express.raw({ type: "application/json" }), async
       const rec = { customerId, email, phone, plan: paidPlan, at: new Date().toISOString() };
       if (phone) await db.kvSet(`paid:${phone}`, rec).catch(() => {});
       if (email) await db.kvSet(`paid:${email}`, rec).catch(() => {});
+      // Money arrived with no account to hang it on. Every sale closes with a
+      // human, so someone is (or should be) mid-call — put a task in front of
+      // CS so "paid but nothing delivered" can never go unnoticed.
+      await db.addTask({
+        slug: "",
+        title: "💰 Pago recibido SIN cuenta — créala y manda su acceso",
+        note: `Llegó un pago${paidPlan ? ` del plan ${paidPlan.toUpperCase()}` : ""} (${amountCents ? "$" + Math.round(amountCents / 100) : "monto ?"}) y ninguna cuenta coincide. Contacto: ${email || (phone ? `(${phone.slice(0, 3)}) ${phone.slice(3, 6)}-${phone.slice(6)}` : "desconocido")}. Crea su cuenta en /admin (se activa sola con el pago guardado) y mándale su link de acceso.`,
+      }).catch(() => {});
     }
     if (event.id) await db.kvSet(`evt:${event.id}`, { at: Date.now() }).catch(() => {});
     console.log("stripe webhook: no contractor match for", event.type, customerId, email, phone);
@@ -719,6 +738,51 @@ app.get("/api/admin/backup", async (req, res) => {
   } catch (e) { res.status(500).send("backup failed: " + e.message); }
 });
 
+// Restore a backup file (the /api/admin/backup format) — upsert-only, never deletes.
+app.post("/api/admin/restore", express.json({ limit: "25mb" }), async (req, res) => {
+  if (!adminOk(req)) return res.status(403).json({ error: "bad admin key" });
+  const body = req.body || {};
+  if (body.confirm !== "RESTAURAR") return res.status(400).json({ error: 'falta la confirmación (escribe "RESTAURAR")' });
+  const dump = body.dump || body.backup || body;
+  if (!dump || typeof dump !== "object" || (!Array.isArray(dump.contractors) && !Array.isArray(dump.clients))) {
+    return res.status(400).json({ error: "el archivo no parece un respaldo de Paulbeza (falta la lista de clientas)" });
+  }
+  try {
+    const counts = await db.importAll(dump);
+    console.log("restore OK:", JSON.stringify(counts));
+    res.json({ ok: true, restored: counts });
+  } catch (e) {
+    console.error("restore failed:", e.message);
+    res.status(500).json({ error: "no se pudo restaurar: " + e.message });
+  }
+});
+
+// Rotate a cleaner's access: every old link/device is disconnected and a fresh
+// invite link is generated (for leaked links or an ex-employee's phone).
+app.post("/api/admin/revoke", async (req, res) => {
+  if (!adminOk(req)) return res.status(403).send("bad admin key");
+  const c = await db.getContractor(String(req.query.id || req.body?.id || ""));
+  if (!c) return res.status(404).send("no contractor");
+  await db.revokeAccess(c.id);
+  const token = await db.createInvite(c.id);
+  const url = `${canonBase(req)}/invite/${token}`;
+  res.send(`<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Acceso renovado</title>
+<style>body{font-family:Inter,Arial,sans-serif;max-width:560px;margin:40px auto;padding:0 16px;color:#16295F}
+.link{background:#ECF9F2;border:2px solid #7ED6D9;border-radius:12px;padding:14px;word-break:break-all;font-size:14px;margin:14px 0}
+a{color:#1E3A8A;font-weight:800}</style></head><body>
+<h2>🔒 Acceso renovado: ${String(c.name).replace(/</g, "&lt;")}</h2>
+<p>Todos los links y dispositivos anteriores quedaron <b>desconectados</b>. Mándale este link nuevo — es su única llave ahora:</p>
+<div class="link">${url}</div>
+<a href="/admin/c/${c.slug}?key=${encodeURIComponent(ADMIN_KEY)}">← Volver a su ficha</a></body></html>`);
+});
+
+// Housekeeping: wipe the closer's meeting log (e.g. after a season of tests).
+app.post("/api/admin/clearmeetings", async (req, res) => {
+  if (!adminOk(req)) return res.status(403).json({ error: "solo admin" });
+  const n = await db.clearMeetings();
+  res.json({ ok: true, cleared: n });
+});
+
 // Operations dashboard: KPIs, funnel, clients with lead activity, latest leads
 /* Month/date filtering for the closer's sales numbers.
  * period = this | last | all | custom (+ from/to YYYY-MM-DD). */
@@ -967,8 +1031,33 @@ td .pill{margin:2px 3px 2px 0}
       </span>
     </div>`; }).join("")}
   `).join("")}
+  <p style="font-size:11px;font-weight:800;letter-spacing:1.5px;color:#8A94A8;margin:16px 0 6px">RESTAURAR RESPALDO</p>
+  <div class="lrow" style="align-items:center">
+    <div class="lprev ph">⬆️</div>
+    <span style="flex:1">Subir un respaldo (.json)<br><span class="lurl">Agrega/actualiza — nunca borra. Pide confirmación.</span></span>
+    <span class="lbtns"><label style="background:#1E3A8A;color:#fff;border-radius:8px;padding:7px 12px;font-weight:800;cursor:pointer;font-size:12px">Elegir archivo<input type="file" accept="application/json" style="display:none" onchange="restoreFile(this)"></label></span>
+  </div>
+  <p id="restoreMsg" style="display:none;font-size:13px;font-weight:700;margin-top:8px"></p>
   <p style="color:#9AA0AC;font-size:12px;margin-top:14px">El portal del closer y el onboarding piden clave; los públicos no.</p>
 </div>
+<script>
+function restoreFile(inp){
+  var f=inp.files&&inp.files[0]; if(!f)return;
+  var msg=document.getElementById('restoreMsg');
+  if(prompt('Esto agrega/actualiza los datos del respaldo (no borra nada). Escribe RESTAURAR para confirmar:')!=='RESTAURAR'){inp.value='';return;}
+  var rd=new FileReader();
+  rd.onload=function(){
+    var dump; try{dump=JSON.parse(rd.result)}catch(e){msg.style.display='block';msg.style.color='#C5221F';msg.textContent='El archivo no es JSON válido.';return;}
+    msg.style.display='block';msg.style.color='#5A6478';msg.textContent='Restaurando…';
+    fetch('/api/admin/restore?key=${KEY}',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({confirm:'RESTAURAR',dump:dump})})
+      .then(function(r){return r.json()})
+      .then(function(j){ if(j.ok){var n=j.restored||{};msg.style.color='#1E7B3C';msg.textContent='✓ Restaurado: '+(n.contractors||0)+' clientas, '+(n.leads||0)+' leads, '+(n.states||0)+' apps, '+(n.meetings||0)+' reuniones, '+(n.tasks||0)+' tareas.';}
+        else{msg.style.color='#C5221F';msg.textContent='Error: '+(j.error||'?');} })
+      .catch(function(){msg.style.color='#C5221F';msg.textContent='Error de red.';});
+  };
+  rd.readAsText(f); inp.value='';
+}
+</script>
 
 <div class="panel">
   <h2>➕ Nueva limpiadora</h2>
@@ -1339,7 +1428,11 @@ td{padding:13px 10px;border-bottom:1px solid #F2F4F7;font-weight:600;color:#3B4F
   <a class="b-line" href="/onboarding?key=${KEY}&slug=${c.slug}">🎨 Onboarding</a>
   <a class="b-line" href="/api/admin/invite?key=${KEY}&id=${c.id}">🔑 Link de acceso</a>
   <button class="b-line" onclick="hook()">🤖 GHL ${d.webhook ? "(conectado)" : ""}</button>
+  <button class="b-line" onclick="revoke()">🔒 Renovar acceso</button>
 </div></div>
+<script>
+function revoke(){ if(!confirm('¿Renovar acceso? TODOS sus links y dispositivos actuales quedan desconectados y se genera un link nuevo (mándaselo).'))return; var f=document.createElement('form'); f.method='POST'; f.action='/api/admin/revoke?key=${KEY}&id=${c.id}'; document.body.appendChild(f); f.submit(); }
+</script>
 
 <div class="panel"><h2>Enlaces</h2>
   <div class="kv"><span>Widget</span><a href="/w/${c.slug}" target="_blank">/w/${c.slug}</a></div>
@@ -1489,6 +1582,102 @@ app.post("/api/lead", async (req, res) => {
   forwardLead(c, { id: leadId, ...clean, ...leadInfo });
   notifyLead(c, { name: clean.name, phone: clean.phone, recommended: leadInfo.recommended });
   res.json({ ok: true, id: leadId });
+});
+
+/* ── Shared quote link ──
+ * The cleaner turns a finished quote into a hosted, branded page she can send
+ * by WhatsApp. The page counts opens, so "ya lo vio" stops being a mystery. */
+app.post("/api/quote/share", async (req, res) => {
+  const c = await auth(req);
+  if (!c) return res.status(401).json({ error: "no session" });
+  const b = req.body || {};
+  const num = (x, cap) => { const n = Number(x); return Number.isFinite(n) && n >= 0 ? Math.min(n, cap) : 0; };
+  const recommended = num(b.recommended, 100000);
+  if (!recommended) return res.status(400).json({ error: "quote required" });
+  const rec = {
+    contractorId: c.id,
+    at: new Date().toISOString(),
+    quote: {
+      name: String(b.name || "").slice(0, 80),
+      address: String(b.address || "").slice(0, 160),
+      sqft: num(b.sqft, 50000), beds: num(b.beds, 30), baths: num(b.baths, 30),
+      cleaningType: String(b.cleaningType || "regular").slice(0, 30),
+      recommended, low: num(b.low, 100000) || recommended, high: num(b.high, 100000) || recommended,
+      recurring: b.recurring != null ? num(b.recurring, 100000) : null,
+      frequency: String(b.frequency || "").slice(0, 20),
+      cleaners: num(b.cleaners, 20), hoursLow: num(b.hoursLow, 48), hoursHigh: num(b.hoursHigh, 48),
+      lang: b.lang === "en" ? "en" : "es",
+    },
+  };
+  const id = crypto.randomBytes(8).toString("hex");
+  await db.kvSet(`share:${id}`, rec);
+  res.json({ ok: true, id, url: `${canonBase(req)}/q/${id}` });
+});
+
+const TYPE_LABEL = {
+  es: { regular: "regular", deep: "profunda", move_in: "de mudanza (entrada)", move_out: "de mudanza (salida)", airbnb: "Airbnb", post_construction: "post-construcción", office: "de oficina" },
+  en: { regular: "regular", deep: "deep", move_in: "move-in", move_out: "move-out", airbnb: "Airbnb", post_construction: "post-construction", office: "office" },
+};
+app.get("/q/:id", async (req, res) => {
+  const id = String(req.params.id || "").replace(/[^a-f0-9]/g, "");
+  const rec = id ? await db.kvGet(`share:${id}`, 1000 * 60 * 60 * 24 * 90).catch(() => null) : null; // links live 90 days
+  if (!rec || !rec.quote) return res.status(404).send("Esta cotización ya no está disponible.");
+  const c = await db.getContractor(rec.contractorId).catch(() => null);
+  if (!c) return res.status(404).send("Esta cotización ya no está disponible.");
+  db.incrCounter(`shareopen:${id}`).catch(() => {});
+  const q = rec.quote;
+  const es = q.lang !== "en";
+  const p = c.data?.profile || {};
+  const biz = p.biz || c.name || "Paulbeza";
+  const bizPhone = String(p.phone || c.phone || "").replace(/\D/g, "");
+  const wa = bizPhone.length >= 10 ? `https://wa.me/${bizPhone.length === 10 ? "1" + bizPhone : bizPhone}?text=${encodeURIComponent(es ? `Hola ${biz} 👋 vi mi cotización de limpieza ($${q.recommended}) y quiero apartar mi cita.` : `Hi ${biz} 👋 I saw my cleaning quote ($${q.recommended}) and I'd like to book.`)}` : null;
+  const money = (n) => "$" + Number(n || 0).toLocaleString("en-US", { maximumFractionDigits: 0 });
+  const esc = (x) => String(x || "").replace(/[&<>"]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch]));
+  const ct = (TYPE_LABEL[es ? "es" : "en"][q.cleaningType]) || "regular";
+  const logo = /^data:image\/(png|jpeg);base64,[A-Za-z0-9+/=]+$/.test(String(p.logo || "")) ? p.logo : null;
+  res.send(`<!doctype html><html lang="${es ? "es" : "en"}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${es ? "Tu cotización de limpieza" : "Your cleaning quote"} — ${esc(biz)}</title><meta name="robots" content="noindex"><link rel="icon" href="/icon-192.png">
+<style>*{box-sizing:border-box;font-family:Inter,Arial,sans-serif;margin:0}
+body{background:#EEF1F8;min-height:100vh;display:flex;justify-content:center;padding:18px;color:#16295F}
+.page{max-width:430px;width:100%}
+.hero{background:linear-gradient(135deg,#1E3A8A 0%,#3B4FA0 55%,#7B5BD6 100%);border-radius:24px;padding:24px 22px;color:#fff;box-shadow:0 24px 60px rgba(22,41,95,.30)}
+.brand{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.brand img{height:34px;max-width:100px;object-fit:contain;background:#fff;border-radius:8px;padding:3px}
+.k{color:#A7E8C8;font-size:10px;font-weight:800;letter-spacing:.16em;text-transform:uppercase}
+.biz{font-weight:800;font-size:15px}
+.amt{font-size:52px;font-weight:900;line-height:1;margin:10px 0 4px}
+.range{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.14);border-radius:14px;padding:10px 14px;margin-top:10px}
+.range b{font-size:20px}
+.meta{color:rgba(255,255,255,.85);font-size:13px;font-weight:600;margin-top:12px;line-height:1.5}
+.card{background:#fff;border:1px solid #E3E8F2;border-radius:18px;padding:16px;margin-top:14px}
+.grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.cell{background:#F5F7FC;border:1px solid #E8ECF5;border-radius:12px;padding:10px 6px;text-align:center}
+.cell b{color:#1E3A8A;font-size:16px}
+.cell span{display:block;color:#8A94A8;font-size:9px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;margin-top:3px}
+.addr{color:#44506A;font-size:13px;font-weight:700;margin-bottom:10px}
+.note{color:#8A94A8;font-size:11.5px;font-weight:600;line-height:1.55;margin-top:14px;text-align:center}
+.wa{display:block;background:#25D366;color:#fff;text-align:center;border-radius:14px;padding:16px;font-size:16px;font-weight:800;text-decoration:none;margin-top:14px;box-shadow:0 10px 26px rgba(37,211,102,.35)}
+.foot{text-align:center;color:#9AA3B8;font-size:11px;font-weight:600;margin:20px 0 6px}.foot a{color:#9AA3B8}</style></head><body><div class="page">
+<div class="hero">
+  <div class="brand">${logo ? `<img src="${logo}" alt="">` : ""}<div><div class="k">${es ? "Cotización de" : "Quote from"}</div><div class="biz">${esc(biz)}</div></div></div>
+  <div class="k">${es ? "Precio recomendado" : "Recommended price"}</div>
+  <div class="amt">${money(q.recommended)}</div>
+  <div class="range"><div class="k" style="margin-bottom:2px">${es ? "Rango estimado" : "Estimated range"}</div><b>${money(q.low)} – ${money(q.high)}</b></div>
+  ${q.recurring != null ? `<p class="meta">${es ? "Precio recurrente" : "Recurring price"}: <b>${money(q.recurring)}</b></p>` : ""}
+  <p class="meta">✨ ${es ? `Limpieza ${ct}` : `${ct.charAt(0).toUpperCase() + ct.slice(1)} cleaning`}${q.cleaners ? ` · ${q.cleaners} ${es ? "persona(s)" : "cleaner(s)"}${q.hoursLow ? `, ${q.hoursLow}–${q.hoursHigh} hrs` : ""}` : ""}</p>
+</div>
+<div class="card">
+  ${q.address ? `<p class="addr">📍 ${esc(q.address)}</p>` : ""}
+  <div class="grid">
+    <div class="cell"><b>${q.sqft ? Number(q.sqft).toLocaleString("en-US") : "—"}</b><span>📐 ${es ? "pies²" : "sq ft"}</span></div>
+    <div class="cell"><b>${q.beds || "—"}</b><span>🛏️ ${es ? "recámaras" : "bedrooms"}</span></div>
+    <div class="cell"><b>${q.baths || "—"}</b><span>🛁 ${es ? "baños" : "baths"}</span></div>
+  </div>
+</div>
+${wa ? `<a class="wa" href="${wa}">🟢 ${es ? "Apartar mi cita por WhatsApp" : "Book my cleaning on WhatsApp"}</a>` : ""}
+<p class="note">⚠️ ${es ? "El precio final puede cambiar si la casa está más sucia de lo descrito o hay extras no mostrados." : "Final price may change if the home is heavier than described or extras weren't shown."}</p>
+<p class="foot">${esc(biz)} · ${es ? "cotización hecha con" : "quote made with"} Paulbeza · <a href="/legal${es ? "" : "?lang=en"}">${es ? "Privacidad" : "Privacy"}</a></p>
+</div></body></html>`);
 });
 
 // Web-push: the client fetches the VAPID public key, then registers a device.
@@ -1953,7 +2142,7 @@ function landingPage(req) {
     appSub: `A neighbor asks "how much to clean mine?" — you type their address (or use your GPS), answer a few questions, and send a polished quote right there.`,
     cap1: "Quoted from the home's size<br>in 60 seconds", cap2: "Set your own rates<br>and minimums", cap3: "Professional quote with your<br>brand, ready to send",
     priceT: "PICK YOUR <em>PLAN</em>", priceSub: "No fine print. No long contracts. Cancel anytime and your domain is yours.",
-    mo: "/mo", setup: "No setup fee — cancel anytime", buyNow: "Start now →", orBook: "or book a call first",
+    mo: "/mo", setup: "No setup fee — cancel anytime", buyNow: "Start now →", orBook: "or book a call first", planCta: "Book my call →",
     plans: [
       { key: "pro", name: "PRO", amt: 49, desc: "The app in your pocket", feats: ["The Paulbeza app: quotes in 60 seconds", "Your own rates and minimums", "Branded quotes, sent by WhatsApp", "Your customer and lead list"] },
       { key: "widget", name: "WIDGET", amt: 149, hot: true, tag: "MOST POPULAR", desc: "Your quote button on your Facebook & Instagram", feats: ["Everything in PRO", "Instant-quote widget for your page, Facebook or Instagram", "Homeowners leave name + phone to see their price", "Those leads land straight in your WhatsApp"] },
@@ -1992,7 +2181,7 @@ function landingPage(req) {
     appSub: `El vecino te pregunta "¿cuánto por limpiar la mía?" — pones su dirección (o usas tu GPS), contestas unas preguntas, y le mandas una cotización profesional ahí mismo.`,
     cap1: "Cotizado por el tamaño<br>de la casa en 60 segundos", cap2: "Pon tus propias tarifas<br>y mínimos", cap3: "Cotización profesional con tu<br>marca, lista para mandar",
     priceT: "ELIGE TU <em>PLAN</em>", priceSub: "Sin letras chiquitas. Sin contratos largos. Cancelas cuando quieras y tu dominio es tuyo.",
-    mo: "/mes", setup: "Sin cargo de inicio — cancela cuando quieras", buyNow: "Comenzar ahora →", orBook: "o agenda una llamada primero",
+    mo: "/mes", setup: "Sin cargo de inicio — cancela cuando quieras", buyNow: "Comenzar ahora →", orBook: "o agenda una llamada primero", planCta: "Agendar mi llamada →",
     plans: [
       { key: "pro", name: "PRO", amt: 49, desc: "La app en tu bolsillo", feats: ["La app Paulbeza: cotizas en 60 segundos", "Tus propias tarifas y mínimos", "Cotizaciones con tu marca, por WhatsApp", "Tu lista de clientes y leads"] },
       { key: "widget", name: "WIDGET", amt: 149, hot: true, tag: "MÁS POPULAR", desc: "Tu cotizador en tu Facebook e Instagram", feats: ["Todo lo de PRO", "Cotizador instantáneo para tu página, Facebook o Instagram", "Los dueños dejan nombre y teléfono para ver su precio", "Esos clientes te llegan directo a tu WhatsApp"] },
@@ -2166,12 +2355,10 @@ footer a{color:#8A94A8}
       <div class="amt">$${p.amt}<small>${L.mo}</small></div>
       <p class="pdesc">${p.desc}</p>
       <ul>${p.feats.map((f) => `<li>${f}</li>`).join("")}</ul>
-      ${STRIPE_LINKS[p.key]
-        ? `<a class="cta plan-cta" href="${STRIPE_LINKS[p.key]}" target="_blank" rel="noreferrer">${L.buyNow}</a>`
-        : `<a class="cta plan-cta" href="#contacto">${L.buyNow}</a>`}
+      <a class="cta plan-cta" href="#contacto">${L.planCta}</a>
     </div>`).join("")}
   </div>
-  <p style="text-align:center;color:#67718A;font-weight:700;font-size:14px;margin-top:26px">${L.setup} · <a href="#contacto" style="color:#67718A">${L.orBook}</a></p>
+  <p style="text-align:center;color:#67718A;font-weight:700;font-size:14px;margin-top:26px">${L.setup}</p>
 </section></div></div>
 
 <div class="wrap"><section id="contacto">
@@ -2208,7 +2395,7 @@ footer a{color:#8A94A8}
     <button type="button" class="qback" id="qback" onclick="qBack()" style="display:none">${L.back}</button>
   </div>
 </section>
-<footer>${L.foot}</footer>
+<footer>${L.foot}<br><a href="/legal${en ? "?lang=en" : ""}">${en ? "Terms & Privacy" : "Términos y Privacidad"}</a></footer>
 </div>
 <script>
 function track(ev){try{fetch('/api/track',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({event:ev})})}catch(e){}}
@@ -2241,6 +2428,97 @@ function finishQuiz(){
 
 // Preview the landing on any host (and in dev) without touching DNS
 app.get("/ventas", (req, res) => res.send(landingPage(req)));
+
+/* ── Legal: Términos y Privacidad ──
+ * Meta (and common sense) require a privacy-policy URL before running ads.
+ * Bilingual, plain language, no legalese theater. */
+app.get("/legal", (req, res) => {
+  const en = req.query.lang === "en";
+  const S = en ? {
+    title: "Terms & Privacy — Paulbeza", h: "Terms & Privacy", updated: "Last updated",
+    tT: "Terms of service", t: [
+      ["What Paulbeza is", "Paulbeza is a monthly software subscription for cleaning businesses: an app that quotes cleanings, an instant-quote widget for your page or social media, and (on the COMPLETO plan) a professional website with your brand."],
+      ["Subscriptions & cancellation", "Plans are billed monthly through Stripe. There are no long-term contracts and no setup fee. You can cancel anytime; service stays active until the end of the paid period. No partial-month refunds."],
+      ["Your domain is yours", "If your plan includes a domain (yourname.com), it is registered for your business and stays yours if you leave."],
+      ["Quotes are estimates", "Prices calculated by the app or widget are estimates produced from the rates each cleaning business configures. The final price of any cleaning job is always agreed between the homeowner and the cleaning business — Paulbeza is the software, not a party to that job."],
+      ["Fair use", "Accounts are per business. Sharing access links outside your business, scraping, or abusing the lookup services may lead to suspension. We may pause an account with overdue payment."],
+    ],
+    pT: "Privacy policy", p: [
+      ["What we collect", "From cleaning businesses: name, phone, business name, and the rates/photos you add. From homeowners using a quote widget: name, phone, address and home details — entered voluntarily to see a price."],
+      ["What it's used for", "Homeowner data is delivered to the cleaning business whose page you used, so they can contact you about your cleaning. We also keep anonymous usage counters (page visits, quotes) to run the service."],
+      ["What we never do", "We do not sell personal data. We do not send marketing to homeowners. Data is shared only with the processors that run the service (hosting, database, Stripe for payments, Meta pixel for ad measurement when enabled)."],
+      ["Data & deletion", "Data lives on servers in the United States. To review or delete your data, message us and we'll take care of it."],
+    ],
+    contact: "Questions? Write to us on WhatsApp or at the number on the page you came from.", back: "← Back",
+  } : {
+    title: "Términos y Privacidad — Paulbeza", h: "Términos y Privacidad", updated: "Última actualización",
+    tT: "Términos del servicio", t: [
+      ["Qué es Paulbeza", "Paulbeza es una suscripción mensual de software para negocios de limpieza: una app que cotiza limpiezas, un cotizador instantáneo para tu página o redes sociales, y (en el plan COMPLETO) una página web profesional con tu marca."],
+      ["Suscripción y cancelación", "Los planes se cobran cada mes por Stripe. No hay contratos largos ni cargo de inicio. Puedes cancelar cuando quieras; el servicio sigue activo hasta el final del periodo pagado. No hay reembolsos de meses parciales."],
+      ["Tu dominio es tuyo", "Si tu plan incluye dominio (tunombre.com), se registra a nombre de tu negocio y es tuyo aunque te vayas."],
+      ["Las cotizaciones son estimados", "Los precios que calcula la app o el cotizador son estimados producidos con las tarifas que configura cada negocio de limpieza. El precio final de un trabajo siempre se acuerda entre el dueño de casa y el negocio de limpieza — Paulbeza es el software, no parte de ese trabajo."],
+      ["Uso justo", "Las cuentas son por negocio. Compartir el link de acceso fuera de tu negocio, extraer datos o abusar de las búsquedas puede suspender la cuenta. Podemos pausar una cuenta con pago vencido."],
+    ],
+    pT: "Política de privacidad", p: [
+      ["Qué recolectamos", "De los negocios de limpieza: nombre, teléfono, nombre del negocio y las tarifas/fotos que agregas. De los dueños de casa que usan un cotizador: nombre, teléfono, dirección y datos de la casa — los escriben voluntariamente para ver su precio."],
+      ["Para qué se usa", "Los datos del dueño de casa se entregan al negocio de limpieza cuya página usaste, para que te contacte sobre tu limpieza. También guardamos contadores anónimos de uso (visitas, cotizaciones) para operar el servicio."],
+      ["Lo que nunca hacemos", "No vendemos datos personales. No mandamos publicidad a los dueños de casa. Los datos solo se comparten con los proveedores que operan el servicio (hosting, base de datos, Stripe para pagos, pixel de Meta para medir anuncios cuando está activo)."],
+      ["Datos y eliminación", "Los datos viven en servidores en Estados Unidos. Para revisar o borrar tus datos, escríbenos y lo resolvemos."],
+    ],
+    contact: "¿Dudas? Escríbenos por WhatsApp o al número de la página de donde vienes.", back: "← Volver",
+  };
+  const sec = (title, items) => `<h2>${title}</h2>${items.map(([h, b]) => `<h3>${h}</h3><p>${b}</p>`).join("")}`;
+  res.send(`<!doctype html><html lang="${en ? "en" : "es"}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${S.title}</title><meta name="robots" content="noindex"><link rel="icon" href="/icon-192.png">
+<style>*{box-sizing:border-box;font-family:Inter,Arial,sans-serif;margin:0}body{background:#fff;color:#16295F;line-height:1.65}
+.wrap{max-width:720px;margin:0 auto;padding:40px 22px 70px}
+h1{font-size:30px;font-weight:800}h2{font-size:21px;font-weight:800;margin:34px 0 6px;color:#1E3A8A}
+h3{font-size:15px;font-weight:800;margin:18px 0 4px}p{font-size:14.5px;color:#44506A;font-weight:500}
+.meta{color:#8A94A8;font-size:13px;font-weight:600;margin-top:6px}
+a{color:#1E3A8A;font-weight:700}.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:26px}
+.lang{background:#1E3A8A;color:#fff;border-radius:99px;padding:8px 15px;font-weight:800;font-size:12px;text-decoration:none}</style></head><body><div class="wrap">
+<div class="top"><a href="/ventas">${S.back}</a><a class="lang" href="/legal?lang=${en ? "es" : "en"}">${en ? "🇲🇽 Español" : "🇺🇸 English"}</a></div>
+<h1>${S.h}</h1><p class="meta">Paulbeza · ${S.updated}: 2026-07-14</p>
+${sec(S.tT, S.t)}
+${sec(S.pT, S.p)}
+<p style="margin-top:30px">${S.contact}</p>
+</div></body></html>`);
+});
+
+/* ── Post-payment welcome — the Payment Links' redirect target ──
+ * The closer takes the payment on the call; this page tells the new client
+ * what happens next so paying never ends on a blank Stripe screen. */
+app.get("/bienvenida", (req, res) => {
+  const en = req.query.lang === "en";
+  const S = en ? {
+    t: "Payment received! 🎉", h: "Welcome to Paulbeza",
+    p: "You're in. We'll send your <b>personal access link</b> by WhatsApp or text in the next few minutes — open it on your phone and save it.",
+    p2: "Didn't get it in 15 minutes? Message us and we'll resend it right away.",
+    demo: "Meanwhile, this is what your quote tool looks like 👇", demoBtn: "See the quote tool", legal: "Terms & Privacy",
+  } : {
+    t: "¡Pago recibido! 🎉", h: "Bienvenida a Paulbeza",
+    p: "Ya estás dentro. Te mandamos tu <b>link de acceso personal</b> por WhatsApp o mensaje en los próximos minutos — ábrelo en tu teléfono y guárdalo.",
+    p2: "¿No te llega en 15 minutos? Escríbenos y te lo reenviamos al instante.",
+    demo: "Mientras tanto, así se ve tu cotizador 👇", demoBtn: "Ver el cotizador", legal: "Términos y Privacidad",
+  };
+  res.send(`<!doctype html><html lang="${en ? "en" : "es"}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${S.t}</title><meta name="robots" content="noindex"><link rel="icon" href="/icon-192.png">
+<style>*{box-sizing:border-box;font-family:Inter,Arial,sans-serif;margin:0}
+body{background:linear-gradient(160deg,#16295F,#1E3A8A 60%,#5B4FA8);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;color:#16295F}
+.card{background:#fff;border-radius:26px;max-width:480px;width:100%;padding:38px 30px;text-align:center;box-shadow:0 40px 90px rgba(0,0,0,.35)}
+h1{font-size:26px;font-weight:800}h2{font-size:17px;font-weight:800;color:#1E3A8A;margin-top:4px}
+p{font-size:14.5px;color:#44506A;font-weight:500;line-height:1.6;margin-top:14px}
+.cta{display:inline-block;margin-top:22px;background:#7ED6D9;color:#1E3A8A;font-weight:800;font-size:15px;padding:14px 26px;border-radius:12px;text-decoration:none}
+.legal{display:block;margin-top:18px;color:#8A94A8;font-size:12px;font-weight:600;text-decoration:none}</style></head><body>
+<div class="card">
+  <div style="font-size:46px">🧼</div>
+  <h1>${S.t}</h1><h2>${S.h}</h2>
+  <p>${S.p}</p><p>${S.p2}</p>
+  <p style="margin-top:22px;font-weight:700;color:#1E3A8A">${S.demo}</p>
+  <a class="cta" href="/w/alto-demo${en ? "?lang=en" : ""}">${S.demoBtn} →</a>
+  <a class="legal" href="/legal${en ? "?lang=en" : ""}">${S.legal}</a>
+</div></body></html>`);
+});
 
 /* ── Example client website (template #1, "Clásico") ──
  * A complete, working cleaner site a prospect can click through — the

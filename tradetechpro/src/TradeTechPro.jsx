@@ -991,6 +991,23 @@ export default function TradeTechPro() {
       window.open(waHref, "_blank");
     };
     const copyMsg = async () => { try { await navigator.clipboard.writeText(msg); showToast(lang === "es" ? "Mensaje copiado ✓" : "Message copied ✓"); } catch { /* ignore */ } };
+    // Hosted quote page (/q/:id) — a branded link she can send instead of raw text.
+    const shareQuote = async () => {
+      let url = null;
+      try {
+        const r = await api("/api/quote/share", { method: "POST", body: JSON.stringify({
+          name: q.name, address: q.address, sqft: q.sqft, beds: q.beds, baths: q.baths,
+          cleaningType: out.cleaningType, recommended: out.recommended, low: out.range[0], high: out.range[1],
+          recurring: out.recurring, frequency: out.frequency,
+          cleaners: out.time?.cleaners, hoursLow: out.time?.low, hoursHigh: out.time?.high, lang,
+        }) });
+        url = (await r.json()).url || null;
+      } catch { /* backend unreachable */ }
+      if (!url) { showToast(lang === "es" ? "No se pudo crear el link" : "Couldn't create the link"); return; }
+      try { await navigator.clipboard.writeText(url); } catch { /* clipboard blocked */ }
+      showToast(lang === "es" ? "Link copiado ✓ — mándaselo a tu cliente" : "Link copied ✓ — send it to your customer");
+      if (navigator.share) { try { await navigator.share({ url }); } catch { /* user closed the sheet */ } }
+    };
     const ct = CLEANING_TYPES.find((c) => c[0] === out.cleaningType);
     return (
       <div className="flex-1 overflow-y-auto pb-6" style={{ background: M.bg }}>
@@ -1063,6 +1080,11 @@ export default function TradeTechPro() {
           <button onClick={sendWhatsApp} className="w-full active:translate-y-px transition-transform mb-2.5" style={{ background: "#25D366", color: "#fff", border: "none", borderRadius: 12, padding: 15, fontSize: 16, fontWeight: 800, boxShadow: "0 4px 14px rgba(37,211,102,0.35)" }}>
             🟢 {lang === "es" ? "Enviar por WhatsApp" : "Send on WhatsApp"}
           </button>
+          {session && (
+            <button onClick={shareQuote} className="w-full active:translate-y-px transition-transform mb-2.5" style={{ background: "#fff", color: M.teal, border: `1.5px solid ${M.aqua}`, borderRadius: 12, padding: 14, fontSize: 15, fontWeight: 800 }}>
+              🔗 {lang === "es" ? "Crear link de la cotización" : "Create quote link"}
+            </button>
+          )}
           <div className="flex gap-2">
             <button onClick={copyMsg} className="flex-1 active:translate-y-px transition-transform" style={{ background: "#fff", color: M.teal, border: `1.5px solid ${M.line}`, borderRadius: 12, padding: 14, fontSize: 14, fontWeight: 800 }}>📋 {lang === "es" ? "Copiar" : "Copy"}</button>
             <button onClick={resetQuote} className="flex-1 active:translate-y-px transition-transform" style={{ background: M.teal, color: "#fff", border: "none", borderRadius: 12, padding: 14, fontSize: 14, fontWeight: 800 }}>{lang === "es" ? "Nueva cotización" : "New quote"}</button>

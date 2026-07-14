@@ -509,6 +509,108 @@ export async function exportAll() {
   };
 }
 
+/* Restore a backup produced by exportAll (or the nested per-client shape the
+ * sibling products emit). Upsert-only — restoring never deletes anything. */
+export async function importAll(dump) {
+  if (!dump || typeof dump !== "object") throw new Error("empty or invalid backup");
+  const arr = (x) => (Array.isArray(x) ? x : []);
+  const clients = arr(dump.clients);
+  const contractors = clients.length
+    ? clients.map((c) => ({ id: c.id, slug: c.slug, name: c.name, phone: c.phone, data: c.data || {}, created_at: c.created_at }))
+    : arr(dump.contractors);
+  const states = clients.length
+    ? clients.filter((c) => c.state).map((c) => ({ contractor_id: c.id, state: c.state }))
+    : arr(dump.states);
+  const leads = clients.length
+    ? clients.flatMap((c) => arr(c.leads).map((l) => ({ ...l, contractor_id: l.contractor_id || c.id })))
+    : arr(dump.leads);
+  const meetings = arr(dump.meetings), tasks = arr(dump.tasks);
+  const n = { contractors: 0, states: 0, leads: 0, meetings: 0, tasks: 0 };
+
+  if (pool) {
+    const client = await pool.connect();
+    try {
+      await client.query("BEGIN");
+      for (const c of contractors) {
+        if (!c?.id || !c?.slug) continue;
+        await client.query(
+          `INSERT INTO contractors (id, slug, name, phone, data, created_at) VALUES ($1,$2,$3,$4,$5,COALESCE($6,now()))
+           ON CONFLICT (id) DO UPDATE SET slug=EXCLUDED.slug, name=EXCLUDED.name, phone=EXCLUDED.phone, data=EXCLUDED.data`,
+          [c.id, c.slug, c.name || "", c.phone || "", c.data || {}, c.created_at || null]);
+        n.contractors++;
+      }
+      for (const s of states) {
+        if (!s?.contractor_id) continue;
+        await client.query(
+          `INSERT INTO app_state (contractor_id, state) VALUES ($1,$2)
+           ON CONFLICT (contractor_id) DO UPDATE SET state=EXCLUDED.state, updated_at=now()`,
+          [s.contractor_id, s.state || {}]);
+        n.states++;
+      }
+      for (const l of leads) {
+        if (!l?.id) continue;
+        await client.query(
+          `INSERT INTO leads (id, contractor_id, name, phone, address, info, status, created_at)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,COALESCE($8,now()))
+           ON CONFLICT (id) DO UPDATE SET name=EXCLUDED.name, phone=EXCLUDED.phone, address=EXCLUDED.address, info=EXCLUDED.info, status=EXCLUDED.status`,
+          [l.id, l.contractor_id || null, l.name || "", l.phone || "", l.address || "", l.info || {}, l.status || "new", l.created_at || null]);
+        n.leads++;
+      }
+      for (const m of meetings) {
+        if (!m?.id) continue;
+        await client.query(
+          `INSERT INTO meetings (id, name, phone, outcome, note, created_at) VALUES ($1,$2,$3,$4,$5,COALESCE($6,now()))
+           ON CONFLICT (id) DO UPDATE SET name=EXCLUDED.name, phone=EXCLUDED.phone, outcome=EXCLUDED.outcome, note=EXCLUDED.note`,
+          [m.id, m.name || "", m.phone || "", m.outcome || "scheduled", m.note || "", m.created_at || null]);
+        n.meetings++;
+      }
+      for (const t of tasks) {
+        if (!t?.id) continue;
+        await client.query(
+          `INSERT INTO tasks (id, slug, title, note, status, created_at, done_at) VALUES ($1,$2,$3,$4,$5,COALESCE($6,now()),$7)
+           ON CONFLICT (id) DO UPDATE SET slug=EXCLUDED.slug, title=EXCLUDED.title, note=EXCLUDED.note, status=EXCLUDED.status, done_at=EXCLUDED.done_at`,
+          [t.id, t.slug || "", t.title || "", t.note || "", t.status || "open", t.created_at || null, t.done_at || null]);
+        n.tasks++;
+      }
+      await client.query("COMMIT");
+    } catch (e) { await client.query("ROLLBACK"); throw e; }
+    finally { client.release(); }
+    return n;
+  }
+
+  mem.contractors = mem.contractors || []; mem.states = mem.states || {};
+  mem.leads = mem.leads || []; mem.meetings = mem.meetings || []; mem.tasks = mem.tasks || [];
+  const upsertById = (list, rec) => { const i = list.findIndex((x) => x.id === rec.id); if (i >= 0) list[i] = { ...list[i], ...rec }; else list.push(rec); };
+  for (const c of contractors) { if (!c?.id || !c?.slug) continue; upsertById(mem.contractors, c); n.contractors++; }
+  for (const s of states) { if (!s?.contractor_id) continue; mem.states[s.contractor_id] = s.state || {}; n.states++; }
+  for (const l of leads) { if (!l?.id) continue; upsertById(mem.leads, l); n.leads++; }
+  for (const m of meetings) { if (!m?.id) continue; upsertById(mem.meetings, m); n.meetings++; }
+  for (const t of tasks) { if (!t?.id) continue; upsertById(mem.tasks, t); n.tasks++; }
+  persistMem();
+  return n;
+}
+
+/* Kill every session AND invite for one cleaner — her old links stop working.
+ * The caller generates a fresh invite to send her. */
+export async function revokeAccess(contractorId) {
+  if (pool) {
+    await pool.query("DELETE FROM sessions WHERE contractor_id=$1", [contractorId]);
+    await pool.query("DELETE FROM invites WHERE contractor_id=$1", [contractorId]);
+    return;
+  }
+  mem.sessions = Object.fromEntries(Object.entries(mem.sessions || {}).filter(([, id]) => id !== contractorId));
+  mem.invites = Object.fromEntries(Object.entries(mem.invites || {}).filter(([, v]) => v.contractor_id !== contractorId));
+  persistMem();
+}
+
+export async function clearMeetings() {
+  if (pool) { const r = await pool.query("DELETE FROM meetings"); return r.rowCount; }
+  const n = (mem.meetings || []).length;
+  mem.meetings = [];
+  persistMem();
+  return n;
+}
+
 export async function listLeads(contractorId) {
   if (pool) return (await pool.query("SELECT * FROM leads WHERE contractor_id=$1 ORDER BY created_at DESC LIMIT 200", [contractorId])).rows;
   return mem.leads.filter(l => l.contractor_id === contractorId).slice().reverse();

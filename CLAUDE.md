@@ -95,11 +95,20 @@ in `playbook/` — read it before re-deriving any process.
 
 - **ALTO business-OS port COMPLETE (items 1–10):** docs ✓ · env catalog +
   `REQUIRE_DB` ✓ · GHL-IN 24h dedupe ✓ · `DEMO_PASS` ✓ · admin backup download
-  ✓ · regression suite (`npm run regression`, 20 checks) ✓ · lead-CRM
+  ✓ · regression suite (`npm run regression`, 26 checks) ✓ · lead-CRM
   (5-stage pipeline / notes / CSV / source tags / company field) ✓ · install
   flow (Android one-tap + iOS overlay + WhatsApp-browser warning) ✓ · web push
   (`notifyLead`/VAPID) ✓ · Stripe 3 tiers ($49/$149/$249 via `planByAmount`, legacy amounts aliased) ✓.
-  Item 11 (owner cockpit `/hq`) is optional and not built.
+  Item 11 (owner cockpit `/hq`) is optional and not built (partly covered by
+  `/admin/economics` + AI advisor). Parity extras from the ALTO/QC comparison:
+  `/legal` (Términos y Privacidad — Meta ads need it) · `/bienvenida`
+  (post-payment page, set it as the Payment Links' redirect) · admin restore
+  (upload backup) + revoke access + clearmeetings · Stripe ±$10 amount
+  tolerance + CS task on unmatched real payment (human-close: no self-serve
+  auto-create) · shared quote links (`/api/quote/share` → `/q/:id`, 90-day
+  TTL, open counter `shareopen:<id>`). The sales landing shows NO payment
+  links — every sale closes with a human; Stripe links live in the closer
+  deck (P key) and admin only.
 - Run `npm run regression` (must be all green) before every commit, plus
   `npm test` (pricing) and `npm run build`.
 - **Owner dashboard actions (values live outside git — set in Render):** create
