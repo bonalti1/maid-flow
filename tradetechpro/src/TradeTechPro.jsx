@@ -138,6 +138,113 @@ const mockLookup = (addr) => new Promise((resolve) => {
 const fmt = (n) => "$" + Number(n || 0).toLocaleString("en-US", { maximumFractionDigits: 0 });
 const num = (n) => Number(n || 0).toLocaleString("en-US");
 
+/* ─── Google Maps loader (browser key from /api/mapconfig; one script, shared) ─── */
+let _gmapsPromise = null;
+function loadGoogleMaps() {
+  if (_gmapsPromise) return _gmapsPromise;
+  _gmapsPromise = fetch("/api/mapconfig")
+    .then((r) => r.json())
+    .then(({ key }) => {
+      if (!key) throw new Error("no-map-key");
+      if (window.google?.maps) return window.google.maps;
+      return new Promise((resolve, reject) => {
+        const s = document.createElement("script");
+        s.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(key)}&v=quarterly`;
+        s.async = true;
+        s.onload = () => (window.google?.maps ? resolve(window.google.maps) : reject(new Error("gmaps-load")));
+        s.onerror = () => reject(new Error("gmaps-load"));
+        document.head.appendChild(s);
+      });
+    });
+  return _gmapsPromise;
+}
+
+/* ─── In-app drive map: route from the cleaner's location to the job.
+ * Keeps her inside the PWA — external Maps only via the explicit button. ─── */
+function DriveMap({ dest, label, lang, onClose }) {
+  const elRef = useRef(null);
+  const [status, setStatus] = useState("loading"); // loading | route | noloc | failed
+  const [info, setInfo] = useState(null); // { dist, dur }
+  const es = lang === "es";
+
+  useEffect(() => {
+    let cancelled = false;
+    loadGoogleMaps().then(async (maps) => {
+      if (cancelled || !elRef.current) return;
+      const map = new maps.Map(elRef.current, {
+        center: { lat: 26.2, lng: -98.2 }, zoom: 11,
+        disableDefaultUI: true, zoomControl: true, gestureHandling: "greedy", clickableIcons: false,
+      });
+      // Resolve the job's position: coords if we have them, else geocode the address.
+      let target = Number.isFinite(dest?.lat) && Number.isFinite(dest?.lng) ? { lat: dest.lat, lng: dest.lng } : null;
+      if (!target && dest?.address) {
+        target = await new Promise((rs) => new maps.Geocoder().geocode({ address: dest.address }, (r, st) =>
+          rs(st === "OK" && r?.[0] ? { lat: r[0].geometry.location.lat(), lng: r[0].geometry.location.lng() } : null)));
+      }
+      if (cancelled) return;
+      if (!target) { setStatus("failed"); return; }
+      const pin = new maps.Marker({ position: target, map, title: label || "",
+        icon: { path: maps.SymbolPath.CIRCLE, scale: 12, fillColor: "#E8442E", fillOpacity: 1, strokeColor: "#fff", strokeWeight: 3 } });
+      map.setCenter(target); map.setZoom(15);
+      const pinOnly = () => { if (!cancelled) { pin.setMap(map); setStatus("noloc"); } };
+      if (!navigator.geolocation) { pinOnly(); return; }
+      navigator.geolocation.getCurrentPosition((pos) => {
+        if (cancelled) return;
+        const origin = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        new maps.DirectionsService().route(
+          { origin, destination: target, travelMode: maps.TravelMode.DRIVING },
+          (res, st) => {
+            if (cancelled) return;
+            if (st !== "OK" || !res?.routes?.[0]) { pinOnly(); return; }
+            new maps.DirectionsRenderer({ map, suppressMarkers: false, polylineOptions: { strokeColor: "#1E3A8A", strokeWeight: 5 } }).setDirections(res);
+            const leg = res.routes[0].legs?.[0];
+            if (leg) setInfo({ dist: leg.distance?.text || "", dur: leg.duration?.text || "" });
+            setStatus("route");
+          });
+      }, pinOnly, { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 });
+    }).catch(() => { if (!cancelled) setStatus("failed"); });
+    return () => { cancelled = true; };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const gmapsHref = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(
+    Number.isFinite(dest?.lat) && Number.isFinite(dest?.lng) ? `${dest.lat},${dest.lng}` : (dest?.address || ""))}`;
+  return (
+    <div className="fixed inset-0 flex flex-col" style={{ background: "#fff", zIndex: 60, maxWidth: 448, margin: "0 auto" }}>
+      <div className="flex items-center gap-2 px-3 py-3" style={{ background: M.tealDeep }}>
+        <button onClick={onClose} className="shrink-0 active:scale-95 transition-transform" style={{ background: "rgba(255,255,255,0.14)", color: "#fff", border: "none", borderRadius: 10, width: 36, height: 36, fontSize: 20, fontWeight: 800 }}>‹</button>
+        <div className="flex-1 min-w-0">
+          <p className="text-white font-extrabold truncate" style={{ fontSize: 14 }}>{label || (es ? "Cómo llegar" : "Directions")}</p>
+          {info && <p style={{ color: M.goldHi, fontSize: 12, fontWeight: 800 }}>🚗 {info.dur} · {info.dist}</p>}
+        </div>
+      </div>
+      <div className="flex-1 relative" style={{ background: "#EEF1F8" }}>
+        <div ref={elRef} className="absolute inset-0" />
+        {status === "loading" && (
+          <div className="absolute inset-0 flex items-center justify-center" style={{ background: "#EEF1F8" }}>
+            <span style={{ color: M.muted2, fontWeight: 700, fontSize: 14 }}>{es ? "Cargando mapa…" : "Loading map…"}</span>
+          </div>
+        )}
+        {status === "failed" && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center px-8 text-center" style={{ background: "#EEF1F8" }}>
+            <span style={{ fontSize: 34 }}>🗺️</span>
+            <p style={{ color: M.muted2, fontWeight: 700, fontSize: 14, marginTop: 8 }}>{es ? "No se pudo cargar el mapa." : "Couldn't load the map."}</p>
+          </div>
+        )}
+      </div>
+      {status === "noloc" && (
+        <p className="text-center px-4 py-2" style={{ background: "#FFF8E6", color: "#7A5A00", fontSize: 12, fontWeight: 700 }}>
+          📍 {es ? "Activa tu ubicación para ver el tiempo de manejo" : "Turn on location for drive time"}
+        </p>
+      )}
+      <div className="px-4 py-3" style={{ background: "#fff", borderTop: `1px solid ${M.line}` }}>
+        <a href={gmapsHref} target="_blank" rel="noreferrer" className="block text-center" style={{ background: M.teal, color: "#fff", borderRadius: 12, padding: 14, fontSize: 15, fontWeight: 800, textDecoration: "none" }}>
+          {es ? "Abrir en Google Maps ↗" : "Open in Google Maps ↗"}
+        </a>
+      </div>
+    </div>
+  );
+}
+
 /* ─── Shared UI ─── */
 const Card = ({ children, style = {} }) => (
   <div className="rounded-2xl p-4 mb-3" style={{ background: "#fff", border: `1px solid ${M.line}`, boxShadow: "0 2px 8px rgba(10,92,76,0.06)", ...style }}>{children}</div>
@@ -263,6 +370,7 @@ export default function TradeTechPro() {
   const [leads, setLeads] = useState([]); // homeowner leads from the public widget
   const [mySlug, setMySlug] = useState(null); // her page slug (from /api/me)
   const [pageModal, setPageModal] = useState(false); // "Mi página web" sheet
+  const [driveTo, setDriveTo] = useState(null); // in-app drive map overlay {lat,lng,address}
   const [aiMsgs, setAiMsgs] = useState([]); // Pregúntale a Paulbeza chat
   const [aiBusy, setAiBusy] = useState(false);
   const [housePos, setHousePos] = useState(null); // {lat,lng} for the house photo
@@ -1122,6 +1230,11 @@ export default function TradeTechPro() {
               🔗 {lang === "es" ? "Crear link de la cotización" : "Create quote link"}
             </button>
           )}
+          {(housePos || q.address) && (
+            <button onClick={() => setDriveTo({ lat: housePos?.lat, lng: housePos?.lng, address: q.address })} className="w-full active:translate-y-px transition-transform mb-2.5" style={{ background: "#fff", color: M.teal, border: `1.5px solid ${M.line}`, borderRadius: 12, padding: 14, fontSize: 15, fontWeight: 800 }}>
+              🚗 {lang === "es" ? "Cómo llegar al trabajo" : "Directions to the job"}
+            </button>
+          )}
           <div className="flex gap-2">
             <button onClick={copyMsg} className="flex-1 active:translate-y-px transition-transform" style={{ background: "#fff", color: M.teal, border: `1.5px solid ${M.line}`, borderRadius: 12, padding: 14, fontSize: 14, fontWeight: 800 }}>📋 {lang === "es" ? "Copiar" : "Copy"}</button>
             <button onClick={resetQuote} className="flex-1 active:translate-y-px transition-transform" style={{ background: M.teal, color: "#fff", border: "none", borderRadius: 12, padding: 14, fontSize: 14, fontWeight: 800 }}>{lang === "es" ? "Nueva cotización" : "New quote"}</button>
@@ -1492,6 +1605,7 @@ export default function TradeTechPro() {
         {screen === "ai" && AiChat()}
         {screen === "account" && Account()}
         {pageModal && <PageSheet />}
+        {driveTo && <DriveMap dest={driveTo} label={driveTo.address} lang={lang} onClose={() => setDriveTo(null)} />}
 
         {tabScreens.includes(screen) && <BottomNav />}
         {toast && (
