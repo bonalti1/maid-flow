@@ -374,6 +374,13 @@ export default function TradeTechPro() {
   const [newExtra, setNewExtra] = useState({ name: "", price: "" }); // Mis precios: add-custom-extra draft
   const [aiMsgs, setAiMsgs] = useState([]); // Pregúntale a Pauleza chat
   const [aiBusy, setAiBusy] = useState(false);
+  // NOTE: kept at this (parent) level on purpose — the screen below is called
+  // as a plain function ({screen === "ai" && AiChat()}), not mounted as its own
+  // <AiChat/> component, so a useState called *inside* it would be a
+  // conditional hook call (only made while screen === "ai") and corrupt React's
+  // hook order every time she navigated in and out — that was the "it kicks me
+  // out" bug. All screen-local state in this file must live up here.
+  const [aiInput, setAiInput] = useState("");
   const [housePos, setHousePos] = useState(null); // {lat,lng} for the house photo
   const [openAcc, setOpenAcc] = useState(null); // Ajustes accordion
   const [openMonth, setOpenMonth] = useState(null); // Cobros month expand
@@ -632,6 +639,16 @@ export default function TradeTechPro() {
 
   const resetQuote = () => { setQ(blankQ); setAddrQ(""); setPlaceSugs(null); setStep(0); setResult(null); setHousePos(null); setScreen("quote"); };
 
+  /* Repeat / recurring business: start a new quote for a client already on
+   * file — her name, phone and address are prefilled and, if she has a saved
+   * address, the satellite scan kicks off immediately so a second visit is a
+   * couple of taps, not a from-scratch address lookup. */
+  const startQuoteForClient = (c) => {
+    resetQuote();
+    setQ((prev) => ({ ...prev, name: c.name || "", phone: c.phone || "" }));
+    if (c.addr) { setAddrQ(c.addr); lookupProperty(c.addr); }
+  };
+
   const toggleAddon = (key) => setQ((prev) => ({ ...prev, addOns: prev.addOns.includes(key) ? prev.addOns.filter((a) => a !== key) : [...prev.addOns, key] }));
 
   /* WhatsApp quote message (Spanish-first), per the handoff template. */
@@ -737,7 +754,22 @@ export default function TradeTechPro() {
     </div>
   );
 
-  /* ── Pregúntale a Pauleza (AI chat) ── */
+  /* ── Pregúntale a Pauleza (AI chat) — same structure as ALTO Pro's AI screen:
+   * a centered welcome with tap-to-ask question chips that collapses into a
+   * normal chat thread once she asks something (adapted to cleaning). ── */
+  const AI_CHIPS = lang === "es" ? [
+    "¿Cuánto debo cobrar por una casa de 1,800 pies²?",
+    "¿Cómo le doy un descuento por limpieza recurrente?",
+    "Redacta un mensaje de seguimiento para un cliente que no contesta",
+    "¿Cuánto cobro extra por limpiar dentro del refrigerador y horno?",
+    "¿Qué le digo a un cliente que dice que está muy caro?",
+  ] : [
+    "How much should I charge for a 1,800 sq ft home?",
+    "How do I give a discount for recurring cleaning?",
+    "Draft a follow-up message for a client who isn't answering",
+    "How much extra should I charge for inside the fridge and oven?",
+    "What do I say to a client who says it's too expensive?",
+  ];
   const sendAi = async (text) => {
     if (!text.trim() || aiBusy) return;
     const next = [...aiMsgs, { role: "user", content: text }];
@@ -748,38 +780,43 @@ export default function TradeTechPro() {
     } catch { setAiMsgs([...next, { role: "assistant", content: lang === "es" ? "No pude responder ahora. Intenta otra vez." : "Couldn't answer right now. Try again." }]); }
     setAiBusy(false);
   };
-  const AiChat = () => {
-    const [draft, setDraft] = useState("");
-    return (
-      <div className="flex-1 flex flex-col" style={{ background: M.bg }}>
-        <TopBar title={lang === "es" ? "💬 Pregúntale a Pauleza" : "💬 Ask Pauleza"} back={() => setScreen("home")} />
+  const askAi = (text) => { setAiInput(""); sendAi(text); };
+  const AiChat = () => (
+    <div className="flex-1 flex flex-col" style={{ background: M.bg }}>
+      <TopBar title={lang === "es" ? "💬 Pregúntale a Pauleza" : "💬 Ask Pauleza"} back={() => setScreen("home")} />
+      {aiMsgs.length === 0 ? (
+        <div className="flex-1 flex flex-col items-center justify-center text-center px-6">
+          <span style={{ fontSize: 44, marginBottom: 6 }}>💬</span>
+          <p className="font-extrabold" style={{ color: M.navy, fontSize: 20 }}>{lang === "es" ? "Pregúntale a Pauleza" : "Ask Pauleza"}</p>
+          <p style={{ color: M.muted2, fontSize: 13, fontWeight: 600, margin: "4px 0 18px" }}>{lang === "es" ? "Pregúntame lo que sea de tu negocio de limpieza" : "Ask me anything about your cleaning business"}</p>
+          <div className="w-full grid gap-2" style={{ maxWidth: 380 }}>
+            {AI_CHIPS.map((chip) => (
+              <button key={chip} onClick={() => askAi(chip)} className="text-left active:scale-[0.98] transition-transform" style={{ background: "#fff", border: `1.5px solid ${M.line}`, borderRadius: 12, padding: "12px 14px", fontSize: 13.5, fontWeight: 700, color: M.navy }}>💬 {chip}</button>
+            ))}
+          </div>
+        </div>
+      ) : (
         <div className="flex-1 overflow-y-auto px-4 py-4">
-          {aiMsgs.length === 0 && (
-            <div className="text-center px-6" style={{ color: M.muted2, marginTop: 30 }}>
-              <div style={{ fontSize: 34, marginBottom: 8 }}>💬</div>
-              <p style={{ fontSize: 14, fontWeight: 600, lineHeight: 1.6 }}>{lang === "es" ? "Pregúntame cómo cobrar una limpieza, qué decirle a un cliente, o cómo conseguir más trabajos." : "Ask me how to price a cleaning, what to tell a client, or how to get more jobs."}</p>
-            </div>
-          )}
           {aiMsgs.map((m, i) => (
             <div key={i} className={`mb-2 flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
               <div style={{ maxWidth: "82%", padding: "10px 13px", borderRadius: 14, fontSize: 14, lineHeight: 1.5, whiteSpace: "pre-wrap", background: m.role === "user" ? M.teal : "#fff", color: m.role === "user" ? "#fff" : M.body, border: m.role === "user" ? "none" : `1px solid ${M.line}` }}>{m.content}</div>
             </div>
           ))}
-          {aiBusy && <div className="mb-2 flex justify-start"><div style={{ padding: "10px 13px", borderRadius: 14, background: "#fff", border: `1px solid ${M.line}`, color: M.muted }}>…</div></div>}
+          {aiBusy && <div className="mb-2 flex justify-start"><div style={{ padding: "10px 13px", borderRadius: 14, background: "#fff", border: `1px solid ${M.line}`, color: M.muted }}>{lang === "es" ? "Pensando…" : "Thinking…"}</div></div>}
         </div>
-        <div className="flex items-center gap-2 px-3 py-3" style={{ background: "#fff", borderTop: `1px solid ${M.line}` }}>
-          <input value={draft} onChange={(e) => setDraft(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { sendAi(draft); setDraft(""); } }}
-            placeholder={lang === "es" ? "Escribe tu pregunta…" : "Type your question…"} className="flex-1 min-w-0" style={{ background: M.bg, border: `1.5px solid ${M.line}`, borderRadius: 12, padding: "12px 14px", fontSize: 15, color: M.navy }} />
-          <button onClick={() => { sendAi(draft); setDraft(""); }} disabled={aiBusy} style={{ background: M.teal, color: "#fff", border: "none", borderRadius: 12, padding: "12px 16px", fontSize: 15, fontWeight: 800 }}>➤</button>
-        </div>
+      )}
+      <div className="flex items-center gap-2 px-3 py-3" style={{ background: "#fff", borderTop: `1px solid ${M.line}` }}>
+        {hasVoice && <button onClick={() => startVoice((txt) => askAi(txt))} aria-label="speak" className="shrink-0 flex items-center justify-center active:scale-90 transition-transform" style={{ width: 44, height: 44, borderRadius: 12, background: listening ? M.red : M.bg, border: `1.5px solid ${listening ? M.red : M.line}`, fontSize: 18 }}>{listening ? "🔴" : "🎤"}</button>}
+        <input value={aiInput} onChange={(e) => setAiInput(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") askAi(aiInput); }}
+          placeholder={lang === "es" ? "Escribe tu pregunta…" : "Type your question…"} className="flex-1 min-w-0" style={{ background: M.bg, border: `1.5px solid ${M.line}`, borderRadius: 12, padding: "12px 14px", fontSize: 15, color: M.navy }} />
+        <button onClick={() => askAi(aiInput)} disabled={aiBusy || !aiInput.trim()} style={{ background: aiBusy || !aiInput.trim() ? M.line : M.teal, color: "#fff", border: "none", borderRadius: 12, padding: "12px 16px", fontSize: 15, fontWeight: 800 }}>➤</button>
       </div>
-    );
-  };
+    </div>
+  );
 
   const BrandHeader = () => (
-    <div className="relative flex items-center justify-center px-5 pt-3 pb-3" style={{ background: "#fff", borderBottom: `1px solid ${M.line}` }}>
+    <div className="flex items-center justify-center px-5 pt-3 pb-3" style={{ background: "#fff", borderBottom: `1px solid ${M.line}` }}>
       <img src="/pauleza-logo.png" alt="Pauleza" style={{ height: 62, width: "auto", objectFit: "contain" }} />
-      <div className="absolute" style={{ right: 16, top: "50%", transform: "translateY(-50%)" }}><LangToggle /></div>
     </div>
   );
 
@@ -787,7 +824,6 @@ export default function TradeTechPro() {
     <div className="flex items-center gap-3 px-5 pt-4 pb-3" style={{ background: M.teal }}>
       {back && <button onClick={back} className="text-2xl font-bold" style={{ color: "#fff", background: "none", border: "none" }}>‹</button>}
       <span className="flex-1 font-extrabold text-lg truncate" style={{ color: "#fff" }}>{title}</span>
-      <LangToggle onDark />
     </div>
   );
 
