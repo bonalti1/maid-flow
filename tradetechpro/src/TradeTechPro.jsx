@@ -397,6 +397,11 @@ export default function TradeTechPro() {
   };
   const canInstall = !IS_STANDALONE; // hide once installed/running as an app
 
+  // Testing switch: when DEMO_UNLIMITED=1 on the server, the anonymous demo caps
+  // are lifted. Fetched once on mount so the client counter is skipped too.
+  const [demoUnlimited, setDemoUnlimited] = useState(false);
+  useEffect(() => { fetch("/api/mapconfig").then((r) => r.json()).then((c) => setDemoUnlimited(!!c.demoUnlimited)).catch(() => {}); }, []);
+
   // Web push ("lead buzz"): subscribe this device to new-lead notifications.
   const [pushOn, setPushOn] = useState(() => typeof Notification !== "undefined" && Notification.permission === "granted");
   const subscribePush = async (interactive) => {
@@ -543,7 +548,7 @@ export default function TradeTechPro() {
 
   // Look up the home's details (sqft/beds/baths) to pre-fill the confirm step.
   const lookupProperty = async (addr, placeId = null, gps = null) => {
-    if (!session && !DEMO_PASS) {
+    if (!session && !DEMO_PASS && !demoUnlimited) {
       let used = 0;
       try { used = parseInt(localStorage.getItem("maidflow_demo_meas") || "0", 10) || 0; } catch { /* private mode */ }
       if (used >= 6) { showToast("🔒 " + t.demoLimit); setField("address", addr); setStep(1); return; }

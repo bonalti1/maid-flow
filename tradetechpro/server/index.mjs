@@ -52,6 +52,10 @@ const CS_KEY = process.env.CS_KEY || "";
 // Unlimited-demo pass: ?pass=<DEMO_PASS> lifts the demo caps for a device, so a
 // closer running /demo on a sales call never hits the anonymous limit.
 const DEMO_PASS = process.env.DEMO_PASS || "";
+// DEMO_UNLIMITED=1 lifts the anonymous demo caps for EVERYONE (testing switch).
+// Off by default — leave unset in production so the 6/day cap stays a conversion
+// moment (and RentCast/Google lookups aren't open to abuse). Fully reversible.
+const DEMO_UNLIMITED = process.env.DEMO_UNLIMITED === "1";
 const OPENAI_KEY = process.env.OPENAI_API_KEY || "";
 // Cloudflare for SaaS (custom client domains). Off until configured.
 const CF_API_TOKEN = process.env.CF_API_TOKEN || "";
@@ -541,7 +545,7 @@ app.get("/api/mapconfig", (_req, res) => {
   // Only ever expose a dedicated, HTTP-referrer-restricted browser key. Never
   // fall back to the server key (used for Geocoding/Places) — that would hand an
   // unrestricted key to anyone who curls this endpoint.
-  res.json({ key: process.env.GOOGLE_MAPS_BROWSER_KEY || "" });
+  res.json({ key: process.env.GOOGLE_MAPS_BROWSER_KEY || "", demoUnlimited: DEMO_UNLIMITED });
 });
 
 /* The "wow factor": a real photo of the client's house on the quote. Proxied so
@@ -630,7 +634,7 @@ const csOk = (req) => {
   return keyEq(k, CS_KEY) || keyEq(k, ADMIN_KEY);
 };
 // Did this request present the valid demo pass (deck iframe, header, or body)?
-const hasDemoPass = (req) => !!DEMO_PASS && keyEq(req.query.pass || req.get("x-demo-pass") || req.body?.pass, DEMO_PASS);
+const hasDemoPass = (req) => DEMO_UNLIMITED || (!!DEMO_PASS && keyEq(req.query.pass || req.get("x-demo-pass") || req.body?.pass, DEMO_PASS));
 // The app-mockup iframe src for the decks — carries the pass only when a logged-in
 // staffer is viewing, so their live demo never hits the cap; public /demo stays capped.
 const demoAppSrc = (req) => "/?demo=app" + (DEMO_PASS && (closerOk(req) || adminOk(req)) ? "&pass=" + encodeURIComponent(DEMO_PASS) : "");
@@ -1855,13 +1859,13 @@ app.post("/api/widget/quote", async (req, res) => {
   if (digits.length < 10 || digits.length > 11) return res.status(400).json({ error: "phone required" });
   if (!String(address).trim()) return res.status(400).json({ error: "address required" });
   const ip = req.ip || req.socket.remoteAddress || "?";
-  if (overQuota(`wip:${ip}`, 12) || overQuota(`wslug:${slug}`, 150)) return res.status(429).json({ error: "quota" });
-  // lifetime per connection per widget: homeowners quote a cleaning 1-3 times
-  // ever; only freeloaders and price-spies get anywhere near 5
-  // Lifetime cap keyed by PHONE (a real homeowner quotes 1-3× ever), not IP —
-  // so many homeowners behind one carrier/CGNAT address aren't blocked.
-  const wqLife = await db.incrCounter(`wq:${slug}:${digits}`).catch(() => 0);
-  if (wqLife > 6) return res.status(429).json({ error: "quota" });
+  if (!DEMO_UNLIMITED) {
+    if (overQuota(`wip:${ip}`, 12) || overQuota(`wslug:${slug}`, 150)) return res.status(429).json({ error: "quota" });
+    // Lifetime cap keyed by PHONE (a real homeowner quotes 1-3× ever), not IP —
+    // so many homeowners behind one carrier/CGNAT address aren't blocked.
+    const wqLife = await db.incrCounter(`wq:${slug}:${digits}`).catch(() => 0);
+    if (wqLife > 6) return res.status(429).json({ error: "quota" });
+  }
 
   // Pull the home's characteristics (best effort — the lead is saved regardless).
   // sqft/beds/baths come from RentCast property records; Google cleans the address.
