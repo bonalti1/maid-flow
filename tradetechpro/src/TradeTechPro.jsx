@@ -1710,34 +1710,43 @@ export default function TradeTechPro() {
       resetQuote();
     };
     const feats = [
-      ["🧹", lang === "es" ? "Cotiza en segundos" : "Quote in seconds", lang === "es" ? "Una dirección y unas preguntas" : "An address and a few questions"],
-      ["💲", lang === "es" ? "Tus precios" : "Your prices", lang === "es" ? "Ajusta tus tarifas y mínimos" : "Set your rates and minimums"],
-      ["🟢", lang === "es" ? "Envía por WhatsApp" : "Send on WhatsApp", lang === "es" ? "Mensaje listo con tu marca" : "Branded message, ready to send"],
+      ["🛰️", M.mint, lang === "es" ? "Cotiza en segundos" : "Quote in seconds", lang === "es" ? "Escanea la casa por satélite" : "Scan the home by satellite"],
+      ["💲", M.aqua, lang === "es" ? "Tus precios, tus reglas" : "Your prices, your rules", lang === "es" ? "Ajusta tus tarifas y mínimos" : "Set your rates and minimums"],
+      ["💬", M.purple, lang === "es" ? "Envía por WhatsApp" : "Send on WhatsApp", lang === "es" ? "Mensaje listo con tu marca" : "Branded message, ready to send"],
     ];
     return (
       <div className="flex-1 overflow-y-auto" style={{ background: M.bg }}>
-        <div className="px-6 pt-8 pb-6 text-center" style={{ background: M.headGrad }}>
-          <div className="mb-3"><Wordmark size={34} /></div>
-          <p className="text-white font-extrabold" style={{ fontSize: 22, lineHeight: 1.2 }}>{lang === "es" ? "Bienvenida a Pauleza" : "Welcome to Pauleza"}</p>
-          <p style={{ color: "rgba(255,255,255,0.82)", fontSize: 13, fontWeight: 600, marginTop: 6 }}>{lang === "es" ? "Cotiza cualquier limpieza en minutos." : "Quote any cleaning in minutes."}</p>
+        {/* Hero — the satellite radar signature behind the wordmark ties it to the quote flow */}
+        <div className="relative overflow-hidden px-6 pt-10 pb-9 text-center" style={{ background: M.headGrad }}>
+          <div className="absolute" style={{ left: "50%", top: 46, width: 150, height: 150, margin: "0 0 0 -75px", borderRadius: 999, border: `1.5px solid ${M.mint}`, opacity: 0.25, animation: "ttpRipple 2.6s ease-out infinite" }} />
+          <div className="absolute" style={{ left: "50%", top: 46, width: 150, height: 150, margin: "0 0 0 -75px", borderRadius: 999, border: `1.5px solid ${M.aqua}`, opacity: 0.25, animation: "ttpRipple 2.6s ease-out 1.3s infinite" }} />
+          <div className="relative">
+            <div className="mb-4"><Wordmark size={44} /></div>
+            <p className="text-white font-extrabold" style={{ fontSize: 25, lineHeight: 1.15, letterSpacing: "-0.01em" }}>{lang === "es" ? "Bienvenida a Pauleza" : "Welcome to Pauleza"}</p>
+            <p style={{ color: "rgba(255,255,255,0.85)", fontSize: 14, fontWeight: 600, marginTop: 7 }}>{lang === "es" ? "Todo tu negocio de limpieza, en tu teléfono." : "Your whole cleaning business, on your phone."}</p>
+          </div>
         </div>
-        <div className="px-5 pt-5">
-          <Card>
-            <p style={{ color: M.gold, fontSize: 10, fontWeight: 900, letterSpacing: "0.18em", textTransform: "uppercase", marginBottom: 4 }}>{lang === "es" ? "Tu negocio" : "Your business"}</p>
-            <p className="font-bold mb-3" style={{ color: M.tealDeep, fontSize: 14 }}>{lang === "es" ? "Aparece en las cotizaciones que envías." : "Shown on the quotes you send."}</p>
+
+        <div className="px-5 pt-5" style={{ marginTop: -14 }}>
+          <Card style={{ borderRadius: 20, boxShadow: "0 14px 34px rgba(42,35,82,0.10)", padding: 18 }}>
+            <p style={{ color: M.teal, fontSize: 10, fontWeight: 900, letterSpacing: "0.18em", textTransform: "uppercase", marginBottom: 4 }}>{lang === "es" ? "Tu negocio" : "Your business"}</p>
+            <p className="font-bold mb-3" style={{ color: M.tealDeep, fontSize: 14.5 }}>{lang === "es" ? "Aparece en cada cotización que mandas." : "Shown on every quote you send."}</p>
             <TextInput value={bizName} onChange={(v) => setBizName(v)} placeholder={lang === "es" ? "Nombre del negocio (ej. Brillo Cleaning)" : "Business name (e.g. Sparkle Maids)"} />
             <TextInput value={userName} onChange={(v) => setUserName(v)} placeholder={lang === "es" ? "Tu nombre" : "Your name"} />
           </Card>
-          <Card>
-            <p style={{ color: M.muted2, fontSize: 9, fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", marginBottom: 8 }}>{lang === "es" ? "Cómo funciona" : "How it works"}</p>
-            {feats.map(([icon, name, desc], i) => (
-              <div key={name} className="flex items-center gap-3 py-2" style={{ borderTop: i ? `1px solid ${M.line}` : "none" }}>
-                <span className="flex items-center justify-center shrink-0" style={{ width: 34, height: 34, borderRadius: 10, background: M.bg, fontSize: 16 }}>{icon}</span>
-                <span className="min-w-0"><span className="block font-bold" style={{ color: M.tealDeep, fontSize: 14 }}>{name}</span><span className="block" style={{ color: M.muted2, fontSize: 11, fontWeight: 600 }}>{desc}</span></span>
+
+          <Card style={{ borderRadius: 20, padding: 18 }}>
+            <p style={{ color: M.muted2, fontSize: 10, fontWeight: 800, letterSpacing: "0.18em", textTransform: "uppercase", marginBottom: 12 }}>{lang === "es" ? "Cómo funciona" : "How it works"}</p>
+            {feats.map(([icon, tint, name, desc], i) => (
+              <div key={name} className="flex items-center gap-3" style={{ paddingTop: i ? 12 : 0, marginTop: i ? 12 : 0, borderTop: i ? `1px solid ${M.line}` : "none" }}>
+                <span className="flex items-center justify-center shrink-0" style={{ width: 42, height: 42, borderRadius: 13, background: `${tint}2E`, border: `1.5px solid ${tint}`, fontSize: 19 }}>{icon}</span>
+                <span className="min-w-0 flex-1"><span className="block font-extrabold" style={{ color: M.tealDeep, fontSize: 15 }}>{name}</span><span className="block" style={{ color: M.muted2, fontSize: 12, fontWeight: 600, marginTop: 1 }}>{desc}</span></span>
               </div>
             ))}
           </Card>
-          <PrimaryBtn onClick={finish} style={{ marginBottom: 24 }}>{lang === "es" ? "Empezar →" : "Get started →"}</PrimaryBtn>
+
+          <PrimaryBtn onClick={finish} style={{ marginTop: 4, marginBottom: 12, padding: 17, fontSize: 17 }}>{lang === "es" ? "Empezar →" : "Get started →"}</PrimaryBtn>
+          <p className="text-center" style={{ color: M.muted, fontSize: 11, fontWeight: 600, marginBottom: 24 }}>{lang === "es" ? "Sin tarjeta · listo en 30 segundos" : "No card needed · ready in 30 seconds"}</p>
         </div>
       </div>
     );
