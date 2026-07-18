@@ -333,13 +333,24 @@ async function reverseGeocode(lat, lng) {
  * autocomplete — more accurate than re-geocoding the address text, which can
  * land on a nearby outbuilding. */
 async function placeDetails(placeId) {
-  const r = await fetch(`https://places.googleapis.com/v1/places/${placeId}`, {
-    headers: { "X-Goog-Api-Key": GOOGLE_KEY, "X-Goog-FieldMask": "location,formattedAddress" },
-  });
-  if (!r.ok) return null;
-  const j = await r.json();
-  if (!j.location) return null;
-  return { lat: j.location.latitude, lng: j.location.longitude, formatted: j.formattedAddress || "" };
+  // New Places API first…
+  try {
+    const r = await fetch(`https://places.googleapis.com/v1/places/${placeId}`, {
+      headers: { "X-Goog-Api-Key": GOOGLE_KEY, "X-Goog-FieldMask": "location,formattedAddress" },
+    });
+    if (r.ok) {
+      const j = await r.json();
+      if (j.location) return { lat: j.location.latitude, lng: j.location.longitude, formatted: j.formattedAddress || "" };
+    }
+  } catch { /* fall through to classic */ }
+  // …then the classic Places API (works if only the legacy one is enabled).
+  try {
+    const r = await fetch(`https://maps.googleapis.com/maps/api/place/details/json?place_id=${encodeURIComponent(placeId)}&fields=geometry,formatted_address&key=${GOOGLE_KEY}`);
+    const j = await r.json();
+    const loc = j.result?.geometry?.location;
+    if (loc) return { lat: loc.lat, lng: loc.lng, formatted: j.result.formatted_address || "" };
+  } catch { /* ignore */ }
+  return null;
 }
 
 /* ── RentCast property data ──
@@ -463,6 +474,7 @@ app.get("/api/places", async (req, res) => {
   const q = String(req.query.q || "").trim();
   if (!q) return res.json({ suggestions: [], source: "demo" });
   if (GOOGLE_KEY) {
+    // Try the New Places Autocomplete API first.
     try {
       const r = await fetch("https://places.googleapis.com/v1/places:autocomplete", {
         method: "POST",
@@ -475,12 +487,22 @@ app.get("/api/places", async (req, res) => {
           .map((s) => ({ text: s.placePrediction?.text?.text, placeId: s.placePrediction?.placeId || null }))
           .filter((s) => s.text)
           .slice(0, 5);
+        if (sugs.length) return res.json({ suggestions: sugs, source: "live" });
+      } else {
+        console.error("places (new) failed:", r.status, (await r.text()).slice(0, 200));
+      }
+    } catch (e) { console.error("places (new) failed:", e.message); }
+    // Fall back to the classic Places Autocomplete API (works if only the
+    // legacy "Places API" is enabled on the key, not "Places API (New)").
+    try {
+      const r = await fetch(`https://maps.googleapis.com/maps/api/place/autocomplete/json?input=${encodeURIComponent(q)}&components=country:us&key=${GOOGLE_KEY}`);
+      const j = await r.json();
+      if (j.status === "OK") {
+        const sugs = (j.predictions || []).map((p) => ({ text: p.description, placeId: p.place_id || null })).filter((s) => s.text).slice(0, 5);
         return res.json({ suggestions: sugs, source: "live" });
       }
-      console.error("places failed:", r.status, await r.text());
-    } catch (e) {
-      console.error("places failed:", e.message);
-    }
+      console.error("places (classic) status:", j.status, j.error_message || "");
+    } catch (e) { console.error("places (classic) failed:", e.message); }
   }
   const ql = q.toLowerCase();
   res.json({
