@@ -772,9 +772,9 @@ export default function TradeTechPro() {
   };
 
   const BrandHeader = () => (
-    <div className="relative flex items-center justify-center px-5 pt-4 pb-3" style={{ background: M.teal }}>
-      <Wordmark size={22} />
-      <div className="absolute" style={{ right: 16, top: "50%", transform: "translateY(-50%)" }}><LangToggle onDark /></div>
+    <div className="relative flex items-center justify-center px-5 pt-3 pb-3" style={{ background: "#fff", borderBottom: `1px solid ${M.line}` }}>
+      <img src="/pauleza-logo.png" alt="Pauleza" style={{ height: 62, width: "auto", objectFit: "contain" }} />
+      <div className="absolute" style={{ right: 16, top: "50%", transform: "translateY(-50%)" }}><LangToggle /></div>
     </div>
   );
 
