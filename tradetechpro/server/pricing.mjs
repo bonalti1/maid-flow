@@ -50,6 +50,14 @@ export function mergeRates(overrides) {
       } else {
         out[key] = { ...def };
         for (const k of Object.keys(def)) { const v = okNum(ov[k], CAP[key]); if (v !== undefined) out[key][k] = v; }
+        // ADDON also accepts custom extras the cleaner defines herself (custom:*)
+        if (key === 'ADDON') {
+          for (const k of Object.keys(ov)) {
+            if (k in def || !/^custom:/.test(k)) continue;
+            const v = okNum(ov[k], CAP.ADDON);
+            if (v !== undefined) out.ADDON[k] = v;
+          }
+        }
       }
     } else { const v = okNum(ov, CAP[key]); if (v !== undefined) out[key] = v; }
   }

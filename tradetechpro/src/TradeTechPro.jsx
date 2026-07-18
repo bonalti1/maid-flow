@@ -3,12 +3,12 @@ import React, { useState, useRef, useEffect } from "react";
 // public widget. Pure JS, no node deps, so Vite bundles it for the browser.
 import { quote as priceQuote, mergeRates, DEFAULTS } from "../server/pricing.mjs";
 
-/* ─── Brand tokens (Paulbeza: mint · aqua · light blue · purple · dark blue) ─── */
+/* ─── Brand tokens (Pauleza: mint · aqua · light blue · purple · dark blue) ─── */
 const C = {
-  teal: "#1E3A8A",       // primary — header bar, dark cards, headings (Dark Blue)
-  tealDeep: "#16295F",   // deepest — gradients, deep panels
-  gold: "#7ED6D9",       // aqua accent
-  goldSoft: "#ECF9F2",   // mint tint
+  teal: "#6B3FA0",       // primary — buttons, headers, headings (brand violet)
+  tealDeep: "#2A2352",   // deepest — gradients, deep panels
+  gold: "#76C7C0",       // aqua accent
+  goldSoft: "#F1ECFA",   // mint tint
   bg: "#F4F7FB",
   card: "#FFFFFF",
   line: "#E3E9F4",
@@ -19,21 +19,21 @@ const C = {
   redSoft: "#FBEAEA",
   navy: "#1E2A4A",       // dark text
 };
-// Scoped visual language for the app screens.
+// Pauleza brand palette (mint→teal→blue→purple, per the logo).
 const M = {
-  teal: "#1E3A8A", tealDeep: "#16295F",
-  purple: "#A971E8", mint: "#A7E8C8", aqua: "#7ED6D9", lblue: "#8EA6E6",
-  cardGrad: "linear-gradient(135deg,#1E3A8A 0%,#3B4FA0 55%,#7B5BD6 100%)",
-  headGrad: "linear-gradient(135deg,#16295F 0%,#1E3A8A 62%,#5B4FA8 100%)",
-  brandGrad: "linear-gradient(90deg,#A7E8C8 0%,#7ED6D9 35%,#8EA6E6 68%,#A971E8 100%)",
-  gold: "#A971E8", goldHi: "#A7E8C8", goldSoft: "#ECF9F2",
+  teal: "#6B3FA0", tealDeep: "#2A2352",
+  purple: "#9355C1", mint: "#A1E9BD", aqua: "#76C7C0", lblue: "#7FA6C5",
+  cardGrad: "linear-gradient(135deg,#6B3FA0 0%,#7D5AB5 55%,#9355C1 100%)",
+  headGrad: "linear-gradient(135deg,#2A2352 0%,#6B3FA0 62%,#7738AA 100%)",
+  brandGrad: "linear-gradient(90deg,#A1E9BD 0%,#76C7C0 35%,#7FA6C5 68%,#9355C1 100%)",
+  gold: "#9355C1", goldHi: "#A1E9BD", goldSoft: "#F1ECFA",
   bg: "#F4F7FB", line: "#E3E9F4", line2: "#D9E2F2",
   muted: "#8FA6B6", muted2: "#5A7488", body: "#324A5C",
   green: "#1E9E5A", red: "#E8442E",
 };
 /* Lowercase gradient wordmark, per the brand mockup. */
 const Wordmark = ({ size = 20 }) => (
-  <span style={{ fontWeight: 900, fontSize: size, letterSpacing: "-0.02em", background: M.brandGrad, WebkitBackgroundClip: "text", backgroundClip: "text", WebkitTextFillColor: "transparent", color: "transparent" }}>paulbeza</span>
+  <span style={{ fontWeight: 900, fontSize: size, letterSpacing: "-0.02em", background: M.brandGrad, WebkitBackgroundClip: "text", backgroundClip: "text", WebkitTextFillColor: "transparent", color: "transparent" }}>pauleza</span>
 );
 
 /* ─── Catalogs (Spanish-first) ─── */
@@ -91,7 +91,7 @@ const ADDONS = [
 const TR = {
   es: {
     demoBanner: "🧪 Modo demo — tus datos no se guardan en la nube. ¿Cliente? Entra con tu link de WhatsApp.",
-    demoLimit: "El modo demo incluye 6 búsquedas de prueba y ya las usaste. Las limpiadoras de Paulbeza cotizan sin límite.",
+    demoLimit: "El modo demo incluye 6 búsquedas de prueba y ya las usaste. Las limpiadoras de Pauleza cotizan sin límite.",
     nav: { home: "Inicio", cobros: "Cobros", quote: "Cotizar", clients: "Clientes", prices: "Mis precios", account: "Ajustes" },
     measuring1: "Buscando imagen satelital…", measuring2: "Midiendo la casa…", measuring3: "Calculando el tamaño…",
     beds: "Recámaras", baths: "Baños", sqft: "pies²", builtIn: "Construida",
@@ -101,7 +101,7 @@ const TR = {
   },
   en: {
     demoBanner: "🧪 Demo mode — your data isn't saved to the cloud. Client? Enter with your WhatsApp link.",
-    demoLimit: "The demo includes 6 trial lookups and you've used them. Paulbeza cleaners quote with no limits.",
+    demoLimit: "The demo includes 6 trial lookups and you've used them. Pauleza cleaners quote with no limits.",
     nav: { home: "Home", cobros: "Payments", quote: "Quote", clients: "Clients", prices: "My prices", account: "Settings" },
     measuring1: "Finding satellite image…", measuring2: "Measuring the home…", measuring3: "Calculating the size…",
     beds: "Bedrooms", baths: "Baths", sqft: "sq ft", builtIn: "Built",
@@ -196,7 +196,7 @@ function DriveMap({ dest, label, lang, onClose }) {
           (res, st) => {
             if (cancelled) return;
             if (st !== "OK" || !res?.routes?.[0]) { pinOnly(); return; }
-            new maps.DirectionsRenderer({ map, suppressMarkers: false, polylineOptions: { strokeColor: "#1E3A8A", strokeWeight: 5 } }).setDirections(res);
+            new maps.DirectionsRenderer({ map, suppressMarkers: false, polylineOptions: { strokeColor: "#6B3FA0", strokeWeight: 5 } }).setDirections(res);
             const leg = res.routes[0].legs?.[0];
             if (leg) setInfo({ dist: leg.distance?.text || "", dur: leg.duration?.text || "" });
             setStatus("route");
@@ -371,7 +371,8 @@ export default function TradeTechPro() {
   const [mySlug, setMySlug] = useState(null); // her page slug (from /api/me)
   const [pageModal, setPageModal] = useState(false); // "Mi página web" sheet
   const [driveTo, setDriveTo] = useState(null); // in-app drive map overlay {lat,lng,address}
-  const [aiMsgs, setAiMsgs] = useState([]); // Pregúntale a Paulbeza chat
+  const [newExtra, setNewExtra] = useState({ name: "", price: "" }); // Mis precios: add-custom-extra draft
+  const [aiMsgs, setAiMsgs] = useState([]); // Pregúntale a Pauleza chat
   const [aiBusy, setAiBusy] = useState(false);
   const [housePos, setHousePos] = useState(null); // {lat,lng} for the house photo
   const [openAcc, setOpenAcc] = useState(null); // Ajustes accordion
@@ -698,7 +699,7 @@ export default function TradeTechPro() {
           style={{ background: "#fff", border: `1px solid ${M.line}`, borderRadius: 18, padding: "18px 18px" }}>
           <span style={{ fontSize: 22 }}>💬</span>
           <span className="flex-1 text-left">
-            <span className="block font-extrabold" style={{ color: M.teal, fontSize: 17 }}>{lang === "es" ? "Pregúntale a Paulbeza" : "Ask Paulbeza"}</span>
+            <span className="block font-extrabold" style={{ color: M.teal, fontSize: 17 }}>{lang === "es" ? "Pregúntale a Pauleza" : "Ask Pauleza"}</span>
             <span className="block" style={{ color: M.muted2, fontSize: 12.5, fontWeight: 600 }}>{lang === "es" ? "Tu asistente de limpieza" : "Your cleaning assistant"}</span>
           </span>
           <span style={{ color: M.muted, fontSize: 20 }}>→</span>
@@ -731,7 +732,7 @@ export default function TradeTechPro() {
     </div>
   );
 
-  /* ── Pregúntale a Paulbeza (AI chat) ── */
+  /* ── Pregúntale a Pauleza (AI chat) ── */
   const sendAi = async (text) => {
     if (!text.trim() || aiBusy) return;
     const next = [...aiMsgs, { role: "user", content: text }];
@@ -746,7 +747,7 @@ export default function TradeTechPro() {
     const [draft, setDraft] = useState("");
     return (
       <div className="flex-1 flex flex-col" style={{ background: M.bg }}>
-        <TopBar title={lang === "es" ? "💬 Pregúntale a Paulbeza" : "💬 Ask Paulbeza"} back={() => setScreen("home")} />
+        <TopBar title={lang === "es" ? "💬 Pregúntale a Pauleza" : "💬 Ask Pauleza"} back={() => setScreen("home")} />
         <div className="flex-1 overflow-y-auto px-4 py-4">
           {aiMsgs.length === 0 && (
             <div className="text-center px-6" style={{ color: M.muted2, marginTop: 30 }}>
@@ -844,7 +845,7 @@ export default function TradeTechPro() {
       return (
         <div className="flex-1 flex flex-col justify-center px-6" style={{ background: M.tealDeep }}>
           {/* Aerial card with a sweeping scan beam — the "wow" moment */}
-          <div className="relative mx-auto w-full overflow-hidden" style={{ maxWidth: 360, aspectRatio: "16 / 11", borderRadius: 22, border: "1.5px solid rgba(167,232,200,0.35)", background: "linear-gradient(135deg,#16295F,#243b7a)", boxShadow: "0 20px 50px rgba(0,0,0,0.4)" }}>
+          <div className="relative mx-auto w-full overflow-hidden" style={{ maxWidth: 360, aspectRatio: "16 / 11", borderRadius: 22, border: "1.5px solid rgba(167,232,200,0.35)", background: "linear-gradient(135deg,#2A2352,#243b7a)", boxShadow: "0 20px 50px rgba(0,0,0,0.4)" }}>
             {satUrl && <img src={satUrl} alt="" onError={(e) => { e.currentTarget.style.display = "none"; }} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />}
             {/* scan beam */}
             <div className="absolute left-0 right-0" style={{ height: 3, background: `linear-gradient(90deg,transparent,${M.goldHi},transparent)`, boxShadow: `0 0 18px 4px ${M.goldHi}`, animation: "ttpScan 1.7s ease-in-out infinite" }} />
@@ -898,7 +899,7 @@ export default function TradeTechPro() {
               ))}
             </div>
             {/* Hero — satellite radar for homes; walkthrough promise for commercial */}
-            <div className="relative overflow-hidden mb-3" style={{ height: 150, borderRadius: 22, background: "linear-gradient(160deg,#16295F 0%,#24387A 70%,#37418F 100%)", border: "1.5px solid rgba(167,232,200,0.28)", boxShadow: "0 18px 40px rgba(22,41,95,0.28)" }}>
+            <div className="relative overflow-hidden mb-3" style={{ height: 150, borderRadius: 22, background: "linear-gradient(160deg,#2A2352 0%,#3A2E63 70%,#5B3D8F 100%)", border: "1.5px solid rgba(167,232,200,0.28)", boxShadow: "0 18px 40px rgba(22,41,95,0.28)" }}>
               <div className="absolute inset-0" style={{ backgroundImage: "linear-gradient(rgba(167,232,200,0.10) 1px,transparent 1px),linear-gradient(90deg,rgba(167,232,200,0.10) 1px,transparent 1px)", backgroundSize: "26px 26px" }} />
               {isCom ? (<>
                 <span className="absolute" style={{ left: "50%", top: "50%", transform: "translate(-50%,-62%)", fontSize: 34 }}>🏢</span>
@@ -1047,13 +1048,15 @@ export default function TradeTechPro() {
       return (
         <StepFrame kicker={lang === "es" ? `Paso ${step + 1} · Extras` : `Step ${step + 1} · Add-ons`} title={lang === "es" ? "¿Algún extra?" : "Any add-ons?"} nextLabel={t.next + " →"}>
           <div className="grid grid-cols-2 gap-2">
-            {ADDONS.map(([key, icon, es, en]) => {
+            {[
+              ...ADDONS.map(([key, icon, es, en]) => ({ key, label: lang === "es" ? es : en })),
+              ...Object.keys(myRates.ADDON || {}).filter((k) => k.startsWith("custom:")).map((key) => ({ key, label: myRates.ADDON_LABELS?.[key] || (lang === "es" ? "Extra" : "Extra") })),
+            ].map(({ key, label }) => {
               const on = q.addOns.includes(key);
               return (
                 <button key={key} onClick={() => toggleAddon(key)} className="flex items-center gap-2 text-left active:scale-[0.98] transition-transform"
                   style={{ background: on ? M.teal : "#fff", color: on ? "#fff" : M.navy, border: `1.5px solid ${on ? M.teal : M.line}`, borderRadius: 12, padding: "12px 12px" }}>
-                  <span style={{ fontSize: 18 }}>{icon}</span>
-                  <span className="font-bold" style={{ fontSize: 13 }}>{lang === "es" ? es : en}</span>
+                  <span className="font-bold" style={{ fontSize: 13 }}>{label}</span>
                   {on && <span className="ml-auto">✓</span>}
                 </button>
               );
@@ -1202,7 +1205,7 @@ export default function TradeTechPro() {
             </div>
             {q.addOns.length > 0 && (
               <div className="flex flex-wrap gap-1.5 mt-3">
-                {q.addOns.map((a) => { const ad = ADDONS.find((x) => x[0] === a); return <span key={a} style={{ background: M.bg, border: `1px solid ${M.line}`, borderRadius: 8, padding: "4px 10px", fontSize: 11, fontWeight: 700, color: M.body }}>{ad?.[1]} {lang === "es" ? ad?.[2] : ad?.[3]}</span>; })}
+                {q.addOns.map((a) => { const ad = ADDONS.find((x) => x[0] === a); const label = ad ? (lang === "es" ? ad[2] : ad[3]) : (myRates.ADDON_LABELS?.[a] || "Extra"); return <span key={a} style={{ background: M.bg, border: `1px solid ${M.line}`, borderRadius: 8, padding: "4px 10px", fontSize: 11, fontWeight: 700, color: M.body }}>{label}</span>; })}
               </div>
             )}
           </Card>
@@ -1254,7 +1257,7 @@ export default function TradeTechPro() {
     api("/api/leads.csv").then((r) => (r.ok ? r.blob() : null)).then((b) => {
       if (!b) return;
       const u = URL.createObjectURL(b); const a = document.createElement("a");
-      a.href = u; a.download = "paulbeza-leads.csv"; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(u);
+      a.href = u; a.download = "pauleza-leads.csv"; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(u);
     }).catch(() => showToast(lang === "es" ? "No se pudo exportar" : "Export failed"));
   };
 
@@ -1342,41 +1345,92 @@ export default function TradeTechPro() {
       return next;
     });
     const resetRates = () => { setMyRates({}); saveProfile({ rates: {} }); showToast(lang === "es" ? "Precios restablecidos ✓" : "Prices reset ✓"); };
+    // Custom extras the cleaner adds herself (keyed custom:<id>, label in ADDON_LABELS).
+    const customKeys = Object.keys(myRates.ADDON || {}).filter((k) => k.startsWith("custom:"));
+    const addCustom = () => {
+      const name = (newExtra.name || "").trim(); const price = cleanNum(newExtra.price);
+      if (!name || price === undefined) { showToast(lang === "es" ? "Escribe nombre y precio" : "Enter a name and price"); return; }
+      const key = "custom:" + Math.random().toString(36).slice(2, 10);
+      setMyRates((prev) => {
+        const next = { ...prev, ADDON: { ...(prev.ADDON || {}), [key]: price }, ADDON_LABELS: { ...(prev.ADDON_LABELS || {}), [key]: name.slice(0, 40) } };
+        saveProfile({ rates: next }); return next;
+      });
+      setNewExtra({ name: "", price: "" });
+    };
+    const removeCustom = (key) => setMyRates((prev) => {
+      const ADDON = { ...(prev.ADDON || {}) }; const ADDON_LABELS = { ...(prev.ADDON_LABELS || {}) };
+      delete ADDON[key]; delete ADDON_LABELS[key];
+      const next = { ...prev, ADDON, ADDON_LABELS }; saveProfile({ rates: next }); return next;
+    });
+    const inp = { background: M.bg, border: `1.5px solid ${M.line}`, color: M.navy };
     return (
       <div className="flex-1 overflow-y-auto pb-6" style={{ background: M.bg }}>
         <div className="px-5 pt-4">
-          <div className="rounded-2xl p-5 mb-3" style={{ background: M.cardGrad }}>
+          <div className="rounded-2xl p-5 mb-3" style={{ background: M.cardGrad, boxShadow: "0 14px 32px rgba(42,35,82,0.18)" }}>
             <p style={{ color: M.goldHi, fontSize: 11, fontWeight: 900, letterSpacing: "0.16em", textTransform: "uppercase" }}>{lang === "es" ? "Mis precios" : "My prices"}</p>
-            <p style={{ color: "rgba(255,255,255,0.82)", fontSize: 13, fontWeight: 600, lineHeight: 1.5, marginTop: 4 }}>{lang === "es" ? "Ajusta tus tarifas. Cada cotización usa las tuyas." : "Set your rates. Every quote uses yours."}</p>
+            <p style={{ color: "rgba(255,255,255,0.85)", fontSize: 13, fontWeight: 600, lineHeight: 1.5, marginTop: 4 }}>{lang === "es" ? "Ajusta tus tarifas. Cada cotización usa las tuyas." : "Set your rates. Every quote uses yours."}</p>
           </div>
-          <Card>
-            <p style={{ color: M.gold, fontSize: 10, fontWeight: 900, letterSpacing: "0.16em", textTransform: "uppercase", marginBottom: 10 }}>{lang === "es" ? "Tarifas por tipo de limpieza" : "Rates by cleaning type"}</p>
-            <div className="flex items-center gap-2 mb-1" style={{ paddingLeft: 110 }}>
-              <span className="flex-1 text-center" style={{ color: M.muted2, fontSize: 9, fontWeight: 700, textTransform: "uppercase" }}>$/{t.sqft}</span>
-              <span className="flex-1 text-center" style={{ color: M.muted2, fontSize: 9, fontWeight: 700, textTransform: "uppercase" }}>{lang === "es" ? "Mínimo" : "Minimum"}</span>
-            </div>
-            {CLEANING_TYPES.map(([key, icon, es, en]) => (
-              <div key={key} className="flex items-center gap-2 mb-2">
-                <span className="shrink-0 font-bold" style={{ width: 102, fontSize: 12, color: M.navy }}>{icon} {lang === "es" ? es : en}</span>
-                <input value={myRates.RATE?.[key]?.perSqft ?? ""} onChange={(e) => setRate(key, "perSqft", e.target.value)} placeholder={String(rates.RATE[key].perSqft)} inputMode="decimal"
-                  className="flex-1 min-w-0 rounded-lg px-2 py-2 font-semibold outline-none text-center" style={{ background: M.bg, border: `1.5px solid ${M.line}`, color: M.navy, fontSize: 13 }} />
-                <input value={myRates.RATE?.[key]?.min ?? ""} onChange={(e) => setRate(key, "min", e.target.value)} placeholder={String(rates.RATE[key].min)} inputMode="numeric"
-                  className="flex-1 min-w-0 rounded-lg px-2 py-2 font-semibold outline-none text-center" style={{ background: M.bg, border: `1.5px solid ${M.line}`, color: M.navy, fontSize: 13 }} />
+
+          {/* Rates by cleaning type — label on its own line, two clearly-labeled fields */}
+          <Card style={{ padding: 18 }}>
+            <p style={{ color: M.teal, fontSize: 11, fontWeight: 900, letterSpacing: "0.14em", textTransform: "uppercase", marginBottom: 3 }}>{lang === "es" ? "Tarifas por tipo de limpieza" : "Rates by cleaning type"}</p>
+            <p style={{ color: M.muted2, fontSize: 12, fontWeight: 600, marginBottom: 14 }}>{lang === "es" ? "El precio por pie cuadrado y el mínimo que cobras." : "Your price per square foot and your minimum."}</p>
+            {CLEANING_TYPES.map(([key, icon, es, en], i) => (
+              <div key={key} style={{ paddingTop: i ? 12 : 0, marginTop: i ? 12 : 0, borderTop: i ? `1px solid ${M.line}` : "none" }}>
+                <p className="font-bold mb-2" style={{ fontSize: 14, color: M.navy }}>{lang === "es" ? es : en}</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <label className="block"><span style={{ color: M.muted2, fontSize: 10, fontWeight: 800, letterSpacing: "0.04em", textTransform: "uppercase" }}>$ / {t.sqft}</span>
+                    <input value={myRates.RATE?.[key]?.perSqft ?? ""} onChange={(e) => setRate(key, "perSqft", e.target.value)} placeholder={String(rates.RATE[key].perSqft)} inputMode="decimal"
+                      className="w-full rounded-xl px-3 py-2.5 font-bold outline-none mt-1" style={{ ...inp, fontSize: 15 }} /></label>
+                  <label className="block"><span style={{ color: M.muted2, fontSize: 10, fontWeight: 800, letterSpacing: "0.04em", textTransform: "uppercase" }}>{lang === "es" ? "Mínimo $" : "Minimum $"}</span>
+                    <input value={myRates.RATE?.[key]?.min ?? ""} onChange={(e) => setRate(key, "min", e.target.value)} placeholder={String(rates.RATE[key].min)} inputMode="numeric"
+                      className="w-full rounded-xl px-3 py-2.5 font-bold outline-none mt-1" style={{ ...inp, fontSize: 15 }} /></label>
+                </div>
               </div>
             ))}
           </Card>
-          <Card>
-            <p style={{ color: M.gold, fontSize: 10, fontWeight: 900, letterSpacing: "0.16em", textTransform: "uppercase", marginBottom: 10 }}>{lang === "es" ? "Precio de extras" : "Add-on prices"}</p>
-            <div className="grid grid-cols-2 gap-2">
-              {ADDONS.map(([key, icon, es, en]) => (
-                <div key={key} className="flex items-center gap-1.5">
-                  <span className="shrink-0" style={{ fontSize: 13, color: M.navy, width: 92 }}>{icon} {lang === "es" ? es : en}</span>
+
+          {/* Add-on prices — no icons, name + $, plus custom extras she can add/remove */}
+          <Card style={{ padding: 18 }}>
+            <p style={{ color: M.teal, fontSize: 11, fontWeight: 900, letterSpacing: "0.14em", textTransform: "uppercase", marginBottom: 3 }}>{lang === "es" ? "Precio de extras" : "Add-on prices"}</p>
+            <p style={{ color: M.muted2, fontSize: 12, fontWeight: 600, marginBottom: 14 }}>{lang === "es" ? "Servicios sueltos que sumas a una limpieza." : "Extra services you add on to a cleaning."}</p>
+            {ADDONS.map(([key, icon, es, en], i) => (
+              <div key={key} className="flex items-center gap-3" style={{ paddingTop: i ? 8 : 0, marginTop: i ? 8 : 0, borderTop: i ? `1px solid ${M.line}` : "none" }}>
+                <span className="flex-1 font-bold" style={{ fontSize: 14, color: M.navy }}>{lang === "es" ? es : en}</span>
+                <div className="flex items-center gap-1" style={{ width: 108 }}>
+                  <span style={{ color: M.muted2, fontSize: 14, fontWeight: 800 }}>$</span>
                   <input value={myRates.ADDON?.[key] ?? ""} onChange={(e) => setAddon(key, e.target.value)} placeholder={String(rates.ADDON[key])} inputMode="numeric"
-                    className="flex-1 min-w-0 rounded-lg px-2 py-2 font-semibold outline-none text-center" style={{ background: M.bg, border: `1.5px solid ${M.line}`, color: M.navy, fontSize: 12 }} />
+                    className="flex-1 min-w-0 rounded-xl px-3 py-2.5 font-bold outline-none text-center" style={{ ...inp, fontSize: 15 }} />
                 </div>
-              ))}
+              </div>
+            ))}
+            {customKeys.map((key) => (
+              <div key={key} className="flex items-center gap-3" style={{ paddingTop: 8, marginTop: 8, borderTop: `1px solid ${M.line}` }}>
+                <span className="flex-1 font-bold truncate" style={{ fontSize: 14, color: M.teal }}>{myRates.ADDON_LABELS?.[key] || (lang === "es" ? "Extra" : "Extra")}</span>
+                <div className="flex items-center gap-1" style={{ width: 108 }}>
+                  <span style={{ color: M.muted2, fontSize: 14, fontWeight: 800 }}>$</span>
+                  <input value={myRates.ADDON?.[key] ?? ""} onChange={(e) => setAddon(key, e.target.value)} inputMode="numeric"
+                    className="flex-1 min-w-0 rounded-xl px-3 py-2.5 font-bold outline-none text-center" style={{ ...inp, fontSize: 15 }} />
+                </div>
+                <button onClick={() => removeCustom(key)} className="shrink-0 active:scale-90" style={{ width: 30, height: 30, borderRadius: 8, background: M.redSoft || "#FBEAEA", color: M.red, border: "none", fontSize: 18, fontWeight: 800, lineHeight: 1 }}>×</button>
+              </div>
+            ))}
+            {/* Add a custom extra */}
+            <div style={{ marginTop: 14, paddingTop: 14, borderTop: `1.5px dashed ${M.line}` }}>
+              <p style={{ color: M.muted2, fontSize: 10, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 8 }}>{lang === "es" ? "Agregar tu propio extra" : "Add your own extra"}</p>
+              <div className="flex items-center gap-2">
+                <input value={newExtra.name} onChange={(e) => setNewExtra((p) => ({ ...p, name: e.target.value }))} placeholder={lang === "es" ? "Nombre (ej. Lavar alfombra)" : "Name (e.g. Carpet wash)"}
+                  className="flex-1 min-w-0 rounded-xl px-3 py-2.5 font-semibold outline-none" style={{ ...inp, fontSize: 14 }} />
+                <div className="flex items-center gap-1" style={{ width: 84 }}>
+                  <span style={{ color: M.muted2, fontSize: 14, fontWeight: 800 }}>$</span>
+                  <input value={newExtra.price} onChange={(e) => setNewExtra((p) => ({ ...p, price: e.target.value }))} onKeyDown={(e) => e.key === "Enter" && addCustom()} placeholder="0" inputMode="numeric"
+                    className="flex-1 min-w-0 rounded-xl px-2 py-2.5 font-bold outline-none text-center" style={{ ...inp, fontSize: 15 }} />
+                </div>
+              </div>
+              <button onClick={addCustom} className="w-full mt-2 active:translate-y-px transition-transform" style={{ background: M.teal, color: "#fff", border: "none", borderRadius: 12, padding: 12, fontSize: 14, fontWeight: 800 }}>+ {lang === "es" ? "Agregar extra" : "Add extra"}</button>
             </div>
           </Card>
+
           <button onClick={resetRates} className="w-full active:translate-y-px transition-transform" style={{ background: "#fff", color: M.red, border: `1.5px solid ${M.line}`, borderRadius: 12, padding: 13, fontSize: 14, fontWeight: 800 }}>{lang === "es" ? "Restablecer a precios por defecto" : "Reset to default prices"}</button>
         </div>
       </div>
@@ -1514,7 +1568,7 @@ export default function TradeTechPro() {
           <p style={{ color: M.muted2, fontSize: 12, fontWeight: 700, marginBottom: 8 }}>{lang === "es" ? "Cómo te pagan tus clientes." : "How your clients pay you."}</p>
           <TextInput value={zelle} onChange={(v) => { setZelle(v); saveProfile({ zelle: v }); }} placeholder={lang === "es" ? "Zelle / pago (opcional)" : "Zelle / payment (optional)"} />
         </AccRow>
-        <AccRow icon="🛠️" title={lang === "es" ? "¿NECESITAS UN CAMBIO?" : "NEED A CHANGE?"} onTap={() => window.open(`https://wa.me/?text=${encodeURIComponent(lang === "es" ? "Hola, necesito un cambio en mi cuenta de Paulbeza" : "Hi, I need a change to my Paulbeza account")}`, "_blank")} />
+        <AccRow icon="🛠️" title={lang === "es" ? "¿NECESITAS UN CAMBIO?" : "NEED A CHANGE?"} onTap={() => window.open(`https://wa.me/?text=${encodeURIComponent(lang === "es" ? "Hola, necesito un cambio en mi cuenta de Pauleza" : "Hi, I need a change to my Pauleza account")}`, "_blank")} />
         <AccRow id="cuenta" icon="⚙️" title={lang === "es" ? "MI CUENTA" : "MY ACCOUNT"}>
           <div className="flex items-center justify-between mb-2"><span style={{ color: M.body, fontWeight: 700, fontSize: 14 }}>{lang === "es" ? "Idioma" : "Language"}</span><LangToggle /></div>
           {session
@@ -1543,7 +1597,7 @@ export default function TradeTechPro() {
       <div className="flex-1 overflow-y-auto" style={{ background: M.bg }}>
         <div className="px-6 pt-8 pb-6 text-center" style={{ background: M.headGrad }}>
           <div className="mb-3"><Wordmark size={34} /></div>
-          <p className="text-white font-extrabold" style={{ fontSize: 22, lineHeight: 1.2 }}>{lang === "es" ? "Bienvenida a Paulbeza" : "Welcome to Paulbeza"}</p>
+          <p className="text-white font-extrabold" style={{ fontSize: 22, lineHeight: 1.2 }}>{lang === "es" ? "Bienvenida a Pauleza" : "Welcome to Pauleza"}</p>
           <p style={{ color: "rgba(255,255,255,0.82)", fontSize: 13, fontWeight: 600, marginTop: 6 }}>{lang === "es" ? "Cotiza cualquier limpieza en minutos." : "Quote any cleaning in minutes."}</p>
         </div>
         <div className="px-5 pt-5">
@@ -1581,7 +1635,7 @@ export default function TradeTechPro() {
         @keyframes ttpScan { 0% { top: -8%; } 100% { top: 108%; } }
         @keyframes ttpBlink { 0%, 100% { opacity: 1; } 50% { opacity: .25; } }
         @keyframes ttpRipple { 0% { transform: scale(0.45); opacity: .9; } 100% { transform: scale(2.4); opacity: 0; } }
-        .addrin:focus-within { border-color: #7ED6D9 !important; box-shadow: 0 0 0 3px rgba(126,214,217,0.22); }
+        .addrin:focus-within { border-color: #76C7C0 !important; box-shadow: 0 0 0 3px rgba(126,214,217,0.22); }
         @media (prefers-reduced-motion: reduce) { * { transition: none !important; } [style*="ttpScan"] { animation: none !important; } }`}</style>
       <div className="w-full max-w-md flex flex-col relative" style={{ background: M.bg, minHeight: "100vh" }}>
         {!session && screen !== "welcome" && (
@@ -1617,7 +1671,7 @@ export default function TradeTechPro() {
           <div className="absolute inset-0 flex items-end justify-center" style={{ background: "rgba(9,20,16,0.55)", zIndex: 50 }} onClick={() => setInstallOverlay(null)}>
             <div className="w-full" style={{ background: "#fff", borderRadius: "20px 20px 0 0", padding: "22px 20px 28px", maxWidth: 448 }} onClick={(e) => e.stopPropagation()}>
               <div className="flex items-center justify-between mb-2">
-                <p className="font-extrabold" style={{ color: M.navy, fontSize: 17 }}>📲 {lang === "es" ? "Instalar Paulbeza" : "Install Paulbeza"}</p>
+                <p className="font-extrabold" style={{ color: M.navy, fontSize: 17 }}>📲 {lang === "es" ? "Instalar Pauleza" : "Install Pauleza"}</p>
                 <button onClick={() => setInstallOverlay(null)} style={{ background: "none", border: "none", color: M.muted2, fontSize: 22, fontWeight: 800 }}>×</button>
               </div>
               {installOverlay === "wa" ? (

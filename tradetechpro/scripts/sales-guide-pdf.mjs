@@ -1,4 +1,4 @@
-// Render the Paulbeza sales guide (ES + EN) to PDF via headless Chromium.
+// Render the Pauleza sales guide (ES + EN) to PDF via headless Chromium.
 import { chromium } from "playwright-core";
 const OUT = "/tmp/claude-0/-home-user-maid-flow/2a6b3e11-ecc4-5329-bf13-608a2afc3111/scratchpad";
 const BASE = "https://maid-flow.onrender.com";
@@ -43,17 +43,17 @@ tr:nth-child(even) td{background:#F7F9FD}
 `;
 
 const es = {
-  file: "Paulbeza-Guia-de-Ventas-ES.pdf",
-  cover: `<div class="wm">paulbeza</div>
+  file: "Pauleza-Guia-de-Ventas-ES.pdf",
+  cover: `<div class="wm">pauleza</div>
     <h1>Guía de ventas<br>Setter + Closer</h1>
     <p>Todo lo que necesitas para entender el producto, el dolor que resuelve, cómo agendar citas y cómo cerrar — en llamada o por mensaje.</p>
     <div class="tag">Uso interno · Julio 2026</div>`,
   pages: [
   // 1 — producto + clienta + dolor
-  `<h2><span class="n">01</span>Qué es Paulbeza</h2>
+  `<h2><span class="n">01</span>Qué es Pauleza</h2>
    <p class="sub">Si solo memorizas una frase, que sea esta:</p>
    <div class="big">"Tu página web te consigue clientas de limpieza <em>sola</em> — el dueño de casa pone su dirección, ve su precio al instante, y su teléfono te llega a tu WhatsApp."</div>
-   <p>Paulbeza es una suscripción mensual para <b>limpiadoras de casas hispanas</b>. No es un software de organización — es una <b>máquina de conseguir y cerrar clientes</b>:</p>
+   <p>Pauleza es una suscripción mensual para <b>limpiadoras de casas hispanas</b>. No es un software de organización — es una <b>máquina de conseguir y cerrar clientes</b>:</p>
    <ul>
      <li><b>La app 🛰️</b> — la limpiadora escribe una dirección y la app escanea la casa por satélite: imagen aérea, foto de la fachada, recámaras, baños, pies cuadrados y año de construcción. En 60 segundos tiene un precio profesional con SU marca y SUS tarifas, listo para mandar por WhatsApp. También cotiza locales comerciales (modo 🏢).</li>
      <li><b>El cotizador (widget) 🧼</b> — un link/botón que pone en su página de Facebook, Instagram o su web. El dueño de casa se cotiza solo; para ver el precio deja nombre y teléfono → ese lead cae directo al WhatsApp de ella.</li>
@@ -79,7 +79,7 @@ const es = {
      <tr class="hot"><td><b>WIDGET</b> ⭐</td><td><b>$149/mes</b></td><td>Todo PRO + el cotizador en SU Facebook, Instagram o página — los leads caen a su WhatsApp</td><td>La que ya tiene página de Facebook o redes (casi todas)</td></tr>
      <tr><td><b>COMPLETO</b></td><td><b>$249/mes</b></td><td>Todo WIDGET + página web profesional + asistente IA + dominio propio</td><td>La que tiene equipo o quiere verse grande</td></tr>
    </table>
-   <div class="warn">⚠️ <b>Regla de oro:</b> NUNCA compares Paulbeza con apps de organización (ZenMaid $19, Jobber $39). Esas organizan las citas que YA tiene. Paulbeza le CONSIGUE clientas. Competimos contra lo que gasta en anuncios y Thumbtack, no contra software.</div>
+   <div class="warn">⚠️ <b>Regla de oro:</b> NUNCA compares Pauleza con apps de organización (ZenMaid $19, Jobber $39). Esas organizan las citas que YA tiene. Pauleza le CONSIGUE clientas. Competimos contra lo que gasta en anuncios y Thumbtack, no contra software.</div>
    <h3>Las 3 anclas de precio (memorízalas)</h3>
    <ul>
      <li><b>Thumbtack:</b> "¿Cuánto gastas en Thumbtack? ¿$200, $300 al mes? Y esos leads se los venden a 5 limpiadoras más. Aquí los leads son SOLO tuyos, en tu propia página."</li>
@@ -93,9 +93,9 @@ const es = {
    <p class="sub">Los leads llegan del quiz de la página de ventas, con nombre, teléfono, negocio y sus respuestas.</p>
    <div class="big">La regla de oro: <em>marcar en menos de 5 minutos.</em> El lead acaba de dejar su número — cada minuto que pasa, se enfría.</div>
    <h3>La cadencia (mensajes + llamadas)</h3>
-   <div class="msg"><span class="who">M1 · instantáneo (sale automático)</span>Hola {{nombre}} 👋 Soy del equipo de Paulbeza. Vi que pediste info para {{negocio}}. Te marcamos en unos minutos de este número 📞 — contéstanos y en 5 minutos te enseñamos cómo tus clientes reciben su precio de limpieza solos, desde tu propia página. 🧼📲</div>
+   <div class="msg"><span class="who">M1 · instantáneo (sale automático)</span>Hola {{nombre}} 👋 Soy del equipo de Pauleza. Vi que pediste info para {{negocio}}. Te marcamos en unos minutos de este número 📞 — contéstanos y en 5 minutos te enseñamos cómo tus clientes reciben su precio de limpieza solos, desde tu propia página. 🧼📲</div>
    <p><b>Llamada 1 (tú, en ≤5 min).</b> Objetivo único: agendar la demo — o pasarla en caliente al cierre si tienes espacio en ese momento.</p>
-   <div class="msg"><span class="who">M2 · si no contesta</span>Te acabo de marcar 📞 Soy de Paulbeza (lo de tu página y la app que cotiza). Te vuelvo a marcar al rato — o dime a qué hora te cae bien. 👍</div>
+   <div class="msg"><span class="who">M2 · si no contesta</span>Te acabo de marcar 📞 Soy de Pauleza (lo de tu página y la app que cotiza). Te vuelvo a marcar al rato — o dime a qué hora te cae bien. 👍</div>
    <p><b>Llamada 2</b> ~1 hora después.</p>
    <div class="msg"><span class="who">M3 · a la mañana siguiente (el demo vende solo)</span>Hola {{nombre}}, para que lo veas tú misma: escribe una dirección aquí y mira lo que verían TUS clientes 👉 ${BASE}/w/alto-demo — ¿te marco hoy en la tarde o mañana temprano?</div>
    <p><b>Llamada 3</b> al día 2. Después pasa a seguimiento semanal.</p>
@@ -176,20 +176,20 @@ const es = {
      <li>Nunca cuelgues sin el onboarding agendado (si compró) o la siguiente llamada (si no).</li>
    </ul>`,
   ],
-  footer: "Paulbeza · Guía de ventas · uso interno",
+  footer: "Pauleza · Guía de ventas · uso interno",
 };
 
 const en = {
-  file: "Paulbeza-Sales-Guide-EN.pdf",
-  cover: `<div class="wm">paulbeza</div>
+  file: "Pauleza-Sales-Guide-EN.pdf",
+  cover: `<div class="wm">pauleza</div>
     <h1>Sales Guide<br>Setter + Closer</h1>
     <p>Everything you need to understand the product, the pain it solves, how to book appointments and how to close — on a call or over text.</p>
     <div class="tag">Internal use · July 2026</div>`,
   pages: [
-  `<h2><span class="n">01</span>What Paulbeza is</h2>
+  `<h2><span class="n">01</span>What Pauleza is</h2>
    <p class="sub">If you memorize one sentence, make it this one:</p>
    <div class="big">"Your website gets you cleaning clients <em>by itself</em> — the homeowner types their address, sees their price instantly, and their phone number lands in your WhatsApp."</div>
-   <p>Paulbeza is a monthly subscription for <b>Hispanic house cleaners</b>. It is not organizer software — it's a <b>machine for getting and closing clients</b>:</p>
+   <p>Pauleza is a monthly subscription for <b>Hispanic house cleaners</b>. It is not organizer software — it's a <b>machine for getting and closing clients</b>:</p>
    <ul>
      <li><b>The app 🛰️</b> — the cleaner types an address and the app scans the home by satellite: aerial image, street photo, bedrooms, baths, square footage, year built. In 60 seconds she has a professional quote with HER brand and HER rates, ready to send on WhatsApp. It also quotes commercial spaces (🏢 mode).</li>
      <li><b>The quote widget 🧼</b> — a link/button she puts on her Facebook page, Instagram or website. Homeowners quote themselves; to see the price they leave name + phone → that lead lands straight in her WhatsApp.</li>
@@ -214,7 +214,7 @@ const en = {
      <tr class="hot"><td><b>WIDGET</b> ⭐</td><td><b>$149/mo</b></td><td>Everything in PRO + the quote widget on HER Facebook, Instagram or page — leads land in her WhatsApp</td><td>Anyone with a Facebook page or socials (almost everyone)</td></tr>
      <tr><td><b>COMPLETO</b></td><td><b>$249/mo</b></td><td>Everything in WIDGET + professional website + AI assistant + her own domain</td><td>Cleaners with a crew, or who want to look big</td></tr>
    </table>
-   <div class="warn">⚠️ <b>Golden rule:</b> NEVER let Paulbeza be compared to organizer apps (ZenMaid $19, Jobber $39). Those organize the appointments she ALREADY has. Paulbeza GETS her clients. We compete with her ad/Thumbtack spend, not with software.</div>
+   <div class="warn">⚠️ <b>Golden rule:</b> NEVER let Pauleza be compared to organizer apps (ZenMaid $19, Jobber $39). Those organize the appointments she ALREADY has. Pauleza GETS her clients. We compete with her ad/Thumbtack spend, not with software.</div>
    <h3>The 3 price anchors (memorize them)</h3>
    <ul>
      <li><b>Thumbtack:</b> "How much do you spend on Thumbtack? $200, $300 a month? And those leads get sold to 5 other cleaners. Here the leads are YOURS ONLY, from your own page."</li>
@@ -227,9 +227,9 @@ const en = {
    <p class="sub">Leads arrive from the sales page quiz with name, phone, business and their answers.</p>
    <div class="big">The golden rule: <em>call within 5 minutes.</em> The lead just left their number — every passing minute, it goes cold.</div>
    <h3>The cadence (messages + calls)</h3>
-   <div class="msg"><span class="who">M1 · instant (sent automatically)</span>Hi {{name}} 👋 I'm with the Paulbeza team. I saw you asked for info for {{business}}. We'll call you in a few minutes from this number 📞 — pick up and in 5 minutes we'll show you how your clients get their cleaning price on their own, from your own page. 🧼📲</div>
+   <div class="msg"><span class="who">M1 · instant (sent automatically)</span>Hi {{name}} 👋 I'm with the Pauleza team. I saw you asked for info for {{business}}. We'll call you in a few minutes from this number 📞 — pick up and in 5 minutes we'll show you how your clients get their cleaning price on their own, from your own page. 🧼📲</div>
    <p><b>Call 1 (you, within 5 min).</b> Single goal: book the demo — or hand it off hot if the closer is free right then.</p>
-   <div class="msg"><span class="who">M2 · after a missed call</span>Just called you 📞 It's Paulbeza (the website + the app that quotes). I'll try again in a bit — or tell me what time works. 👍</div>
+   <div class="msg"><span class="who">M2 · after a missed call</span>Just called you 📞 It's Pauleza (the website + the app that quotes). I'll try again in a bit — or tell me what time works. 👍</div>
    <p><b>Call 2</b> ~1 hour later.</p>
    <div class="msg"><span class="who">M3 · next morning (the demo sells itself)</span>Hi {{name}}, so you can see it yourself: type an address here and see what YOUR clients would see 👉 ${BASE}/w/alto-demo — should I call you this afternoon or tomorrow morning?</div>
    <p><b>Call 3</b> on day 2. Then weekly nurture.</p>
@@ -307,7 +307,7 @@ const en = {
      <li>Never hang up without onboarding booked (if she bought) or the next call booked (if not).</li>
    </ul>`,
   ],
-  footer: "Paulbeza · Sales guide · internal use",
+  footer: "Pauleza · Sales guide · internal use",
 };
 
 const html = (d) => `<!doctype html><html><head><meta charset="utf-8"><style>${CSS}</style></head><body>

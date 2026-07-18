@@ -1,11 +1,11 @@
 {
-  "name": "Paulbeza",
-  "short_name": "Paulbeza",
+  "name": "Pauleza",
+  "short_name": "Pauleza",
   "description": "Todo para tu negocio de limpieza. Cotiza al instante, manda el precio por WhatsApp y recibe clientes desde tu propia página.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#1E3A8A",
-  "theme_color": "#1E3A8A",
+  "background_color": "#6B3FA0",
+  "theme_color": "#6B3FA0",
   "lang": "es",
   "icons": [
     { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },

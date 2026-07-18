@@ -14,7 +14,7 @@ la landing) a GHL.
 **Receta (workflow "LANDING PAGE WEBHOOK"):**
 1. GHL → Automations → Create Workflow → trigger **Inbound Webhook** → copiar la
    URL.
-2. Admin del motor → cuenta Paulbeza Ventas → botón **🤖 GHL** → pegar la URL
+2. Admin del motor → cuenta Pauleza Ventas → botón **🤖 GHL** → pegar la URL
    (debe empezar `https://`) → debe decir "✓ Guardado" y quedar "(conectado)".
 3. Disparar un lead de prueba desde la landing → en GHL, Mapping Reference →
    "Check for new requests" → seleccionar el request → Save trigger.
@@ -35,7 +35,7 @@ la landing) a GHL.
    - **Send SMS** = el mensaje M1 (ver 02-equipo).
 5. **Publish** (el clásico olvido: en Draft recibe y no hace nada).
 
-**Payload que manda el motor:** `{source:"paulbeza",
+**Payload que manda el motor:** `{source:"pauleza",
 contractor:"alto-ventas", id, name, phone, address, src:"landing"|"trial-app",
 biz, work, crew, revenue, marketing}` (los campos del quiz solo vienen de
 src=landing). Si se agrega un campo nuevo, GHL no lo muestra en el picker hasta
@@ -63,9 +63,9 @@ WhatsApp / IG / Messenger nacen en GHL; un workflow los empuja al panel:
 
 ## La correa del bot (pegar en las instrucciones del bot de GHL)
 
-> Eres el asistente de Paulbeza. El equipo YA tiene el teléfono de la clienta y
+> Eres el asistente de Pauleza. El equipo YA tiene el teléfono de la clienta y
 > le va a MARCAR — tu único trabajo es mantenerla interesada hasta esa llamada.
-> REGLAS: (1) Solo puedes afirmar esto: Paulbeza le da a la limpiadora su propia
+> REGLAS: (1) Solo puedes afirmar esto: Pauleza le da a la limpiadora su propia
 > app que cotiza limpiezas al instante, una página web profesional con IA que
 > contesta a sus clientes 24/7, y los leads le llegan directo a su teléfono;
 > planes desde $49/mes, sin cargo de inicio. (2) A CUALQUIER otra pregunta

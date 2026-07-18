@@ -50,4 +50,17 @@ test("mergeRates: cleaner override changes the quote", () => {
   assert.ok(over.recommended > base.recommended);
 });
 
+// 7. Custom cleaner-defined extras (custom:*) survive mergeRates and price in.
+test("custom add-on: cleaner's own extra prices through", () => {
+  const rates = mergeRates({ ADDON: { "custom:abc123": 40 } });
+  assert.equal(rates.ADDON["custom:abc123"], 40);
+  assert.equal(rates.ADDON.fridge, DEFAULTS.ADDON.fridge); // built-ins untouched
+  const base = quote({ sqft: 1500, cleaningType: "regular" }, rates);
+  const withExtra = quote({ sqft: 1500, cleaningType: "regular", addOns: ["custom:abc123"] }, rates);
+  assert.equal(withExtra.recommended - base.recommended, 40);
+  // a non-custom unknown key is still rejected
+  const bad = mergeRates({ ADDON: { hackerKey: 999 } });
+  assert.equal(bad.ADDON.hackerKey, undefined);
+});
+
 console.log(`\n${passed} passed`);

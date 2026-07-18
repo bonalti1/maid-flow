@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- pauleza "pa" monogram — the two joined bowls read as an infinity loop -->
+  <defs>
+    <linearGradient id="pg" gradientUnits="userSpaceOnUse" x1="78" y1="256" x2="434" y2="256">
+      <stop offset="0%" stop-color="#A1E9BD"/>
+      <stop offset="34%" stop-color="#76C7C0"/>
+      <stop offset="64%" stop-color="#7FA6C5"/>
+      <stop offset="100%" stop-color="#9355C1"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="116" fill="#ffffff"/>
+  <g stroke="url(#pg)" stroke-width="52" fill="none" stroke-linecap="round">
+    <!-- p: bowl + descender -->
+    <circle cx="182" cy="212" r="74"/>
+    <line x1="108" y1="212" x2="108" y2="404"/>
+    <!-- a: bowl + short right stem (mirrors the p) -->
+    <circle cx="330" cy="212" r="74"/>
+    <line x1="404" y1="196" x2="404" y2="286"/>
+  </g>
+</svg>

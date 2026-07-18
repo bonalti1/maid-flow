@@ -1,4 +1,4 @@
-# Paulbeza — engine + business OS
+# Pauleza — engine + business OS
 
 Spanish-first SaaS sold to Hispanic **house cleaners**. One Express server serves
 the client PWA, all staff portals, the sales landing, and every client website.
@@ -64,7 +64,7 @@ in `playbook/` — read it before re-deriving any process.
   add-ons, +$15/bath +$8/bed. Recommended rounds to $5; range is ±12%.
 - **Leads flow**: widget → `/api/widget/quote` (or `/api/widget/lead`) saves a
   lead + `forwardLead` → per-account GHL webhook (`data.webhook`, https-only,
-  payload `{source:"paulbeza", contractor, id, name, phone, address, ...extra}`).
+  payload `{source:"pauleza", contractor, id, name, phone, address, ...extra}`).
   The in-app quote posts `/api/lead` (authed, resolves the cleaner from her
   session). Channel leads (WhatsApp/IG) come IN from GHL via `/api/hl/lead`
   (`HL_WEBHOOK_SECRET`, phone dedupe) and are NOT re-forwarded (no loop).
