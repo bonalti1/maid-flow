@@ -320,6 +320,7 @@ export default function TradeTechPro() {
   const [bizEmail, setBizEmail] = useState(savedProfile.email || "");
   const [zelle, setZelle] = useState(savedProfile.zelle || "");
   const [reviewLink, setReviewLink] = useState(savedProfile.reviewLink || ""); // where a good review gets posted (Google/Facebook)
+  const [resultFrom, setResultFrom] = useState("quote"); // where the result screen's back button returns to
   const [myRates, setMyRates] = useState(savedProfile.rates || {});
   const logoIdRef = useRef(null);
 
@@ -629,14 +630,35 @@ export default function TradeTechPro() {
       furnished: q.furnished, frequency: q.frequency, addOns: q.addOns,
     }, rates);
     setResult(out);
+    setResultFrom("quote");
     setScreen("result");
-    // remember the quote
-    const item = { id: Date.now(), name: q.name, phone: q.phone, address: q.address, sqft: q.sqft, beds: q.beds, baths: q.baths, cleaningType: q.cleaningType, recommended: out.recommended, ts: Date.now() };
+    // Remember the quote. Store the full input snapshot (minus heavy photo
+    // data-URIs) + the computed result so tapping it later re-opens the exact
+    // same quote screen, not just a summary.
+    const item = { id: Date.now(), name: q.name, phone: q.phone, address: q.address, sqft: q.sqft, beds: q.beds, baths: q.baths, cleaningType: q.cleaningType, recommended: out.recommended, ts: Date.now(), q: { ...q, photos: [] }, out, housePos };
     setSavedQuotes((prev) => {
       const next = [item, ...prev].slice(0, 30);
       try { localStorage.setItem("maidflow_quotes", JSON.stringify(next)); } catch { /* ignore */ }
       return next;
     });
+  };
+
+  // Re-open a past quote's full result screen. New quotes carry the whole
+  // snapshot (q + out); older/summary-only ones are recomputed from what we
+  // saved so they still open.
+  const openQuote = (sq) => {
+    if (sq.q && sq.out) {
+      setQ({ ...blankQ, ...sq.q });
+      setResult(sq.out);
+      setHousePos(sq.housePos || null);
+    } else {
+      const out = priceQuote({ sqft: Number(sq.sqft) || 0, beds: Number(sq.beds) || 0, baths: Number(sq.baths) || 0, cleaningType: sq.cleaningType || "regular" }, mergeRates(myRates));
+      setQ({ ...blankQ, name: sq.name || "", phone: sq.phone || "", address: sq.address || "", sqft: sq.sqft || "", beds: sq.beds || "", baths: sq.baths || "", cleaningType: sq.cleaningType || "regular" });
+      setResult(out);
+      setHousePos(null);
+    }
+    setResultFrom("clients");
+    setScreen("result");
   };
 
   const resetQuote = () => { setQ(blankQ); setAddrQ(""); setPlaceSugs(null); setStep(0); setResult(null); setHousePos(null); setScreen("quote"); };
@@ -1392,15 +1414,16 @@ export default function TradeTechPro() {
           <>
             <p className="mb-2 mt-3" style={{ color: M.tealDeep, fontSize: 14, fontWeight: 800 }}>{lang === "es" ? "Cotizaciones recientes" : "Recent quotes"}</p>
             {savedQuotes.slice(0, 8).map((sq) => (
-              <Card key={sq.id} style={{ marginBottom: 8 }}>
-                <div className="flex items-center justify-between gap-2">
-                  <div className="min-w-0">
-                    <p className="font-bold truncate" style={{ color: M.navy, fontSize: 14 }}>{sq.name || sq.address || "—"}</p>
-                    <p className="truncate" style={{ color: M.muted2, fontSize: 11, fontWeight: 600 }}>{sq.address}</p>
-                  </div>
-                  <p className="shrink-0 font-extrabold" style={{ color: M.teal, fontSize: 18 }}>{fmt(sq.recommended)}</p>
+              <button key={sq.id} onClick={() => openQuote(sq)} className="w-full text-left active:scale-[0.98] transition-transform" style={{ marginBottom: 8, background: "#fff", border: `1px solid ${M.line}`, borderRadius: 16, padding: "14px 16px", display: "flex", alignItems: "center", gap: 10 }}>
+                <div className="flex-1 min-w-0">
+                  <p className="font-bold truncate" style={{ color: M.navy, fontSize: 14 }}>{sq.name || sq.address || "—"}</p>
+                  <p className="truncate" style={{ color: M.muted2, fontSize: 11, fontWeight: 600 }}>{sq.address}{sq.cleaningType ? ` · ${(lang === "es" ? TYPE_ES : TYPE_EN)[sq.cleaningType] || sq.cleaningType}` : ""}</p>
                 </div>
-              </Card>
+                <div className="shrink-0 text-right">
+                  <p className="font-extrabold" style={{ color: M.teal, fontSize: 18 }}>{fmt(sq.recommended)}</p>
+                  <p style={{ color: M.muted, fontSize: 10, fontWeight: 700 }}>{lang === "es" ? "Ver ›" : "View ›"}</p>
+                </div>
+              </button>
             ))}
           </>
         )}
@@ -1745,7 +1768,7 @@ export default function TradeTechPro() {
         {screen === "quote" && step === 0 && !measuring && <BrandHeader />}
         {/* Back returns to the questionnaire (state intact) to tweak an answer;
             "Nueva cotización" on the result screen is the destructive reset. */}
-        {screen === "result" && <div><TopBar title={titles.result} back={() => setScreen("quote")} /></div>}
+        {screen === "result" && <div><TopBar title={titles.result} back={() => setScreen(resultFrom)} /></div>}
 
         {screen === "welcome" && Welcome()}
         {screen === "home" && Home()}
