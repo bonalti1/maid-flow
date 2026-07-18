@@ -354,6 +354,14 @@ export default function TradeTechPro() {
   const [savedQuotes, setSavedQuotes] = useState(() => {
     try { return JSON.parse(localStorage.getItem("maidflow_quotes") || "[]"); } catch { return []; }
   });
+  // Citas (agenda): a booked cleaning. Created from a quote/client in a couple
+  // taps; every cita carries when + a reminder flag so the WhatsApp recordatorio
+  // is a free side effect (the app reminds HER to remind the client).
+  const [citas, setCitas] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("maidflow_citas") || "[]"); } catch { return []; }
+  });
+  const [schedFor, setSchedFor] = useState(null); // { name, phone, address, cleaningType, recommended } to schedule
+  const saveCitas = (next) => { try { localStorage.setItem("maidflow_citas", JSON.stringify(next)); } catch { /* ignore */ } return next; };
   const [toast, setToast] = useState(null);
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(null), 2400); };
 
@@ -469,6 +477,7 @@ export default function TradeTechPro() {
         };
         setCustomers((local) => mergeById(local, j.state?.customers));
         setSavedQuotes((local) => mergeById(local, j.state?.quotes));
+        setCitas((local) => saveCitas(mergeById(local, j.state?.citas)));
         if (!WANT_DEMO && welcomedInit) setScreen("home");
         setCloudReady(true);
       } catch { /* offline — local data keeps working; retried when back online */ }
@@ -498,7 +507,7 @@ export default function TradeTechPro() {
       api("/api/state", {
         method: "PUT",
         body: JSON.stringify({
-          state: { customers, quotes: savedQuotes },
+          state: { customers, quotes: savedQuotes, citas },
           profile: { profile: { name: userName, biz: bizName, phone: userPhone, logo, lang, email: bizEmail, zelle, reviewLink, rates: myRates } },
         }),
       }).then((r) => {
@@ -513,7 +522,7 @@ export default function TradeTechPro() {
     }, 1500);
     return () => clearTimeout(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session, cloudReady, customers, savedQuotes, userName, bizName, userPhone, logo, lang, bizEmail, zelle, myRates]);
+  }, [session, cloudReady, customers, savedQuotes, citas, userName, bizName, userPhone, logo, lang, bizEmail, zelle, reviewLink, myRates]);
 
   /* ── Questionnaire state ── */
   const blankQ = { name: "", phone: "", address: "", company: "", placeId: null, propKind: "home", sqft: "", beds: "", baths: "", yearBuilt: "", propertyType: "", cleaningType: "regular", condition: "normal", pets: "none", addOns: [], frequency: "one_time", furnished: "partial", photos: [] };
@@ -675,6 +684,41 @@ export default function TradeTechPro() {
 
   const toggleAddon = (key) => setQ((prev) => ({ ...prev, addOns: prev.addOns.includes(key) ? prev.addOns.filter((a) => a !== key) : [...prev.addOns, key] }));
 
+  /* ── Citas / agenda ── */
+  const startOfDay = (ts) => { const d = new Date(ts); d.setHours(0, 0, 0, 0); return d.getTime(); };
+  const todayStart = startOfDay(Date.now());
+  const dayLabel = (ts) => {
+    const d = new Date(ts), diff = Math.round((startOfDay(ts) - todayStart) / 864e5);
+    if (diff === 0) return lang === "es" ? "Hoy" : "Today";
+    if (diff === 1) return lang === "es" ? "Mañana" : "Tomorrow";
+    return d.toLocaleDateString(lang === "es" ? "es-MX" : "en-US", { weekday: "long", day: "numeric", month: "short", timeZone: "UTC" });
+  };
+  // Create a cita. `when` is a day timestamp (midnight); timeLabel is the rough
+  // slot. A reminder is scheduled the evening before by default (7pm local).
+  const addCita = ({ name, phone, address, cleaningType, recommended }, whenTs, timeLabel, remind = true) => {
+    const reminderAt = whenTs - 5 * 3600e3; // ~7pm the night before (day − 5h)
+    const cita = { id: Date.now(), name: name || "", phone: phone || "", address: address || "", cleaningType: cleaningType || "", recommended: recommended || 0, when: whenTs, timeLabel: timeLabel || "", remind, reminderAt, done: false, notified: false, ts: Date.now() };
+    setCitas((prev) => { const next = [cita, ...prev]; saveCitas(next); return next; });
+    setSchedFor(null);
+    showToast(lang === "es" ? "Cita agendada ✓" : "Booked ✓");
+  };
+  const patchCita = (id, patch) => setCitas((prev) => { const next = prev.map((c) => (c.id === id ? { ...c, ...patch } : c)); saveCitas(next); return next; });
+  const deleteCita = (id) => setCitas((prev) => { const next = prev.filter((c) => c.id !== id); saveCitas(next); return next; });
+  // The one-tap WhatsApp reminder — the app reminds HER, she taps, this opens.
+  const recordatorioMsg = (c) => {
+    const business = bizName || (lang === "es" ? "su limpiadora" : "your cleaner");
+    const day = dayLabel(c.when).toLowerCase(), t = c.timeLabel ? ` ${c.timeLabel}` : "";
+    return lang === "es"
+      ? `Hola ${c.name || "👋"} 👋 Le recuerdo su limpieza ${day}${t}. Cualquier cosa me avisa. ¡Nos vemos! — ${business}`
+      : `Hi ${c.name || "there"} 👋 Reminder of your cleaning ${day}${t}. Let me know if anything comes up. See you! — ${business}`;
+  };
+  const sendRecordatorio = (c) => {
+    const d = String(c.phone || "").replace(/\D/g, "");
+    if (d.length < 10) { showToast(lang === "es" ? "Falta el teléfono del cliente 📱" : "Missing the client's phone 📱"); return; }
+    window.open(`https://wa.me/${d.length === 10 ? "1" + d : d}?text=${encodeURIComponent(recordatorioMsg(c))}`, "_blank");
+    patchCita(c.id, { reminded: true });
+  };
+
   /* WhatsApp quote message (Spanish-first), per the handoff template. */
   const quoteMessage = (out) => {
     const name = q.name || (lang === "es" ? "cliente" : "there");
@@ -704,9 +748,50 @@ export default function TradeTechPro() {
 
   /* ── Home dashboard (ALTO-Pro style: hero + leads + tiles + AI row) ── */
   const shareUrl = mySlug ? `${window.location.origin}/w/${mySlug}` : null;
+
+  // Derived agenda lists (upcoming, not-done, soonest first).
+  const upcomingCitas = [...citas].filter((c) => !c.done && c.when >= todayStart).sort((a, b) => a.when - b.when);
+  const todayCitas = upcomingCitas.filter((c) => startOfDay(c.when) === todayStart);
+  // One reusable cita card — used in both the Home strip and the Clientes agenda.
+  const CitaRow = ({ c, compact }) => (
+    <div className="mb-2" style={{ background: "#fff", border: `1px solid ${M.line}`, borderRadius: 14, padding: compact ? "12px 14px" : "14px 16px" }}>
+      <div className="flex items-center gap-2">
+        <div className="flex-1 min-w-0">
+          <p className="font-extrabold truncate" style={{ color: M.tealDeep, fontSize: 14.5 }}>{c.name || (lang === "es" ? "Cliente" : "Client")} <span style={{ color: M.teal, fontWeight: 800 }}>· {dayLabel(c.when)}{c.timeLabel ? ` ${c.timeLabel.toLowerCase()}` : ""}</span></p>
+          {c.address ? <p className="truncate" style={{ color: M.muted2, fontSize: 11.5, fontWeight: 600 }}>📍 {c.address}</p> : null}
+        </div>
+        {c.recommended ? <span className="shrink-0 font-extrabold" style={{ color: M.teal, fontSize: 15 }}>{fmt(c.recommended)}</span> : null}
+      </div>
+      {!compact && (
+        <div className="flex gap-2 mt-2.5">
+          <button onClick={() => sendRecordatorio(c)} className="flex-1 active:translate-y-px transition-transform" style={{ background: "#25D366", color: "#fff", border: "none", borderRadius: 10, padding: "9px 6px", fontSize: 12.5, fontWeight: 800 }}>💬 {lang === "es" ? "Recordatorio" : "Reminder"}</button>
+          {c.address && <button onClick={() => setDriveTo({ address: c.address })} className="active:translate-y-px transition-transform" style={{ background: "#fff", color: M.teal, border: `1.5px solid ${M.line}`, borderRadius: 10, padding: "9px 12px", fontSize: 12.5, fontWeight: 800 }}>🚗</button>}
+          <button onClick={() => { patchCita(c.id, { done: true }); showToast(lang === "es" ? "Marcada como hecha ✓" : "Marked done ✓"); }} className="active:translate-y-px transition-transform" style={{ background: "#fff", color: M.green, border: `1.5px solid ${M.line}`, borderRadius: 10, padding: "9px 12px", fontSize: 12.5, fontWeight: 800 }}>✓</button>
+          <button onClick={() => { if (window.confirm(lang === "es" ? "¿Borrar esta cita?" : "Delete this appointment?")) deleteCita(c.id); }} className="active:translate-y-px transition-transform" style={{ background: "#fff", color: M.muted2, border: `1.5px solid ${M.line}`, borderRadius: 10, padding: "9px 11px", fontSize: 12.5, fontWeight: 800 }}>🗑</button>
+        </div>
+      )}
+    </div>
+  );
+
   const Home = () => (
     <div className="flex-1 overflow-y-auto pb-6" style={{ background: M.bg }}>
       <div className="px-5 pt-4">
+        {/* ¿Qué tengo hoy? — today's agenda at a glance, the first thing she sees */}
+        {todayCitas.length > 0 && (
+          <div className="mb-3" style={{ background: "#fff", border: `1.5px solid ${M.aqua}`, borderRadius: 18, padding: "14px 16px" }}>
+            <div className="flex items-center justify-between mb-2">
+              <p style={{ color: M.teal, fontSize: 11, fontWeight: 900, letterSpacing: "0.14em", textTransform: "uppercase" }}>📅 {lang === "es" ? "Hoy" : "Today"}</p>
+              <button onClick={() => setScreen("clients")} style={{ background: "none", border: "none", color: M.muted2, fontSize: 12, fontWeight: 800 }}>{lang === "es" ? "Ver agenda ›" : "See agenda ›"}</button>
+            </div>
+            {todayCitas.slice(0, 3).map((c) => (
+              <div key={c.id} className="flex items-center gap-2 py-1.5" style={{ borderTop: `1px solid ${M.bg}` }}>
+                <span className="shrink-0 font-extrabold" style={{ color: M.teal, fontSize: 13, width: 74 }}>{c.timeLabel || (lang === "es" ? "Hoy" : "Today")}</span>
+                <span className="flex-1 min-w-0 truncate font-bold" style={{ color: M.navy, fontSize: 13.5 }}>{c.name || (lang === "es" ? "Cliente" : "Client")}</span>
+                <button onClick={() => sendRecordatorio(c)} className="shrink-0 active:scale-95" style={{ background: "#25D366", color: "#fff", border: "none", borderRadius: 8, padding: "5px 9px", fontSize: 11, fontWeight: 800 }}>💬</button>
+              </div>
+            ))}
+          </div>
+        )}
         {/* Hero action — quote a cleaning */}
         <button onClick={resetQuote} className="w-full text-center active:translate-y-px transition-transform mb-3"
           style={{ background: "#fff", border: `2px solid ${M.aqua}`, borderRadius: 22, padding: "30px 20px", boxShadow: "0 10px 30px rgba(30,58,138,0.08)" }}>
@@ -823,6 +908,46 @@ export default function TradeTechPro() {
         </div>
       </div>
     </div>
+    );
+  };
+
+  /* ── Schedule sheet: book a cita in a couple taps (day chips + rough time).
+   * Reminder is on by default — no setup, it just comes with the cita. ── */
+  const ScheduleSheet = () => {
+    const [dayTs, setDayTs] = useState(todayStart + 864e5); // default: mañana
+    const [slot, setSlot] = useState(lang === "es" ? "Mañana" : "Morning");
+    const [remind, setRemind] = useState(true);
+    const base = schedFor || {};
+    const dayOpts = [0, 1, 2, 3, 7].map((n) => ({ ts: todayStart + n * 864e5, label: n === 0 ? (lang === "es" ? "Hoy" : "Today") : n === 1 ? (lang === "es" ? "Mañana" : "Tomorrow") : new Date(todayStart + n * 864e5).toLocaleDateString(lang === "es" ? "es-MX" : "en-US", { weekday: "short", day: "numeric", timeZone: "UTC" }) }));
+    const slots = lang === "es" ? ["Mañana", "Mediodía", "Tarde", "A convenir"] : ["Morning", "Midday", "Afternoon", "TBD"];
+    return (
+      <div className="absolute inset-0 flex items-end justify-center" style={{ background: "rgba(16,27,48,0.55)", zIndex: 50 }} onClick={() => setSchedFor(null)}>
+        <div className="w-full" style={{ background: "#fff", borderRadius: "20px 20px 0 0", padding: "22px 20px 26px", maxWidth: 448 }} onClick={(e) => e.stopPropagation()}>
+          <div className="flex items-center justify-between mb-1">
+            <p className="font-extrabold" style={{ color: M.teal, fontSize: 17 }}>📅 {lang === "es" ? "Agendar cita" : "Book a cleaning"}</p>
+            <button onClick={() => setSchedFor(null)} style={{ background: "none", border: "none", color: M.muted2, fontSize: 22, fontWeight: 800 }}>×</button>
+          </div>
+          {base.name || base.address ? <p style={{ color: M.muted2, fontSize: 13, fontWeight: 700, marginBottom: 12 }}>{base.name || "—"}{base.address ? ` · ${base.address}` : ""}</p> : null}
+          <p style={{ color: M.muted2, fontSize: 10, fontWeight: 800, letterSpacing: "0.14em", textTransform: "uppercase", marginBottom: 8 }}>{lang === "es" ? "¿Qué día?" : "What day?"}</p>
+          <div className="flex flex-wrap gap-2 mb-4">
+            {dayOpts.map((d) => (
+              <button key={d.ts} onClick={() => setDayTs(d.ts)} className="active:scale-95 transition-transform" style={{ background: dayTs === d.ts ? M.teal : "#fff", color: dayTs === d.ts ? "#fff" : M.navy, border: `1.5px solid ${dayTs === d.ts ? M.teal : M.line}`, borderRadius: 11, padding: "9px 14px", fontSize: 13.5, fontWeight: 800, textTransform: "capitalize" }}>{d.label}</button>
+            ))}
+          </div>
+          <p style={{ color: M.muted2, fontSize: 10, fontWeight: 800, letterSpacing: "0.14em", textTransform: "uppercase", marginBottom: 8 }}>{lang === "es" ? "¿A qué hora?" : "What time?"}</p>
+          <div className="flex flex-wrap gap-2 mb-4">
+            {slots.map((s) => (
+              <button key={s} onClick={() => setSlot(s)} className="active:scale-95 transition-transform" style={{ background: slot === s ? M.teal : "#fff", color: slot === s ? "#fff" : M.navy, border: `1.5px solid ${slot === s ? M.teal : M.line}`, borderRadius: 11, padding: "9px 14px", fontSize: 13.5, fontWeight: 800 }}>{s}</button>
+            ))}
+          </div>
+          <button onClick={() => setRemind((v) => !v)} className="w-full flex items-center gap-3 mb-3 active:opacity-80" style={{ background: M.bg, border: `1.5px solid ${M.line}`, borderRadius: 12, padding: "12px 14px" }}>
+            <span style={{ fontSize: 18 }}>🔔</span>
+            <span className="flex-1 text-left"><span className="block font-bold" style={{ color: M.navy, fontSize: 13.5 }}>{lang === "es" ? "Recordarle por WhatsApp" : "Remind her on WhatsApp"}</span><span className="block" style={{ color: M.muted2, fontSize: 11, fontWeight: 600 }}>{lang === "es" ? "La noche antes te avisamos a ti para mandarlo" : "We ping you the night before to send it"}</span></span>
+            <span style={{ width: 42, height: 24, borderRadius: 99, background: remind ? M.green : M.line, position: "relative", transition: "background .15s" }}><span style={{ position: "absolute", top: 2, left: remind ? 20 : 2, width: 20, height: 20, borderRadius: 99, background: "#fff", transition: "left .15s" }} /></span>
+          </button>
+          <PrimaryBtn onClick={() => addCita(base, dayTs, slot, remind)}>{lang === "es" ? "Agendar →" : "Book →"}</PrimaryBtn>
+        </div>
+      </div>
     );
   };
 
@@ -1346,6 +1471,9 @@ export default function TradeTechPro() {
               🔗 {lang === "es" ? "Crear link de la cotización" : "Create quote link"}
             </button>
           )}
+          <button onClick={() => setSchedFor({ name: q.name, phone: q.phone, address: q.address, cleaningType: out.cleaningType, recommended: out.recommended })} className="w-full active:translate-y-px transition-transform mb-2.5" style={{ background: M.tealDeep, color: "#fff", border: "none", borderRadius: 12, padding: 14, fontSize: 15, fontWeight: 800 }}>
+            📅 {lang === "es" ? "Agendar esta limpieza" : "Book this cleaning"}
+          </button>
           {(housePos || q.address) && (
             <button onClick={() => setDriveTo({ lat: housePos?.lat, lng: housePos?.lng, address: q.address })} className="w-full active:translate-y-px transition-transform mb-2.5" style={{ background: "#fff", color: M.teal, border: `1.5px solid ${M.line}`, borderRadius: 12, padding: 14, fontSize: 15, fontWeight: 800 }}>
               🚗 {lang === "es" ? "Cómo llegar al trabajo" : "Directions to the job"}
@@ -1384,6 +1512,15 @@ export default function TradeTechPro() {
         <button onClick={resetQuote} className="w-full flex items-center justify-center gap-2 mb-3 active:translate-y-px transition-transform" style={{ background: "#fff", color: M.teal, border: `1.5px dashed ${M.aqua}`, borderRadius: 14, padding: 14, fontSize: 14, fontWeight: 800 }}>
           + {lang === "es" ? "Nueva cotización (cliente nuevo)" : "New quote (new client)"}
         </button>
+
+        {/* Agenda — Mis citas: upcoming booked cleanings (Hoy / Esta semana) */}
+        {upcomingCitas.length > 0 && (
+          <>
+            <p className="mb-2 mt-1" style={{ color: M.tealDeep, fontSize: 14, fontWeight: 800 }}>📅 {lang === "es" ? "Agenda" : "Agenda"}</p>
+            {upcomingCitas.slice(0, 12).map((c) => <CitaRow key={c.id} c={c} />)}
+          </>
+        )}
+
         {leads.length > 0 && (
           <>
             <div className="flex items-center justify-between mb-2">
@@ -1789,6 +1926,7 @@ export default function TradeTechPro() {
         {screen === "ai" && AiChat()}
         {screen === "account" && Account()}
         {pageModal && <PageSheet />}
+        {schedFor && <ScheduleSheet />}
         {driveTo && <DriveMap dest={driveTo} label={driveTo.address} lang={lang} onClose={() => setDriveTo(null)} />}
 
         {tabScreens.includes(screen) && <BottomNav />}
