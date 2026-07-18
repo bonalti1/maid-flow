@@ -42,6 +42,18 @@ async function notifyLead(c, lead) {
   if (dead.size) { try { await db.mergeContractorData(c.id, { push: subs.filter((s) => !dead.has(s.endpoint)) }); } catch { /* ignore */ } }
 }
 
+// Generic push (reviews, etc.) — same best-effort/prune-dead-subs shape as
+// notifyLead, but with a caller-supplied title/body instead of the lead copy.
+async function pushToContractor(c, { title, body, url = "/" }) {
+  if (!PUSH_ON) return;
+  const subs = Array.isArray(c.data?.push) ? c.data.push : [];
+  if (!subs.length) return;
+  const payload = JSON.stringify({ title, body, url });
+  const dead = new Set();
+  await Promise.all(subs.map((s) => webpush.sendNotification(s, payload).catch((e) => { if (e.statusCode === 404 || e.statusCode === 410) dead.add(s.endpoint); })));
+  if (dead.size) { try { await db.mergeContractorData(c.id, { push: subs.filter((s) => !dead.has(s.endpoint)) }); } catch { /* ignore */ } }
+}
+
 const PORT = process.env.PORT || 8787;
 const GOOGLE_KEY = process.env.GOOGLE_MAPS_API_KEY || "";
 const RENTCAST_KEY = process.env.RENTCAST_API_KEY || "";
@@ -1569,6 +1581,9 @@ app.put("/api/state", async (req, res) => {
     const profile = {
       name: str(p.name, 80), biz: str(p.biz, 80), phone: str(p.phone, 30),
       email: str(p.email, 120), zelle: str(p.zelle, 120),
+      // Where a HAPPY (4-5★) reviewer gets routed — her Google Business or
+      // Facebook page review link. https-only; empty clears it.
+      reviewLink: p.reviewLink === "" ? "" : (/^https:\/\/.{1,300}$/.test(String(p.reviewLink || "")) ? String(p.reviewLink) : undefined),
       lang: p.lang === "en" ? "en" : "es",
       logo: typeof p.logo === "string" && p.logo.length < 400000 ? p.logo : undefined,
       rates: sanitizeRates(p.rates),
@@ -2541,6 +2556,169 @@ p{font-size:14.5px;color:#44506A;font-weight:500;line-height:1.6;margin-top:14px
   <a class="cta" href="/w/alto-demo${en ? "?lang=en" : ""}">${S.demoBtn} →</a>
   <a class="legal" href="/legal${en ? "?lang=en" : ""}">${S.legal}</a>
 </div></body></html>`);
+});
+
+/* ── Review gate (/opina/:slug) ──
+ * The cleaner sends this link after a job. It asks for a star rating FIRST:
+ * 4-5★ ("good") routes to her real public review link (Google/Facebook) with
+ * the written text pre-copied to the clipboard so posting it there is one
+ * paste; 1-3★ ("bad") is captured privately and pushed straight to her — it
+ * never becomes a public review. Same shape as ALTO Pro's /opina, adapted to
+ * cleaning copy and the Pauleza violet brand. */
+const getReviews = async (cid) => { const v = await db.kvGet(`rev:${cid}`).catch(() => null); return Array.isArray(v) ? v : []; };
+
+app.post("/api/review/:slug", async (req, res) => {
+  const c = await db.getContractorBySlug(String(req.params.slug));
+  if (!c) return res.status(404).json({ error: "unknown" });
+  if (c.data?.status === "paused") return res.status(403).json({ error: "paused" });
+  const ip = req.ip || req.socket.remoteAddress || "?";
+  if (overQuota(`rvw:${ip}`, 6) || overQuota(`rvs:${c.slug}`, 80)) return res.status(429).json({ error: "quota" });
+  const stars = Math.round(Number(req.body?.stars));
+  if (!(stars >= 1 && stars <= 5)) return res.status(400).json({ error: "stars 1-5" });
+  const clean = (s, n) => String(s || "").replace(/\s+/g, " ").trim().slice(0, n);
+  const r = { id: crypto.randomUUID(), s: stars, n: clean(req.body?.name, 60), t: clean(req.body?.text, 600), ph: String(req.body?.phone || "").replace(/\D/g, "").slice(0, 11), d: new Date().toISOString() };
+  const list = await getReviews(c.id);
+  list.push(r);
+  await db.kvSet(`rev:${c.id}`, list.slice(-100)).catch(() => {});
+  if (stars <= 3) {
+    pushToContractor(c, {
+      title: "⚠️ Cliente insatisfecho",
+      body: `${r.n || "Un cliente"} dejó ${stars}★${r.t ? ": " + r.t.slice(0, 90) : ""}${r.ph ? " · " + r.ph : ""}`,
+      url: "/",
+    }).catch(() => {});
+  }
+  const link = stars >= 4 ? String(c.data?.profile?.reviewLink || "") : "";
+  res.json({ ok: true, reviewLink: /^https:\/\//.test(link) ? link : null });
+});
+
+app.get("/opina/:slug", async (req, res) => {
+  const c = await db.getContractorBySlug(String(req.params.slug));
+  if (!c || c.data?.status === "paused") return res.status(404).send("Not found");
+  const p = c.data?.profile || {};
+  const biz = String(p.biz || c.name || "").replace(/[&<>"'`]/g, "");
+  const logo = /^data:image\/(png|jpeg);base64,/.test(String(p.logo || "")) ? p.logo : null;
+  const color = "#6B3FA0";
+  // Back-to-app button when previewed from inside the app (?app=1). Real
+  // client links (sent by WhatsApp/SMS) never carry that param.
+  const oBack = req.query.app != null ? `<div style="padding:12px 16px 0;max-width:430px;margin:0 auto"><a href="/" onclick="if(history.length>1){history.back();return false}" style="display:inline-flex;align-items:center;gap:5px;background:#fff;border:1.5px solid #E6E8EC;border-radius:999px;padding:8px 13px;font-weight:800;font-size:14px;color:#2A2352;text-decoration:none;box-shadow:0 4px 14px rgba(16,27,48,.1)">‹ Volver a la app</a></div>` : "";
+  res.send(`<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tu opinión — ${biz}</title><meta name="robots" content="noindex"><link rel="icon" href="/icon-192.png">
+<style>
+*{box-sizing:border-box;font-family:Inter,Arial,sans-serif;margin:0;-webkit-tap-highlight-color:transparent}
+body{min-height:100vh;display:flex;flex-direction:column;gap:12px;align-items:center;justify-content:center;padding:18px;background:linear-gradient(160deg,${color} 0%,#2A2352 90%)}
+.card{background:#fff;border-radius:26px;max-width:430px;width:100%;padding:34px 26px;text-align:center;box-shadow:0 30px 90px rgba(0,0,0,.4)}
+.logo{max-height:56px;max-width:190px;margin-bottom:6px}
+.biz{font-weight:800;font-size:20px;color:${color}}
+h1{font-size:21px;margin:14px 0 6px;color:#2A2352;letter-spacing:-.3px}
+.sub{color:#67718A;font-weight:600;font-size:14px;line-height:1.55}
+.stars{display:flex;justify-content:center;gap:6px;margin:22px 0 4px}
+.stars button{font-size:44px;background:none;border:none;cursor:pointer;filter:grayscale(1);opacity:.45;transition:transform .12s,filter .12s,opacity .12s;padding:2px}
+.stars button.on{filter:none;opacity:1;transform:scale(1.12)}
+textarea,input{width:100%;border:1.5px solid #E4E7EE;border-radius:13px;padding:13px 14px;font-size:15px;font-family:inherit;outline:none;margin-top:10px;color:#2A2352}
+textarea{min-height:96px;resize:vertical}
+textarea:focus,input:focus{border-color:${color}}
+.btn{display:inline-block;width:100%;border:none;cursor:pointer;background:${color};color:#fff;font-weight:800;font-size:16px;padding:15px;border-radius:13px;margin-top:14px;text-decoration:none}
+.hide{display:none}
+.big{font-size:52px;margin:6px 0}
+.lang{position:fixed;top:14px;right:16px;background:#ffffff2e;border:1px solid #ffffff55;color:#fff;font-weight:700;font-size:12.5px;padding:7px 13px;border-radius:99px;cursor:pointer}
+.foot{margin-top:18px;color:#9AA3B2;font-size:11.5px;font-weight:600}
+</style></head><body>${oBack}
+<button class="lang" id="lang">🇺🇸 English</button>
+<div class="card">
+  ${logo ? `<img class="logo" src="${logo}" alt="${biz}">` : `<div class="biz">${biz}</div>`}
+  <div id="p1">
+    <h1 data-i="q">¿Cómo estuvo tu limpieza con ${biz}?</h1>
+    <p class="sub" data-i="qs">Toca las estrellas — nos ayuda muchísimo.</p>
+    <div class="stars" id="stars">${[1, 2, 3, 4, 5].map((n) => `<button data-s="${n}" aria-label="${n}">⭐</button>`).join("")}</div>
+  </div>
+  <div id="p2" class="hide">
+    <h1 id="h2"></h1>
+    <p class="sub" id="s2"></p>
+    <textarea id="txt"></textarea>
+    <input id="nm">
+    <input id="ph" type="tel" class="hide">
+    <button class="btn" id="send" data-i="send">Enviar</button>
+  </div>
+  <div id="p3" class="hide">
+    <div class="big" id="emo">🙏</div>
+    <h1 id="h3"></h1>
+    <p class="sub" id="s3"></p>
+    <a class="btn hide" id="gbtn" target="_blank" rel="noopener"></a>
+  </div>
+  <p class="foot">${biz}</p>
+</div>
+<script>(function(){
+var slug=${JSON.stringify(c.slug)},stars=0,en=false,sent=false;
+var T={
+ q:["¿Cómo estuvo tu limpieza con ${biz}?","How was your cleaning with ${biz}?"],
+ qs:["Toca las estrellas — nos ayuda muchísimo.","Tap the stars — it helps us a lot."],
+ hGood:["¡Qué alegría! 🎉","So glad to hear it! 🎉"],
+ sGood:["¿Nos cuentas en unas palabras cómo te fue? (opcional)","Mind telling us a bit about it? (optional)"],
+ hBad:["Lo sentimos mucho 😔","We're really sorry 😔"],
+ sBad:["Cuéntanos qué pasó. La dueña lo lee personalmente.","Tell us what happened. The owner reads this personally."],
+ txtG:["Ej. Llegaron a tiempo y dejaron todo brillando…","E.g. They arrived on time and left everything sparkling…"],
+ txtB:["Cuéntanos qué salió mal…","Tell us what went wrong…"],
+ nm:["Tu nombre (opcional)","Your name (optional)"],
+ ph:["Tu teléfono — te llamamos para arreglarlo (opcional)","Your phone — we'll call to make it right (optional)"],
+ send:["Enviar","Send"],
+ h3G:["¡Mil gracias!","Thank you so much!"],
+ s3G:["Tu opinión ya quedó guardada. Nos ayuda muchísimo — gracias de verdad.","Your review is saved. It helps us so much — thank you."],
+ s3GG:["¿Nos ayudas publicándola también ahí? Ya copiamos tu texto — solo pégalo. Es 1 minuto y nos cambia el negocio.","One more favor: post it there too? We already copied your text — just paste it. Takes 1 minute and changes everything for us."],
+ gbtnG:["⭐ Dejar reseña en Google","⭐ Leave the review on Google"],
+ gbtnF:["👍 Dejar reseña en Facebook","👍 Leave the review on Facebook"],
+ gbtnI:["📸 Encuéntranos en Instagram","📸 Find us on Instagram"],
+ gbtnX:["⭐ Dejar tu reseña ahí","⭐ Leave your review there"],
+ h3B:["Gracias por decírnoslo","Thank you for telling us"],
+ s3B:["La dueña lo verá hoy mismo y te contactará para arreglarlo. De verdad, gracias por darnos la oportunidad.","The owner will see this today and reach out to make it right. Truly, thank you for giving us the chance."]
+};
+function t(k){return T[k][en?1:0];}
+function apply(){document.querySelectorAll('[data-i]').forEach(function(e){e.textContent=t(e.getAttribute('data-i'));});
+ document.getElementById('lang').textContent=en?'🇲🇽 Español':'🇺🇸 English';
+ if(stars){paint();}}
+document.getElementById('lang').onclick=function(){en=!en;apply();paint();};
+var txt=document.getElementById('txt'),nm=document.getElementById('nm'),ph=document.getElementById('ph');
+function paint(){
+ if(!stars)return;
+ var good=stars>=4;
+ document.getElementById('h2').textContent=good?t('hGood'):t('hBad');
+ document.getElementById('s2').textContent=good?t('sGood'):t('sBad');
+ txt.placeholder=good?t('txtG'):t('txtB');
+ nm.placeholder=t('nm');ph.placeholder=t('ph');
+ ph.classList.toggle('hide',good);
+ document.getElementById('send').textContent=t('send');
+}
+document.getElementById('stars').addEventListener('click',function(e){
+ var b=e.target.closest('button');if(!b)return;
+ stars=+b.getAttribute('data-s');
+ [].forEach.call(document.querySelectorAll('#stars button'),function(x){x.classList.toggle('on',+x.getAttribute('data-s')<=stars);});
+ paint();
+ document.getElementById('p2').classList.remove('hide');
+ setTimeout(function(){txt.focus();},150);
+});
+document.getElementById('send').onclick=function(){
+ if(sent)return;sent=true;this.textContent='…';
+ fetch('/api/review/'+slug,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({stars:stars,text:txt.value,name:nm.value,phone:ph.value})})
+ .then(function(r){return r.json()}).then(function(j){
+   var good=stars>=4;
+   document.getElementById('p1').classList.add('hide');
+   document.getElementById('p2').classList.add('hide');
+   document.getElementById('p3').classList.remove('hide');
+   document.getElementById('emo').textContent=good?'🙏':'🤝';
+   document.getElementById('h3').textContent=good?t('h3G'):t('h3B');
+   if(good&&j.reviewLink){
+     document.getElementById('s3').textContent=t('s3GG');
+     var h='';try{h=new URL(j.reviewLink).hostname}catch(e){}
+     var bk=/google\\.|g\\.page|goo\\.gl/.test(h)?'gbtnG':/facebook\\.|fb\\./.test(h)?'gbtnF':/instagram\\./.test(h)?'gbtnI':'gbtnX';
+     var g=document.getElementById('gbtn');g.textContent=t(bk);g.href=j.reviewLink;g.classList.remove('hide');
+     if(txt.value.trim()&&navigator.clipboard){navigator.clipboard.writeText(txt.value.trim()).catch(function(){});}
+   } else {
+     document.getElementById('s3').textContent=good?t('s3G'):t('s3B');
+   }
+ }).catch(function(){sent=false;document.getElementById('send').textContent=t('send');});
+};
+apply();
+})();</script>
+</body></html>`);
 });
 
 /* ── Example client website (template #1, "Clásico") ──

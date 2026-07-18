@@ -212,6 +212,22 @@ check("/admin 200 with key", (await fetch(B + "/admin?key=regadmin", { redirect:
   check("shared quote page renders + requires session", r.ok === true && page.includes("$555") && page.includes("1 Oak St") && anon.status === 401, JSON.stringify({ ok: r.ok, url: r.url, anon: anon.status }));
 }
 
+// 23. Review gate: good (4-5★) returns her saved review link; bad (1-3★) never does
+{
+  await fetch(B + "/api/state", { method: "PUT", headers: AH, body: JSON.stringify({ profile: { profile: { reviewLink: "https://g.page/r/reg-test" } } }) });
+  const good = await J(`/api/review/${cleaner.slug}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ stars: 5, text: "Excelente" }) });
+  const bad = await J(`/api/review/${cleaner.slug}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ stars: 2, text: "No otra vez" }) });
+  const badLink = await J(`/api/review/${cleaner.slug}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ stars: 0 }) });
+  check("review gate: good routes to review link, bad never does", good.ok === true && good.reviewLink === "https://g.page/r/reg-test" && bad.ok === true && bad.reviewLink === null && badLink.error === "stars 1-5", JSON.stringify({ good, bad, badLink }));
+}
+
+// 24. /opina/:slug: public review page renders for a real slug, 404s for unknown
+{
+  const page = await fetch(B + `/opina/${cleaner.slug}`).then((r) => r.text());
+  const missing = await fetch(B + "/opina/no-such-slug-xyz");
+  check("/opina renders + 404s unknown slug", page.includes("¿Cómo estuvo tu limpieza") && missing.status === 404);
+}
+
 console.log("\n" + results.join("\n"));
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

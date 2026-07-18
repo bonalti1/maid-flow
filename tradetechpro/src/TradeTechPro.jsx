@@ -319,6 +319,7 @@ export default function TradeTechPro() {
   const [logo, setLogo] = useState(savedProfile.logo || null);
   const [bizEmail, setBizEmail] = useState(savedProfile.email || "");
   const [zelle, setZelle] = useState(savedProfile.zelle || "");
+  const [reviewLink, setReviewLink] = useState(savedProfile.reviewLink || ""); // where a good review gets posted (Google/Facebook)
   const [myRates, setMyRates] = useState(savedProfile.rates || {});
   const logoIdRef = useRef(null);
 
@@ -456,6 +457,7 @@ export default function TradeTechPro() {
         if (p.lang) setLang(p.lang);
         if (p.email) setBizEmail(p.email);
         if (p.zelle) setZelle(p.zelle);
+        if (p.reviewLink) setReviewLink(p.reviewLink);
         if (p.rates) setMyRates(p.rates);
         // Merge local (pre-login / offline) data with the server copy by id so a
         // fresh account never wipes quotes made before the invite link was opened.
@@ -496,7 +498,7 @@ export default function TradeTechPro() {
         method: "PUT",
         body: JSON.stringify({
           state: { customers, quotes: savedQuotes },
-          profile: { profile: { name: userName, biz: bizName, phone: userPhone, logo, lang, email: bizEmail, zelle, rates: myRates } },
+          profile: { profile: { name: userName, biz: bizName, phone: userPhone, logo, lang, email: bizEmail, zelle, reviewLink, rates: myRates } },
         }),
       }).then((r) => {
         if (r && r.status === 401) { // session died server-side — stop pretending it's saved
@@ -730,10 +732,26 @@ export default function TradeTechPro() {
     </div>
   );
 
-  /* ── "Mi página web" share sheet ── */
-  const PageSheet = () => (
+  /* ── "Mi página web" share sheet — quote widget + review-gate, same
+   * structure as ALTO Pro's WebShare: each link has a preview, WhatsApp/SMS
+   * send, and copy. The review card only sends GOOD reviews public (the
+   * /opina gate below asks stars first); a bad one comes to her privately. ── */
+  const opinaUrl = mySlug ? `${window.location.origin}/opina/${mySlug}` : null;
+  const PageSheet = () => {
+    const [rlDraft, setRlDraft] = useState(reviewLink);
+    const saveReviewLink = () => {
+      const v = rlDraft.trim();
+      if (v && !/^https:\/\//.test(v)) { showToast(lang === "es" ? "El link debe empezar con https://" : "The link must start with https://"); return; }
+      setReviewLink(v); saveProfile({ reviewLink: v });
+      showToast(lang === "es" ? "Guardado ✓" : "Saved ✓");
+    };
+    const sendMsg = (url, text, sms) => {
+      if (sms) { window.location.href = "sms:?&body=" + encodeURIComponent(text + " " + url); }
+      else { window.open("https://wa.me/?text=" + encodeURIComponent(text + " " + url), "_blank"); }
+    };
+    return (
     <div className="absolute inset-0 flex items-end justify-center" style={{ background: "rgba(16,27,48,0.55)", zIndex: 50 }} onClick={() => setPageModal(false)}>
-      <div className="w-full" style={{ background: "#fff", borderRadius: "20px 20px 0 0", padding: "22px 20px 28px", maxWidth: 448 }} onClick={(e) => e.stopPropagation()}>
+      <div className="w-full overflow-y-auto" style={{ background: "#fff", borderRadius: "20px 20px 0 0", padding: "22px 20px 28px", maxWidth: 448, maxHeight: "88vh" }} onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-1">
           <p className="font-extrabold" style={{ color: M.teal, fontSize: 17 }}>🌐 {lang === "es" ? "Tu página web" : "Your website"}</p>
           <button onClick={() => setPageModal(false)} style={{ background: "none", border: "none", color: M.muted2, fontSize: 22, fontWeight: 800 }}>×</button>
@@ -743,16 +761,48 @@ export default function TradeTechPro() {
           <div className="flex items-center gap-2 mb-2" style={{ background: M.bg, border: `1.5px solid ${M.line}`, borderRadius: 12, padding: "12px 14px" }}>
             <span className="flex-1 min-w-0 truncate font-semibold" style={{ color: M.teal, fontSize: 13 }}>{shareUrl}</span>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 mb-1">
             <button onClick={() => { try { navigator.clipboard.writeText(shareUrl); showToast(lang === "es" ? "Link copiado ✓" : "Link copied ✓"); } catch { /* ignore */ } }} className="flex-1" style={{ background: "#fff", color: M.teal, border: `1.5px solid ${M.line}`, borderRadius: 12, padding: 13, fontSize: 14, fontWeight: 800 }}>📋 {lang === "es" ? "Copiar" : "Copy"}</button>
             <a href={`https://wa.me/?text=${encodeURIComponent((lang === "es" ? "Cotiza tu limpieza aquí 👉 " : "Get your cleaning quote here 👉 ") + shareUrl)}`} target="_blank" rel="noreferrer" className="flex-1 text-center" style={{ background: "#25D366", color: "#fff", borderRadius: 12, padding: 13, fontSize: 14, fontWeight: 800, textDecoration: "none" }}>🟢 WhatsApp</a>
           </div>
         </>) : (
           <p style={{ color: M.muted2, fontSize: 13, fontWeight: 600 }}>{lang === "es" ? "Tu página se activa cuando tu cuenta esté lista. Pídele a tu equipo de onboarding que la publique." : "Your website turns on once your account is set up. Ask your onboarding team to publish it."}</p>
         )}
+
+        {/* Divider: same either/or framing as ALTO Pro's Pedir reseña section */}
+        <div className="flex items-center gap-3 my-4">
+          <span className="flex-1" style={{ height: 1.5, background: M.line }} />
+          <span className="text-xs font-extrabold text-center" style={{ color: M.muted2, maxWidth: 190, lineHeight: 1.3 }}>{lang === "es" ? "Y cuando termines el trabajo…" : "And once the job is done…"}</span>
+          <span className="flex-1" style={{ height: 1.5, background: M.line }} />
+        </div>
+
+        <p className="font-extrabold mb-1" style={{ color: M.teal, fontSize: 16 }}>⭐ {lang === "es" ? "Pedir reseña" : "Ask for a review"}</p>
+        <p style={{ color: M.body, fontSize: 13, lineHeight: 1.6, marginBottom: 10 }}>{lang === "es" ? "Mándalo cuando termines un trabajo. Cliente feliz → deja 5 estrellas donde tengas presencia (Google, Facebook). Descontento → te lo dice en privado, no en público." : "Send it once a job is done. Happy client → leaves 5 stars wherever you're listed (Google, Facebook). Unhappy → tells you privately, never in public."}</p>
+
+        {opinaUrl && (<>
+          <div className="flex items-center gap-2 mb-2" style={{ background: M.bg, border: `1.5px solid ${M.line}`, borderRadius: 12, padding: "12px 14px" }}>
+            <span className="flex-1 min-w-0 truncate font-semibold" style={{ color: M.teal, fontSize: 13 }}>{opinaUrl}</span>
+            <a href={opinaUrl + "?app=1"} target="_blank" rel="noreferrer" className="shrink-0 font-extrabold" style={{ background: M.tealDeep, color: "#fff", borderRadius: 9, padding: "6px 11px", fontSize: 12, textDecoration: "none" }}>👁 {lang === "es" ? "Ver" : "View"}</a>
+          </div>
+          <div className="flex gap-2 mb-2">
+            <button onClick={() => sendMsg(opinaUrl, lang === "es" ? "¿Cómo estuvo tu limpieza? Cuéntanos en 30 segundos 👇" : "How was your cleaning? Tell us in 30 seconds 👇", false)} className="flex-1" style={{ background: "#25D366", color: "#fff", border: "none", borderRadius: 12, padding: 13, fontSize: 14, fontWeight: 800 }}>💬 {lang === "es" ? "Enviar por WhatsApp" : "Send on WhatsApp"}</button>
+            <button onClick={() => sendMsg(opinaUrl, lang === "es" ? "¿Cómo estuvo tu limpieza? Cuéntanos en 30 segundos 👇" : "How was your cleaning? Tell us in 30 seconds 👇", true)} className="flex-1" style={{ background: M.tealDeep, color: "#fff", border: "none", borderRadius: 12, padding: 13, fontSize: 14, fontWeight: 800 }}>✉️ {lang === "es" ? "Enviar por mensaje" : "Send by text"}</button>
+          </div>
+          <button onClick={() => { try { navigator.clipboard.writeText(opinaUrl); showToast(lang === "es" ? "Link copiado ✓" : "Link copied ✓"); } catch { /* ignore */ } }} className="w-full text-center mb-3" style={{ background: "none", border: "none", color: M.muted2, fontSize: 13, fontWeight: 700 }}>🔗 {lang === "es" ? "Copiar link" : "Copy link"}</button>
+        </>)}
+
+        <div style={{ background: M.bg, border: `1px solid ${M.line}`, borderRadius: 12, padding: "12px 14px" }}>
+          <p style={{ color: M.muted2, fontSize: 11, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 6 }}>{lang === "es" ? "Link de reseñas (Google o Facebook)" : "Review link (Google or Facebook)"}</p>
+          <div className="flex gap-2">
+            <input value={rlDraft} onChange={(e) => setRlDraft(e.target.value)} placeholder="https://g.page/r/..." className="flex-1 min-w-0" style={{ background: "#fff", border: `1.5px solid ${M.line}`, borderRadius: 10, padding: "10px 12px", fontSize: 13, color: M.navy }} />
+            <button onClick={saveReviewLink} style={{ background: M.teal, color: "#fff", border: "none", borderRadius: 10, padding: "10px 16px", fontSize: 13, fontWeight: 800 }}>{lang === "es" ? "Guardar" : "Save"}</button>
+          </div>
+          <p style={{ color: M.muted2, fontSize: 11, fontWeight: 600, marginTop: 6, lineHeight: 1.5 }}>{lang === "es" ? "El cliente con 4-5★ verá el botón para dejarlo ahí — con 1-3★ nunca sale de tu bandeja." : "A 4-5★ client sees the button to post it there — 1-3★ never leaves your inbox."}</p>
+        </div>
       </div>
     </div>
-  );
+    );
+  };
 
   /* ── Pregúntale a Pauleza (AI chat) — same structure as ALTO Pro's AI screen:
    * a centered welcome with tap-to-ask question chips that collapses into a
