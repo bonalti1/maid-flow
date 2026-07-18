@@ -705,7 +705,7 @@ export default function TradeTechPro() {
             ["🌐", lang === "es" ? "Mi página web" : "My website", lang === "es" ? "Mándala — el cliente cotiza solo" : "Share it — clients self-quote", () => setPageModal(true)],
             ["💲", lang === "es" ? "Mis precios" : "My prices", lang === "es" ? "Ajusta tus tarifas" : "Set your rates", () => setScreen("prices")],
             ["👥", lang === "es" ? "Mis clientes" : "My clients", lang === "es" ? "Leads, historial y notas" : "Leads, history & notes", () => setScreen("clients")],
-            ["📄", lang === "es" ? "Cotización nueva" : "New quote", lang === "es" ? "Arma y manda por WhatsApp" : "Build & send on WhatsApp", () => resetQuote()],
+            ["🔁", lang === "es" ? "Cotizar de nuevo" : "Quote again", lang === "es" ? "Elige un cliente — trabajo recurrente" : "Pick a client — recurring work", () => setScreen("clients")],
           ].map(([ic, title, sub, onClick], i) => (
             <button key={i} onClick={onClick} className="text-left active:translate-y-px transition-transform"
               style={{ background: "#fff", border: `1px solid ${M.line}`, borderRadius: 18, padding: "18px 16px", minHeight: 132 }}>
@@ -1309,6 +1309,9 @@ export default function TradeTechPro() {
           <p style={{ color: M.goldHi, fontSize: 11, fontWeight: 900, letterSpacing: "0.16em", textTransform: "uppercase" }}>{lang === "es" ? "Tus clientes" : "Your customers"}</p>
           <p className="text-white font-extrabold" style={{ fontSize: 26, margin: "4px 0 0" }}>{customers.length}</p>
         </div>
+        <button onClick={resetQuote} className="w-full flex items-center justify-center gap-2 mb-3 active:translate-y-px transition-transform" style={{ background: "#fff", color: M.teal, border: `1.5px dashed ${M.aqua}`, borderRadius: 14, padding: 14, fontSize: 14, fontWeight: 800 }}>
+          + {lang === "es" ? "Nueva cotización (cliente nuevo)" : "New quote (new client)"}
+        </button>
         {leads.length > 0 && (
           <>
             <div className="flex items-center justify-between mb-2">
@@ -1352,11 +1355,15 @@ export default function TradeTechPro() {
           </>
         )}
         <p className="mb-2 mt-3" style={{ color: M.tealDeep, fontSize: 14, fontWeight: 800 }}>{lang === "es" ? "Directorio" : "Directory"}</p>
+        {customers.length === 0 && <p style={{ color: M.muted2, fontSize: 13, fontWeight: 600, lineHeight: 1.6, marginBottom: 8 }}>{lang === "es" ? "Aquí aparecen tus clientes en cuanto mandes una cotización por WhatsApp." : "Your clients show up here as soon as you send a quote on WhatsApp."}</p>}
         {customers.map((c) => (
-          <Card key={c.id} style={{ marginBottom: 8 }}>
-            <p className="font-bold" style={{ color: M.navy, fontSize: 14 }}>{c.name}</p>
-            <p style={{ color: M.muted2, fontSize: 12, fontWeight: 600 }}>{c.phone}{c.addr ? ` · ${c.addr}` : ""}</p>
-          </Card>
+          <button key={c.id} onClick={() => startQuoteForClient(c)} className="w-full text-left active:scale-[0.98] transition-transform" style={{ marginBottom: 8, background: "#fff", border: `1px solid ${M.line}`, borderRadius: 16, padding: "14px 16px", display: "flex", alignItems: "center", gap: 10 }}>
+            <div className="flex-1 min-w-0">
+              <p className="font-bold truncate" style={{ color: M.navy, fontSize: 14 }}>{c.name}</p>
+              <p className="truncate" style={{ color: M.muted2, fontSize: 12, fontWeight: 600 }}>{c.phone}{c.addr ? ` · ${c.addr}` : ""}</p>
+            </div>
+            <span className="shrink-0" style={{ color: M.teal, fontSize: 11, fontWeight: 800, background: M.bg, border: `1px solid ${M.line}`, borderRadius: 9, padding: "6px 10px", whiteSpace: "nowrap" }}>{lang === "es" ? "Cotizar de nuevo ›" : "Quote again ›"}</span>
+          </button>
         ))}
       </div>
     </div>
