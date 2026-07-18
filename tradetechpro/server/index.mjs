@@ -653,7 +653,7 @@ const demoAppSrc = (req) => "/?demo=app" + (DEMO_PASS && (closerOk(req) || admin
 
 function loginPage(title, action, wrong) {
   return `<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Pauleza · ${title}</title><link rel="icon" href="/icon-192.png"><style>
+<title>Pauleza · ${title}</title><link rel="icon" href="/favicon-192.png"><style>
 *{box-sizing:border-box;font-family:Inter,Arial,sans-serif;margin:0}
 body{background:#2A2352;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
 .card{background:#fff;border-radius:22px;padding:36px 30px;width:100%;max-width:380px;text-align:center;box-shadow:0 30px 80px rgba(0,0,0,.45)}
@@ -883,7 +883,7 @@ app.get("/admin", async (req, res) => {
   const ago = (x) => { if (!x) return "—"; const h = (Date.now() - new Date(x).getTime()) / 36e5; return h < 1 ? "hace minutos" : h < 24 ? `hace ${Math.round(h)}h` : `hace ${Math.round(h / 24)}d`; };
   const esc = (x) => String(x || "").replace(/[&<>"]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch]));
   res.send(`<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Pauleza · Admin</title><link rel="icon" href="/icon-192.png">
+<title>Pauleza · Admin</title><link rel="icon" href="/favicon-192.png">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 *{box-sizing:border-box;margin:0;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display",Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
@@ -1197,7 +1197,7 @@ app.get("/admin/economics", async (req, res) => {
     clients: clients.length, paying: payCount("ok"), pending: payCount("pending"), failed: payCount("failed"), canceled: payCount("canceled"),
   };
   res.send(`<!doctype html><html lang="${en ? "en" : "es"}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Pauleza · ${tr("Centro de mando", "Command center")}</title><link rel="icon" href="/icon-192.png"><style>
+<title>Pauleza · ${tr("Centro de mando", "Command center")}</title><link rel="icon" href="/favicon-192.png"><style>
 *{box-sizing:border-box;margin:0;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
 body{background:#F5F6F8;color:#2A2352;letter-spacing:-0.011em}
 ::selection{background:rgba(248,180,8,.35)}
@@ -1398,7 +1398,7 @@ app.get("/admin/c/:slug", async (req, res) => {
   const payColor = pay === "ok" ? "#1E7B3C" : pay === "failed" ? "#C5221F" : pay === "pending" ? "#9A6E00" : "#8A94A8";
   const payLabel = { ok: "✓ pagando", failed: "💳 pago falló", pending: "⏳ pendiente de pago", canceled: "canceló" }[pay] || "sin estado";
   res.send(`<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${esc(c.name)} · Pauleza Admin</title><link rel="icon" href="/icon-192.png"><style>
+<title>${esc(c.name)} · Pauleza Admin</title><link rel="icon" href="/favicon-192.png"><style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 *{box-sizing:border-box;margin:0;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display",Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
 body{background:#F5F6F8;color:#2A2352;letter-spacing:-0.011em}
@@ -1674,7 +1674,7 @@ app.get("/q/:id", async (req, res) => {
   const ct = (TYPE_LABEL[es ? "es" : "en"][q.cleaningType]) || "regular";
   const logo = /^data:image\/(png|jpeg);base64,[A-Za-z0-9+/=]+$/.test(String(p.logo || "")) ? p.logo : null;
   res.send(`<!doctype html><html lang="${es ? "es" : "en"}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${es ? "Tu cotización de limpieza" : "Your cleaning quote"} — ${esc(biz)}</title><meta name="robots" content="noindex"><link rel="icon" href="/icon-192.png">
+<title>${es ? "Tu cotización de limpieza" : "Your cleaning quote"} — ${esc(biz)}</title><meta name="robots" content="noindex"><link rel="icon" href="/favicon-192.png">
 <style>*{box-sizing:border-box;font-family:Inter,Arial,sans-serif;margin:0}
 body{background:#EEF1F8;min-height:100vh;display:flex;justify-content:center;padding:18px;color:#2A2352}
 .page{max-width:430px;width:100%}
@@ -2244,7 +2244,7 @@ function landingPage(req) {
 <meta property="og:type" content="website">
 <meta property="og:url" content="${base}/">
 <meta name="twitter:card" content="summary_large_image">
-<link rel="icon" href="/icon-192.png">
+<link rel="icon" href="/favicon-192.png">
 ${pixelHead}
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&family=Inter:wght@400;600;700;800&display=swap');
@@ -2507,7 +2507,7 @@ app.get("/legal", (req, res) => {
   };
   const sec = (title, items) => `<h2>${title}</h2>${items.map(([h, b]) => `<h3>${h}</h3><p>${b}</p>`).join("")}`;
   res.send(`<!doctype html><html lang="${en ? "en" : "es"}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${S.title}</title><meta name="robots" content="noindex"><link rel="icon" href="/icon-192.png">
+<title>${S.title}</title><meta name="robots" content="noindex"><link rel="icon" href="/favicon-192.png">
 <style>*{box-sizing:border-box;font-family:Inter,Arial,sans-serif;margin:0}body{background:#fff;color:#2A2352;line-height:1.65}
 .wrap{max-width:720px;margin:0 auto;padding:40px 22px 70px}
 h1{font-size:30px;font-weight:800}h2{font-size:21px;font-weight:800;margin:34px 0 6px;color:#6B3FA0}
@@ -2540,7 +2540,7 @@ app.get("/bienvenida", (req, res) => {
     demo: "Mientras tanto, así se ve tu cotizador 👇", demoBtn: "Ver el cotizador", legal: "Términos y Privacidad",
   };
   res.send(`<!doctype html><html lang="${en ? "en" : "es"}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${S.t}</title><meta name="robots" content="noindex"><link rel="icon" href="/icon-192.png">
+<title>${S.t}</title><meta name="robots" content="noindex"><link rel="icon" href="/favicon-192.png">
 <style>*{box-sizing:border-box;font-family:Inter,Arial,sans-serif;margin:0}
 body{background:linear-gradient(160deg,#2A2352,#6B3FA0 60%,#7738AA);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;color:#2A2352}
 .card{background:#fff;border-radius:26px;max-width:480px;width:100%;padding:38px 30px;text-align:center;box-shadow:0 40px 90px rgba(0,0,0,.35)}
@@ -2602,7 +2602,7 @@ app.get("/opina/:slug", async (req, res) => {
   // client links (sent by WhatsApp/SMS) never carry that param.
   const oBack = req.query.app != null ? `<div style="padding:12px 16px 0;max-width:430px;margin:0 auto"><a href="/" onclick="if(history.length>1){history.back();return false}" style="display:inline-flex;align-items:center;gap:5px;background:#fff;border:1.5px solid #E6E8EC;border-radius:999px;padding:8px 13px;font-weight:800;font-size:14px;color:#2A2352;text-decoration:none;box-shadow:0 4px 14px rgba(16,27,48,.1)">‹ Volver a la app</a></div>` : "";
   res.send(`<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Tu opinión — ${biz}</title><meta name="robots" content="noindex"><link rel="icon" href="/icon-192.png">
+<title>Tu opinión — ${biz}</title><meta name="robots" content="noindex"><link rel="icon" href="/favicon-192.png">
 <style>
 *{box-sizing:border-box;font-family:Inter,Arial,sans-serif;margin:0;-webkit-tap-highlight-color:transparent}
 body{min-height:100vh;display:flex;flex-direction:column;gap:12px;align-items:center;justify-content:center;padding:18px;background:linear-gradient(160deg,${color} 0%,#2A2352 90%)}
@@ -3029,7 +3029,7 @@ app.get("/plantillas", (req, res) => {
     ["3", "El Limpio", "Suave y de confianza — el vecino honesto.", "#1B6FB8"],
   ];
   res.send(`<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Pauleza · Elige tu plantilla</title><link rel="icon" href="/icon-192.png"><style>
+<title>Pauleza · Elige tu plantilla</title><link rel="icon" href="/favicon-192.png"><style>
 *{box-sizing:border-box;font-family:Inter,Arial,sans-serif;margin:0}
 body{background:#6B3FA0;color:#fff;padding:34px 20px 60px}
 h1{text-align:center;font-size:clamp(24px,4.5vw,36px);font-weight:800}
@@ -3139,7 +3139,7 @@ app.get("/cs", async (req, res) => {
     if (dev >= 4) attention.push({ slug: c.slug, name: c.name, tag: "link compartido", icon: "📱", msg: `${dev} dispositivos — ofrécele cuentas para su equipo`, act: "site", c });
   }
   res.send(`<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Pauleza · Servicio</title><link rel="icon" href="/icon-192.png"><style>
+<title>Pauleza · Servicio</title><link rel="icon" href="/favicon-192.png"><style>
 *{box-sizing:border-box;margin:0;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
 body{background:#F5F6F8;color:#2A2352;letter-spacing:-0.011em}
 ::selection{background:rgba(248,180,8,.35)}
@@ -3305,7 +3305,7 @@ app.get("/onboarding", async (req, res) => {
   if (!slug) {
     const list = (await db.listContractors()).filter((c) => !["alto-demo", "alto-ventas"].includes(c.slug));
     return res.send(`<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Pauleza · Onboarding</title><link rel="icon" href="/icon-192.png"><style>
+<title>Pauleza · Onboarding</title><link rel="icon" href="/favicon-192.png"><style>
 *{box-sizing:border-box;font-family:Inter,Arial,sans-serif;margin:0}body{background:#F4F6FA;color:#6B3FA0}
 header{background:#6B3FA0;color:#fff;padding:14px 22px;display:flex;align-items:center;gap:12px}
 header img{height:32px;background:#fff;border-radius:8px;padding:4px 6px}header b em{color:#76C7C0;font-style:normal}
@@ -3332,7 +3332,7 @@ ${list.length ? list.map((c) => `<div class="row"><span><b>${esc(c.name)}</b><sm
   const svc = Array.isArray(st.services) ? st.services : [];
   const chk = (x) => (svc.indexOf(x) >= 0 ? "checked" : "");
   res.send(`<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Onboarding · ${esc(c.name)}</title><link rel="icon" href="/icon-192.png"><style>
+<title>Onboarding · ${esc(c.name)}</title><link rel="icon" href="/favicon-192.png"><style>
 @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;1,9..144,600&family=Inter:wght@400;500;600;700;800&display=swap');
 *{box-sizing:border-box;font-family:Inter,Arial,sans-serif;margin:0;-webkit-tap-highlight-color:transparent}
 :root{--navy:#6B3FA0;--navy2:#2A2352;--gold:#76C7C0;--mut:#9DA8C4;--line:rgba(255,255,255,.1)}
@@ -3935,7 +3935,7 @@ app.post("/api/onboarding/publish", async (req, res) => {
 app.get("/equipo", (req, res) => {
   const base = canonBase(req);
   res.send(`<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Pauleza · Equipo</title><link rel="icon" href="/icon-192.png"><style>
+<title>Pauleza · Equipo</title><link rel="icon" href="/favicon-192.png"><style>
 @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;1,9..144,600&family=Inter:wght@400;500;600;700;800&display=swap');
 *{box-sizing:border-box;font-family:Inter,Arial,sans-serif;margin:0;-webkit-tap-highlight-color:transparent}
 :root{--navy:#6B3FA0;--navy2:#2A2352;--gold:#76C7C0;--mut:#9DA8C4;--line:rgba(255,255,255,.1)}
@@ -4379,7 +4379,7 @@ app.get("/closer", async (req, res) => {
     ],
   };
   res.send(`<!doctype html><html lang="${en ? "en" : "es"}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Pauleza · ${L.title}</title><link rel="icon" href="/icon-192.png"><style>
+<title>Pauleza · ${L.title}</title><link rel="icon" href="/favicon-192.png"><style>
 *{box-sizing:border-box;margin:0;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display",Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
 html{background:#F5F6F8}
 body{max-width:680px;margin:0 auto;padding:34px 20px 72px;color:#2A2352;line-height:1.55;letter-spacing:-0.011em}
@@ -4715,7 +4715,7 @@ app.get("/demo", (req, res) => {
 
   res.send(`<!doctype html><html lang="${en ? "en" : "es"}"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${L.title}</title><link rel="icon" href="/icon-192.png">
+<title>${L.title}</title><link rel="icon" href="/favicon-192.png">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;1,9..144,600&family=Inter:wght@400;500;600;700;800&display=swap');
 *{box-sizing:border-box;font-family:Inter,Arial,sans-serif;margin:0;-webkit-tap-highlight-color:transparent}
