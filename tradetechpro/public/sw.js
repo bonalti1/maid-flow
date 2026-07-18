@@ -1,7 +1,11 @@
 // Pauleza service worker — offline app shell for cheap Android phones used
-// inside clients' homes with no signal. Cache-first for same-origin static
-// assets (hashed by Vite), network-only for /api and /w, offline fallback to "/".
-const CACHE = "pauleza-v1";
+// inside clients' homes with no signal.
+//   • HTML/navigations → network-FIRST, so a new deploy is picked up immediately
+//     (cache-first here froze users on an old app shell + old JS hash).
+//   • Vite hashed assets (/assets/*, images) → cache-first (immutable, safe).
+//   • /api and /w → network-only. Offline navigation falls back to "/".
+// Bump CACHE on any caching-logic change so old shells are purged on activate.
+const CACHE = "pauleza-v3";
 
 self.addEventListener("install", () => self.skipWaiting());
 self.addEventListener("activate", (e) => {
@@ -34,6 +38,24 @@ self.addEventListener("fetch", (e) => {
   const url = new URL(req.url);
   if (req.method !== "GET" || url.origin !== self.location.origin) return; // let dynamic/cross-origin pass
   if (url.pathname.startsWith("/api/") || url.pathname.startsWith("/w/")) return;
+
+  // HTML / navigations → network-first so new deploys apply right away.
+  const isHTML = req.mode === "navigate" || (req.headers.get("accept") || "").includes("text/html");
+  if (isHTML) {
+    e.respondWith((async () => {
+      const cache = await caches.open(CACHE);
+      try {
+        const resp = await fetch(req);
+        if (resp && resp.ok) cache.put(req, resp.clone());
+        return resp;
+      } catch {
+        return (await cache.match(req)) || (await cache.match("/")) || Response.error();
+      }
+    })());
+    return;
+  }
+
+  // Everything else (Vite content-hashed assets, images) → cache-first.
   e.respondWith((async () => {
     const cache = await caches.open(CACHE);
     const cached = await cache.match(req);
@@ -43,7 +65,6 @@ self.addEventListener("fetch", (e) => {
       if (resp && resp.ok && resp.type === "basic") cache.put(req, resp.clone());
       return resp;
     } catch {
-      // Offline and uncached — fall back to the app shell so the SPA still boots.
       return (await cache.match("/")) || Response.error();
     }
   })());
