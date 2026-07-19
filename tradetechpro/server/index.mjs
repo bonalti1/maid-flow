@@ -1654,6 +1654,11 @@ app.post("/api/quote/share", async (req, res) => {
   const num = (x, cap) => { const n = Number(x); return Number.isFinite(n) && n >= 0 ? Math.min(n, cap) : 0; };
   const recommended = num(b.recommended, 100000);
   if (!recommended) return res.status(400).json({ error: "quote required" });
+  // Geo for the house photos — only stored when it's a plausible lat/lng pair.
+  const latN = Number(b.lat), lngN = Number(b.lng);
+  const hasGeo = Number.isFinite(latN) && Number.isFinite(lngN) && Math.abs(latN) <= 90 && Math.abs(lngN) <= 180 && (latN !== 0 || lngN !== 0);
+  const addOns = (Array.isArray(b.addOns) ? b.addOns : [])
+    .map((a) => String(a || "").slice(0, 50)).filter(Boolean).slice(0, 24);
   const rec = {
     contractorId: c.id,
     at: new Date().toISOString(),
@@ -1666,6 +1671,7 @@ app.post("/api/quote/share", async (req, res) => {
       recurring: b.recurring != null ? num(b.recurring, 100000) : null,
       frequency: String(b.frequency || "").slice(0, 20),
       cleaners: num(b.cleaners, 20), hoursLow: num(b.hoursLow, 48), hoursHigh: num(b.hoursHigh, 48),
+      addOns, lat: hasGeo ? latN : null, lng: hasGeo ? lngN : null,
       lang: b.lang === "en" ? "en" : "es",
     },
   };
@@ -1677,6 +1683,15 @@ app.post("/api/quote/share", async (req, res) => {
 const TYPE_LABEL = {
   es: { regular: "regular", deep: "profunda", move_in: "de mudanza (entrada)", move_out: "de mudanza (salida)", airbnb: "Airbnb", post_construction: "post-construcción", office: "de oficina" },
   en: { regular: "regular", deep: "deep", move_in: "move-in", move_out: "move-out", airbnb: "Airbnb", post_construction: "post-construction", office: "office" },
+};
+// Add-on + frequency labels for the shared proposal (keeps parity with the app's ADDONS list).
+const ADDON_LABEL = {
+  es: { fridge: "Refrigerador", oven: "Horno", cabinets: "Gabinetes por dentro", windows: "Ventanas", blinds: "Persianas", baseboards: "Zócalos", laundry: "Lavar ropa", dishes: "Lavar trastes", garage: "Garaje", patio: "Patio", trash: "Sacar basura", organization: "Organización" },
+  en: { fridge: "Fridge", oven: "Oven", cabinets: "Inside cabinets", windows: "Windows", blinds: "Blinds", baseboards: "Baseboards", laundry: "Laundry", dishes: "Dishes", garage: "Garage", patio: "Patio", trash: "Trash haul-out", organization: "Organization" },
+};
+const FREQ_LABEL = {
+  es: { weekly: "cada semana", biweekly: "cada 2 semanas", monthly: "cada mes", one_time: "una vez" },
+  en: { weekly: "weekly", biweekly: "every 2 weeks", monthly: "monthly", one_time: "one-time" },
 };
 app.get("/q/:id", async (req, res) => {
   const id = String(req.params.id || "").replace(/[^a-f0-9]/g, "");
@@ -1694,50 +1709,116 @@ app.get("/q/:id", async (req, res) => {
   const money = (n) => "$" + Number(n || 0).toLocaleString("en-US", { maximumFractionDigits: 0 });
   const esc = (x) => String(x || "").replace(/[&<>"]/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[ch]));
   const ct = (TYPE_LABEL[es ? "es" : "en"][q.cleaningType]) || "regular";
+  const ctTitle = es ? `Limpieza ${ct}` : `${ct.charAt(0).toUpperCase() + ct.slice(1)} cleaning`;
   const logo = /^data:image\/(png|jpeg);base64,[A-Za-z0-9+/=]+$/.test(String(p.logo || "")) ? p.logo : null;
+  const hasGeo = Number.isFinite(Number(q.lat)) && Number.isFinite(Number(q.lng)) && (q.lat !== null && q.lng !== null);
+  const custom = (p.rates && typeof p.rates.ADDON_LABELS === "object") ? p.rates.ADDON_LABELS : {};
+  const addOnLabel = (a) => custom[a] || ADDON_LABEL[es ? "es" : "en"][a] || (es ? "Extra" : "Extra");
+  const addOns = Array.isArray(q.addOns) ? q.addOns.filter(Boolean) : [];
+  const freq = q.frequency && FREQ_LABEL[es ? "es" : "en"][q.frequency] ? FREQ_LABEL[es ? "es" : "en"][q.frequency] : "";
+  const dateStr = new Date(rec.at || Date.now()).toLocaleDateString(es ? "es-US" : "en-US", { year: "numeric", month: "long", day: "numeric" });
+  const bizPhoneFmt = bizPhone.length === 10 ? `(${bizPhone.slice(0,3)}) ${bizPhone.slice(3,6)}-${bizPhone.slice(6)}` : (p.phone || c.phone || "");
   res.send(`<!doctype html><html lang="${es ? "es" : "en"}"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${es ? "Tu cotización de limpieza" : "Your cleaning quote"} — ${esc(biz)}</title><meta name="robots" content="noindex"><link rel="icon" href="/favicon-192.png">
-<style>*{box-sizing:border-box;font-family:Inter,Arial,sans-serif;margin:0}
-body{background:#EEF1F8;min-height:100vh;display:flex;justify-content:center;padding:18px;color:#2A2352}
-.page{max-width:430px;width:100%}
-.hero{background:linear-gradient(135deg,#6B3FA0 0%,#7D5AB5 55%,#9355C1 100%);border-radius:24px;padding:24px 22px;color:#fff;box-shadow:0 24px 60px rgba(22,41,95,.30)}
-.brand{display:flex;align-items:center;gap:10px;margin-bottom:14px}
-.brand img{height:34px;max-width:100px;object-fit:contain;background:#fff;border-radius:8px;padding:3px}
-.k{color:#A1E9BD;font-size:10px;font-weight:800;letter-spacing:.16em;text-transform:uppercase}
-.biz{font-weight:800;font-size:15px}
-.amt{font-size:52px;font-weight:900;line-height:1;margin:10px 0 4px}
-.range{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.14);border-radius:14px;padding:10px 14px;margin-top:10px}
-.range b{font-size:20px}
-.meta{color:rgba(255,255,255,.85);font-size:13px;font-weight:600;margin-top:12px;line-height:1.5}
-.card{background:#fff;border:1px solid #E3E8F2;border-radius:18px;padding:16px;margin-top:14px}
-.grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
-.cell{background:#F5F7FC;border:1px solid #E8ECF5;border-radius:12px;padding:10px 6px;text-align:center}
-.cell b{color:#6B3FA0;font-size:16px}
-.cell span{display:block;color:#8A94A8;font-size:9px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;margin-top:3px}
-.addr{color:#44506A;font-size:13px;font-weight:700;margin-bottom:10px}
-.note{color:#8A94A8;font-size:11.5px;font-weight:600;line-height:1.55;margin-top:14px;text-align:center}
-.wa{display:block;background:#25D366;color:#fff;text-align:center;border-radius:14px;padding:16px;font-size:16px;font-weight:800;text-decoration:none;margin-top:14px;box-shadow:0 10px 26px rgba(37,211,102,.35)}
-.foot{text-align:center;color:#9AA3B8;font-size:11px;font-weight:600;margin:20px 0 6px}.foot a{color:#9AA3B8}</style></head><body><div class="page">
-<div class="hero">
-  <div class="brand">${logo ? `<img src="${logo}" alt="">` : ""}<div><div class="k">${es ? "Cotización de" : "Quote from"}</div><div class="biz">${esc(biz)}</div></div></div>
-  <div class="k">${es ? "Precio recomendado" : "Recommended price"}</div>
-  <div class="amt">${money(q.recommended)}</div>
-  <div class="range"><div class="k" style="margin-bottom:2px">${es ? "Rango estimado" : "Estimated range"}</div><b>${money(q.low)} – ${money(q.high)}</b></div>
-  ${q.recurring != null ? `<p class="meta">${es ? "Precio recurrente" : "Recurring price"}: <b>${money(q.recurring)}</b></p>` : ""}
-  <p class="meta">✨ ${es ? `Limpieza ${ct}` : `${ct.charAt(0).toUpperCase() + ct.slice(1)} cleaning`}${q.cleaners ? ` · ${q.cleaners} ${es ? "persona(s)" : "cleaner(s)"}${q.hoursLow ? `, ${q.hoursLow}–${q.hoursHigh} hrs` : ""}` : ""}</p>
-</div>
-<div class="card">
-  ${q.address ? `<p class="addr">📍 ${esc(q.address)}</p>` : ""}
-  <div class="grid">
-    <div class="cell"><b>${q.sqft ? Number(q.sqft).toLocaleString("en-US") : "—"}</b><span>📐 ${es ? "pies²" : "sq ft"}</span></div>
-    <div class="cell"><b>${q.beds || "—"}</b><span>🛏️ ${es ? "recámaras" : "bedrooms"}</span></div>
-    <div class="cell"><b>${q.baths || "—"}</b><span>🛁 ${es ? "baños" : "baths"}</span></div>
+<title>${es ? "Propuesta de limpieza" : "Cleaning proposal"} — ${esc(biz)}</title><meta name="robots" content="noindex"><link rel="icon" href="/favicon-192.png">
+<style>*{box-sizing:border-box;font-family:Inter,Arial,sans-serif;margin:0;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+body{background:#E9EDF6;color:#2A2352;padding:16px 14px 120px;display:flex;justify-content:center}
+.sheet{max-width:640px;width:100%;background:#fff;border-radius:22px;overflow:hidden;box-shadow:0 30px 70px rgba(22,41,95,.22)}
+/* Letterhead */
+.head{background:linear-gradient(135deg,#6B3FA0 0%,#7D5AB5 52%,#9355C1 100%);color:#fff;padding:26px 26px 22px;position:relative}
+.logo-wrap{display:flex;align-items:center;gap:14px;margin-bottom:18px}
+.logo-wrap img{height:60px;max-width:210px;object-fit:contain;background:#fff;border-radius:12px;padding:7px 10px;box-shadow:0 8px 22px rgba(0,0,0,.16)}
+.logo-txt{font-size:24px;font-weight:900;letter-spacing:-.02em}
+.k{color:#A1E9BD;font-size:10px;font-weight:800;letter-spacing:.18em;text-transform:uppercase}
+.head .biz{font-weight:800;font-size:16px;margin-top:2px}
+.head .sub{color:rgba(255,255,255,.82);font-size:12.5px;font-weight:600;margin-top:2px}
+.title-row{display:flex;justify-content:space-between;align-items:flex-end;gap:14px;margin-top:16px;flex-wrap:wrap}
+.title-row h1{font-size:21px;font-weight:900;letter-spacing:-.01em}
+.title-row .date{color:rgba(255,255,255,.8);font-size:11.5px;font-weight:700;text-align:right}
+/* House photos */
+.photos{display:grid;grid-template-columns:1fr 1fr;gap:2px;background:#E3E8F2}
+.photos.solo{grid-template-columns:1fr}
+.photos figure{position:relative;margin:0;background:#DDE3EF}
+.photos img{width:100%;height:210px;object-fit:cover;display:block}
+.photos figcaption{position:absolute;left:8px;bottom:8px;background:rgba(20,14,40,.66);color:#fff;font-size:10px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;padding:4px 9px;border-radius:7px}
+/* Body */
+.body{padding:24px 26px}
+.for{color:#8A94A8;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase}
+.forname{font-size:17px;font-weight:800;color:#2A2352;margin-top:2px}
+.addr{color:#5A6478;font-size:13px;font-weight:600;margin-top:4px}
+.price-box{margin:20px 0;padding:20px;border:1.5px solid #E3E8F2;border-radius:18px;background:linear-gradient(180deg,#FAF7FE 0%,#fff 100%);text-align:center}
+.price-box .amt{font-size:52px;font-weight:900;line-height:1;color:#6B3FA0;letter-spacing:-.02em}
+.price-box .lbl{color:#8A94A8;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px}
+.price-box .range{display:inline-block;margin-top:12px;background:#F1ECFA;border:1px solid #E4D9F5;border-radius:12px;padding:8px 16px;font-size:14px;font-weight:800;color:#7D5AB5}
+.sec-t{font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#9355C1;margin:22px 0 10px}
+.grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:9px}
+.cell{background:#F5F7FC;border:1px solid #E8ECF5;border-radius:13px;padding:12px 6px;text-align:center}
+.cell b{color:#2A2352;font-size:18px;font-weight:900}
+.cell span{display:block;color:#8A94A8;font-size:9px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;margin-top:4px}
+.lines{border:1px solid #EBEEF6;border-radius:14px;overflow:hidden}
+.line{display:flex;justify-content:space-between;align-items:center;padding:12px 15px;font-size:13.5px;font-weight:600;color:#3A4358;border-top:1px solid #EFF2F8}
+.line:first-child{border-top:none}
+.line b{font-weight:800;color:#2A2352}
+.chips{display:flex;flex-wrap:wrap;gap:7px}
+.chip{background:#F1ECFA;border:1px solid #E4D9F5;color:#6B3FA0;border-radius:9px;padding:6px 12px;font-size:12px;font-weight:700}
+.recur{margin-top:12px;background:#EAF7EF;border:1px solid #CBEBD7;border-radius:14px;padding:14px 16px;display:flex;justify-content:space-between;align-items:center}
+.recur .rl{color:#1B7A45;font-size:12px;font-weight:800}.recur .rl small{display:block;color:#4E9E6E;font-weight:700;font-size:10.5px;margin-top:2px;text-transform:none;letter-spacing:0}
+.recur b{color:#1B7A45;font-size:22px;font-weight:900}
+.terms{color:#8A94A8;font-size:11.5px;font-weight:600;line-height:1.6;margin-top:20px;padding-top:16px;border-top:1px dashed #E3E8F2}
+.foot{text-align:center;color:#9AA3B8;font-size:11px;font-weight:600;padding:18px 26px 24px;border-top:1px solid #F0F2F8}
+.foot b{color:#6B3FA0}.foot a{color:#9AA3B8}
+/* Sticky action bar (screen only) */
+.bar{position:fixed;left:0;right:0;bottom:0;background:rgba(255,255,255,.94);backdrop-filter:blur(8px);border-top:1px solid #E3E8F2;padding:12px 14px;display:flex;gap:10px;justify-content:center;box-shadow:0 -8px 24px rgba(22,41,95,.10)}
+.bar .b{flex:1;max-width:300px;text-align:center;border-radius:13px;padding:15px;font-size:15px;font-weight:800;text-decoration:none;cursor:pointer;border:none}
+.b-wa{background:#25D366;color:#fff}
+.b-pdf{background:#6B3FA0;color:#fff}
+@media(max-width:520px){.title-row h1{font-size:19px}.price-box .amt{font-size:44px}.photos img{height:168px}}
+@media print{
+  body{background:#fff;padding:0}
+  .sheet{box-shadow:none;border-radius:0;max-width:100%}
+  .bar{display:none!important}
+  .price-box{background:#FAF7FE!important}
+  @page{margin:12mm}
+}</style></head><body>
+<div class="sheet">
+  <div class="head">
+    <div class="logo-wrap">${logo ? `<img src="${logo}" alt="${esc(biz)}">` : `<span class="logo-txt">${esc(biz)}</span>`}
+      <div><div class="k">${es ? "Presentado por" : "Presented by"}</div><div class="biz">${esc(biz)}</div>${bizPhoneFmt ? `<div class="sub">${esc(bizPhoneFmt)}</div>` : ""}</div></div>
+    <div class="title-row"><h1>${es ? "Propuesta de limpieza" : "Cleaning Proposal"}</h1><div class="date">${dateStr}</div></div>
   </div>
+  ${hasGeo ? `<div class="photos">
+    <figure><img src="/api/housephoto?view=street&lat=${q.lat}&lng=${q.lng}" alt="" onerror="this.parentNode.remove();document.querySelector('.photos').classList.add('solo')"><figcaption>${es ? "Frente" : "Front"}</figcaption></figure>
+    <figure><img src="/api/housephoto?view=satellite&lat=${q.lat}&lng=${q.lng}" alt="" onerror="this.parentNode.remove();document.querySelector('.photos').classList.add('solo')"><figcaption>${es ? "Vista aérea" : "Aerial"}</figcaption></figure>
+  </div>` : ""}
+  <div class="body">
+    ${q.name || q.address ? `<div>${q.name ? `<div class="for">${es ? "Preparada para" : "Prepared for"}</div><div class="forname">${esc(q.name)}</div>` : ""}${q.address ? `<div class="addr">📍 ${esc(q.address)}</div>` : ""}</div>` : ""}
+    <div class="price-box">
+      <div class="lbl">${es ? "Precio recomendado" : "Recommended price"}</div>
+      <div class="amt">${money(q.recommended)}</div>
+      <div class="range">${es ? "Rango" : "Range"}: ${money(q.low)} – ${money(q.high)}</div>
+    </div>
+    <div class="sec-t">${es ? "Detalles del servicio" : "Service details"}</div>
+    <div class="lines">
+      <div class="line"><span>${es ? "Tipo de limpieza" : "Cleaning type"}</span><b>${esc(ctTitle)}</b></div>
+      ${q.cleaners ? `<div class="line"><span>${es ? "Equipo" : "Team"}</span><b>${q.cleaners} ${es ? "persona(s)" : "cleaner(s)"}${q.hoursLow ? ` · ${q.hoursLow}–${q.hoursHigh} ${es ? "hrs" : "hrs"}` : ""}</b></div>` : ""}
+      ${freq ? `<div class="line"><span>${es ? "Frecuencia" : "Frequency"}</span><b>${esc(freq)}</b></div>` : ""}
+    </div>
+    <div class="sec-t">${es ? "El hogar" : "The home"}</div>
+    <div class="grid">
+      <div class="cell"><b>${q.sqft ? Number(q.sqft).toLocaleString("en-US") : "—"}</b><span>${es ? "pies²" : "sq ft"}</span></div>
+      <div class="cell"><b>${q.beds || "—"}</b><span>${es ? "recámaras" : "bedrooms"}</span></div>
+      <div class="cell"><b>${q.baths || "—"}</b><span>${es ? "baños" : "baths"}</span></div>
+    </div>
+    ${addOns.length ? `<div class="sec-t">${es ? "Extras incluidos" : "Add-ons included"}</div><div class="chips">${addOns.map((a) => `<span class="chip">✓ ${esc(addOnLabel(a))}</span>`).join("")}</div>` : ""}
+    ${q.recurring != null ? `<div class="recur"><div class="rl">${es ? "Precio recurrente" : "Recurring price"}<small>${freq ? esc(freq) : (es ? "servicio recurrente" : "recurring service")}</small></div><b>${money(q.recurring)}</b></div>` : ""}
+    <p class="terms">${es ? "El precio final puede ajustarse si el hogar está más sucio de lo descrito o si hay extras no mostrados en esta propuesta. Cotización válida por 30 días." : "Final price may adjust if the home is heavier than described or if extras not shown in this proposal are needed. Quote valid for 30 days."}</p>
+  </div>
+  <div class="foot">${esc(biz)}${bizPhoneFmt ? ` · ${esc(bizPhoneFmt)}` : ""} · ${es ? "propuesta hecha con" : "proposal made with"} <b>Pauleza</b> · <a href="/legal${es ? "" : "?lang=en"}">${es ? "Privacidad" : "Privacy"}</a></div>
 </div>
-${wa ? `<a class="wa" href="${wa}">🟢 ${es ? "Apartar mi cita por WhatsApp" : "Book my cleaning on WhatsApp"}</a>` : ""}
-<p class="note">⚠️ ${es ? "El precio final puede cambiar si la casa está más sucia de lo descrito o hay extras no mostrados." : "Final price may change if the home is heavier than described or extras weren't shown."}</p>
-<p class="foot">${esc(biz)} · ${es ? "cotización hecha con" : "quote made with"} Pauleza · <a href="/legal${es ? "" : "?lang=en"}">${es ? "Privacidad" : "Privacy"}</a></p>
-</div></body></html>`);
+<div class="bar">
+  <button class="b b-pdf" onclick="window.print()">⬇️ ${es ? "Descargar PDF" : "Download PDF"}</button>
+  ${wa ? `<a class="b b-wa" href="${wa}">🟢 ${es ? "Apartar cita" : "Book now"}</a>` : ""}
+</div>
+</body></html>`);
 });
 
 // Web-push: the client fetches the VAPID public key, then registers a device.

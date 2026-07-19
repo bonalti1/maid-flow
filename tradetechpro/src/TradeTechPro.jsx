@@ -1386,6 +1386,7 @@ export default function TradeTechPro() {
           cleaningType: out.cleaningType, recommended: out.recommended, low: out.range[0], high: out.range[1],
           recurring: out.recurring, frequency: out.frequency,
           cleaners: out.time?.cleaners, hoursLow: out.time?.low, hoursHigh: out.time?.high, lang,
+          lat: housePos?.lat, lng: housePos?.lng, addOns: Array.isArray(q.addOns) ? q.addOns : [],
         }) });
         url = (await r.json()).url || null;
       } catch { /* backend unreachable */ }
