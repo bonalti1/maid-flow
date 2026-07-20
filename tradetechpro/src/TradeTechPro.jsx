@@ -312,6 +312,15 @@ export default function TradeTechPro() {
   const t = TR[lang] || TR.es;
   const welcomedInit = (() => { try { return !!localStorage.getItem("maidflow_welcomed"); } catch { return false; } })();
   const [screen, setScreen] = useState(WANT_DEMO ? "quote" : (welcomedInit ? "home" : "welcome"));
+  // Desktop responsive shell: ≥980px becomes a sidebar + centered content layout.
+  // Below the breakpoint the app is byte-for-byte the mobile experience.
+  const [isDesktop, setIsDesktop] = useState(() => { try { return window.matchMedia("(min-width: 980px)").matches; } catch { return false; } });
+  useEffect(() => {
+    let mq; try { mq = window.matchMedia("(min-width: 980px)"); } catch { return; }
+    const on = () => setIsDesktop(mq.matches);
+    on(); mq.addEventListener ? mq.addEventListener("change", on) : mq.addListener(on);
+    return () => { mq.removeEventListener ? mq.removeEventListener("change", on) : mq.removeListener(on); };
+  }, []);
 
   const [userName, setUserName] = useState(savedProfile.name || (DEMO_ON ? "María" : ""));
   const [bizName, setBizName] = useState(savedProfile.biz || (DEMO_ON ? "Brillo Cleaning (Demo)" : ""));
@@ -857,8 +866,8 @@ export default function TradeTechPro() {
       else { window.open("https://wa.me/?text=" + encodeURIComponent(text + " " + url), "_blank"); }
     };
     return (
-    <div className="absolute inset-0 flex items-end justify-center" style={{ background: "rgba(16,27,48,0.55)", zIndex: 50 }} onClick={() => setPageModal(false)}>
-      <div className="w-full overflow-y-auto" style={{ background: "#fff", borderRadius: "20px 20px 0 0", padding: "22px 20px 28px", maxWidth: 448, maxHeight: "88vh" }} onClick={(e) => e.stopPropagation()}>
+    <div className="sheet-back absolute inset-0 flex items-end justify-center" style={{ background: "rgba(16,27,48,0.55)", zIndex: 50 }} onClick={() => setPageModal(false)}>
+      <div className="sheet-card w-full overflow-y-auto" style={{ background: "#fff", borderRadius: "20px 20px 0 0", padding: "22px 20px 28px", maxWidth: 448, maxHeight: "88vh" }} onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-1">
           <p className="font-extrabold" style={{ color: M.teal, fontSize: 17 }}>🌐 {lang === "es" ? "Tu página web" : "Your website"}</p>
           <button onClick={() => setPageModal(false)} style={{ background: "none", border: "none", color: M.muted2, fontSize: 22, fontWeight: 800 }}>×</button>
@@ -921,8 +930,8 @@ export default function TradeTechPro() {
     const dayOpts = [0, 1, 2, 3, 7].map((n) => ({ ts: todayStart + n * 864e5, label: n === 0 ? (lang === "es" ? "Hoy" : "Today") : n === 1 ? (lang === "es" ? "Mañana" : "Tomorrow") : new Date(todayStart + n * 864e5).toLocaleDateString(lang === "es" ? "es-MX" : "en-US", { weekday: "short", day: "numeric", timeZone: "UTC" }) }));
     const slots = lang === "es" ? ["Mañana", "Mediodía", "Tarde", "A convenir"] : ["Morning", "Midday", "Afternoon", "TBD"];
     return (
-      <div className="absolute inset-0 flex items-end justify-center" style={{ background: "rgba(16,27,48,0.55)", zIndex: 50 }} onClick={() => setSchedFor(null)}>
-        <div className="w-full" style={{ background: "#fff", borderRadius: "20px 20px 0 0", padding: "22px 20px 26px", maxWidth: 448 }} onClick={(e) => e.stopPropagation()}>
+      <div className="sheet-back absolute inset-0 flex items-end justify-center" style={{ background: "rgba(16,27,48,0.55)", zIndex: 50 }} onClick={() => setSchedFor(null)}>
+        <div className="sheet-card w-full" style={{ background: "#fff", borderRadius: "20px 20px 0 0", padding: "22px 20px 26px", maxWidth: 448 }} onClick={(e) => e.stopPropagation()}>
           <div className="flex items-center justify-between mb-1">
             <p className="font-extrabold" style={{ color: M.teal, fontSize: 17 }}>📅 {lang === "es" ? "Agendar cita" : "Book a cleaning"}</p>
             <button onClick={() => setSchedFor(null)} style={{ background: "none", border: "none", color: M.muted2, fontSize: 22, fontWeight: 800 }}>×</button>
@@ -1043,6 +1052,45 @@ export default function TradeTechPro() {
       })}
     </div>
   );
+
+  // Desktop-only left rail. Mirrors every primary destination the mobile app
+  // reaches from Home, so on a laptop nothing is more than one click away.
+  const deskNav = [
+    ["home", "🏠", t.nav.home],
+    ["quote", "🛰️", t.nav.quote],
+    ["clients", "👥", t.nav.clients],
+    ["prices", "💲", t.nav.prices],
+    ["cobros", "💵", t.nav.cobros],
+    ["ai", "💬", lang === "es" ? "Pauleza IA" : "Pauleza AI"],
+  ];
+  const SideNav = () => {
+    const NavBtn = ([s, icon, label, onClick], on) => (
+      <button key={s} onClick={onClick || (() => (s === "quote" ? resetQuote() : setScreen(s)))}
+        className="flex items-center gap-3 w-full text-left transition-colors"
+        style={{ padding: "12px 14px", borderRadius: 12, border: "none", cursor: "pointer",
+          background: on ? M.teal : "transparent", color: on ? "#fff" : M.navy, fontSize: 15, fontWeight: 800 }}>
+        <span style={{ fontSize: 18, width: 22, textAlign: "center" }}>{icon}</span>
+        <span className="truncate">{label}</span>
+      </button>
+    );
+    return (
+      <aside className="shrink-0 flex flex-col" style={{ width: 250, background: "#fff", borderRight: `1px solid ${M.line}`, height: "100vh", position: "sticky", top: 0, padding: "22px 14px 16px" }}>
+        <img src="/pauleza-logo.png" alt="Pauleza" style={{ height: 52, width: "auto", objectFit: "contain", margin: "2px auto 20px", display: "block" }} />
+        <nav className="flex flex-col gap-1">
+          {deskNav.map((item) => NavBtn(item, screen === item[0] || (item[0] === "clients" && screen === "result")))}
+        </nav>
+        <div className="flex flex-col gap-1" style={{ marginTop: "auto" }}>
+          {NavBtn(["web", "🌐", lang === "es" ? "Mi página web" : "My website", () => setPageModal(true)], false)}
+          {NavBtn(["account", "⚙️", t.nav.account], screen === "account")}
+          {!session && (
+            <div className="text-center" style={{ marginTop: 8, padding: "8px 10px", borderRadius: 10, background: M.goldSoft, border: `1.5px solid ${M.gold}` }}>
+              <span className="text-[11px] font-extrabold" style={{ color: "#7A5A00" }}>{t.demoBanner}</span>
+            </div>
+          )}
+        </div>
+      </aside>
+    );
+  };
 
   /* ── Questionnaire steps ── */
   const STEPS = [
@@ -1893,9 +1941,15 @@ export default function TradeTechPro() {
   /* ── Router ── */
   const tabScreens = ["home", "cobros", "quote", "clients", "prices", "account", "ai"];
   const titles = { result: lang === "es" ? "📄 Cotización" : "📄 Quote" };
+  // Desktop shell: sidebar + a centered, framed content panel. Welcome stays a
+  // full-bleed splash. Per-screen width so grids breathe and forms stay readable.
+  const deskShell = isDesktop && screen !== "welcome";
+  const contentMax = ({ home: 900, clients: 1000, result: 1000, ai: 880 })[screen] || 780;
+  const deskBg = "#E6ECF6";
+  const deskTitles = { home: t.nav.home, clients: t.nav.clients, prices: t.nav.prices, cobros: t.nav.cobros, quote: t.nav.quote };
 
   return (
-    <div className="min-h-screen flex justify-center" style={{ background: M.tealDeep }}>
+    <div className="min-h-screen flex justify-center" style={{ background: deskShell ? deskBg : M.tealDeep }}>
       <style>{`@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap');
         * { font-family: 'Nunito', ui-rounded, sans-serif; -webkit-tap-highlight-color: transparent; }
         input::placeholder { color: #9DB0A8; }
@@ -1904,15 +1958,31 @@ export default function TradeTechPro() {
         @keyframes ttpBlink { 0%, 100% { opacity: 1; } 50% { opacity: .25; } }
         @keyframes ttpRipple { 0% { transform: scale(0.45); opacity: .9; } 100% { transform: scale(2.4); opacity: 0; } }
         .addrin:focus-within { border-color: #76C7C0 !important; box-shadow: 0 0 0 3px rgba(126,214,217,0.22); }
-        @media (prefers-reduced-motion: reduce) { * { transition: none !important; } [style*="ttpScan"] { animation: none !important; } }`}</style>
-      <div className="w-full max-w-md flex flex-col relative" style={{ background: M.bg, minHeight: "100vh" }}>
-        {!session && screen !== "welcome" && (
+        @media (prefers-reduced-motion: reduce) { * { transition: none !important; } [style*="ttpScan"] { animation: none !important; } }
+        @media (min-width: 980px) {
+          .sheet-back { position: fixed !important; align-items: center !important; z-index: 80 !important; }
+          .sheet-card { border-radius: 20px !important; max-width: 480px !important; box-shadow: 0 30px 90px rgba(20,20,50,.45) !important; max-height: 86vh; }
+        }`}</style>
+      <div className={deskShell ? "flex w-full relative" : "w-full max-w-md flex flex-col relative"}
+        style={deskShell ? { minHeight: "100vh", maxWidth: 1320, background: "#fff", boxShadow: "0 0 60px rgba(30,42,74,0.10)" } : { background: M.bg, minHeight: "100vh" }}>
+        {deskShell && <SideNav />}
+        {/* On desktop everything below lives in a centered, height-capped content
+            panel; on mobile the wrappers collapse (display:contents) so the layout
+            is unchanged. */}
+        <div className={deskShell ? "flex-1 flex flex-col relative min-w-0" : "contents"}
+          style={deskShell ? { height: "100vh", overflow: "hidden", background: M.bg } : undefined}>
+          <div className={deskShell ? "flex-1 flex flex-col min-h-0 w-full mx-auto" : "contents"}
+            style={deskShell ? { maxWidth: contentMax } : undefined}>
+        {!deskShell && !session && screen !== "welcome" && (
           <div className="px-4 py-2 text-center" style={{ background: M.goldSoft, borderBottom: `1.5px solid ${M.gold}` }}>
             <span className="text-xs font-bold" style={{ color: "#7A5A00" }}>{t.demoBanner}</span>
           </div>
         )}
-        {["home", "clients", "prices"].includes(screen) && <BrandHeader />}
-        {screen === "quote" && step === 0 && !measuring && <BrandHeader />}
+        {!deskShell && ["home", "clients", "prices"].includes(screen) && <BrandHeader />}
+        {!deskShell && screen === "quote" && step === 0 && !measuring && <BrandHeader />}
+        {deskShell && deskTitles[screen] && (
+          <div className="px-5 pt-6 pb-1"><h1 style={{ color: M.navy, fontSize: 24, fontWeight: 900, letterSpacing: "-0.01em" }}>{deskTitles[screen]}</h1></div>
+        )}
         {/* Back returns to the questionnaire (state intact) to tweak an answer;
             "Nueva cotización" on the result screen is the destructive reset. */}
         {screen === "result" && <div><TopBar title={titles.result} back={() => setScreen(resultFrom)} /></div>}
@@ -1930,15 +2000,15 @@ export default function TradeTechPro() {
         {schedFor && <ScheduleSheet />}
         {driveTo && <DriveMap dest={driveTo} label={driveTo.address} lang={lang} onClose={() => setDriveTo(null)} />}
 
-        {tabScreens.includes(screen) && <BottomNav />}
+        {!deskShell && tabScreens.includes(screen) && <BottomNav />}
         {toast && (
           <div className="absolute left-0 right-0 flex justify-center" style={{ bottom: 80, pointerEvents: "none" }}>
             <span className="rounded-full px-5 py-2.5 font-bold text-sm text-white" style={{ background: M.tealDeep, boxShadow: "0 8px 20px rgba(0,0,0,.3)" }}>{toast}</span>
           </div>
         )}
         {installOverlay && (
-          <div className="absolute inset-0 flex items-end justify-center" style={{ background: "rgba(9,20,16,0.55)", zIndex: 50 }} onClick={() => setInstallOverlay(null)}>
-            <div className="w-full" style={{ background: "#fff", borderRadius: "20px 20px 0 0", padding: "22px 20px 28px", maxWidth: 448 }} onClick={(e) => e.stopPropagation()}>
+          <div className="sheet-back absolute inset-0 flex items-end justify-center" style={{ background: "rgba(9,20,16,0.55)", zIndex: 50 }} onClick={() => setInstallOverlay(null)}>
+            <div className="sheet-card w-full" style={{ background: "#fff", borderRadius: "20px 20px 0 0", padding: "22px 20px 28px", maxWidth: 448 }} onClick={(e) => e.stopPropagation()}>
               <div className="flex items-center justify-between mb-2">
                 <p className="font-extrabold" style={{ color: M.navy, fontSize: 17 }}>📲 {lang === "es" ? "Instalar Pauleza" : "Install Pauleza"}</p>
                 <button onClick={() => setInstallOverlay(null)} style={{ background: "none", border: "none", color: M.muted2, fontSize: 22, fontWeight: 800 }}>×</button>
@@ -1959,6 +2029,8 @@ export default function TradeTechPro() {
             </div>
           </div>
         )}
+          </div>
+        </div>
       </div>
     </div>
   );
