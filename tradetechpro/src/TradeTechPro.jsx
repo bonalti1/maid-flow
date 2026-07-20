@@ -1066,25 +1066,25 @@ export default function TradeTechPro() {
   const SideNav = () => {
     const NavBtn = ([s, icon, label, onClick], on) => (
       <button key={s} onClick={onClick || (() => (s === "quote" ? resetQuote() : setScreen(s)))}
-        className="flex items-center gap-3 w-full text-left transition-colors"
-        style={{ padding: "12px 14px", borderRadius: 12, border: "none", cursor: "pointer",
-          background: on ? M.teal : "transparent", color: on ? "#fff" : M.navy, fontSize: 15, fontWeight: 800 }}>
-        <span style={{ fontSize: 18, width: 22, textAlign: "center" }}>{icon}</span>
+        className="flex items-center w-full text-left transition-colors"
+        style={{ gap: 14, padding: "15px 18px", borderRadius: 14, border: "none", cursor: "pointer",
+          background: on ? M.teal : "transparent", color: on ? "#fff" : M.navy, fontSize: 17, fontWeight: 800, lineHeight: 1 }}>
+        <span style={{ fontSize: 22, width: 28, textAlign: "center", flexShrink: 0 }}>{icon}</span>
         <span className="truncate">{label}</span>
       </button>
     );
     return (
-      <aside className="shrink-0 flex flex-col" style={{ width: 250, background: "#fff", borderRight: `1px solid ${M.line}`, height: "100vh", position: "sticky", top: 0, padding: "22px 14px 16px" }}>
-        <img src="/pauleza-logo.png" alt="Pauleza" style={{ height: 52, width: "auto", objectFit: "contain", margin: "2px auto 20px", display: "block" }} />
-        <nav className="flex flex-col gap-1">
+      <aside className="shrink-0 flex flex-col" style={{ width: 288, background: "#fff", borderRight: `1px solid ${M.line}`, height: "100vh", position: "sticky", top: 0, padding: "26px 18px 18px" }}>
+        <img src="/pauleza-logo.png" alt="Pauleza" style={{ height: 66, width: "auto", objectFit: "contain", margin: "4px auto 26px", display: "block" }} />
+        <nav className="flex flex-col" style={{ gap: 7 }}>
           {deskNav.map((item) => NavBtn(item, screen === item[0] || (item[0] === "clients" && screen === "result")))}
         </nav>
-        <div className="flex flex-col gap-1" style={{ marginTop: "auto" }}>
+        <div className="flex flex-col" style={{ gap: 7, marginTop: "auto", paddingTop: 12, borderTop: `1px solid ${M.line}` }}>
           {NavBtn(["web", "🌐", lang === "es" ? "Mi página web" : "My website", () => setPageModal(true)], false)}
           {NavBtn(["account", "⚙️", t.nav.account], screen === "account")}
           {!session && (
-            <div className="text-center" style={{ marginTop: 8, padding: "8px 10px", borderRadius: 10, background: M.goldSoft, border: `1.5px solid ${M.gold}` }}>
-              <span className="text-[11px] font-extrabold" style={{ color: "#7A5A00" }}>{t.demoBanner}</span>
+            <div className="text-center" style={{ marginTop: 6, padding: "10px 12px", borderRadius: 12, background: M.goldSoft, border: `1.5px solid ${M.gold}` }}>
+              <span className="text-xs font-extrabold" style={{ color: "#7A5A00", lineHeight: 1.4 }}>{t.demoBanner}</span>
             </div>
           )}
         </div>
@@ -1944,7 +1944,7 @@ export default function TradeTechPro() {
   // Desktop shell: sidebar + a centered, framed content panel. Welcome stays a
   // full-bleed splash. Per-screen width so grids breathe and forms stay readable.
   const deskShell = isDesktop && screen !== "welcome";
-  const contentMax = ({ home: 900, clients: 1000, result: 1000, ai: 880 })[screen] || 780;
+  const contentMax = ({ home: 1180, clients: 1220, result: 1160, ai: 1000, prices: 960, cobros: 960 })[screen] || 860;
   const deskBg = "#E6ECF6";
   const deskTitles = { home: t.nav.home, clients: t.nav.clients, prices: t.nav.prices, cobros: t.nav.cobros, quote: t.nav.quote };
 
@@ -1964,7 +1964,7 @@ export default function TradeTechPro() {
           .sheet-card { border-radius: 20px !important; max-width: 480px !important; box-shadow: 0 30px 90px rgba(20,20,50,.45) !important; max-height: 86vh; }
         }`}</style>
       <div className={deskShell ? "flex w-full relative" : "w-full max-w-md flex flex-col relative"}
-        style={deskShell ? { minHeight: "100vh", maxWidth: 1320, background: "#fff", boxShadow: "0 0 60px rgba(30,42,74,0.10)" } : { background: M.bg, minHeight: "100vh" }}>
+        style={deskShell ? { minHeight: "100vh", background: "#fff" } : { background: M.bg, minHeight: "100vh" }}>
         {deskShell && <SideNav />}
         {/* On desktop everything below lives in a centered, height-capped content
             panel; on mobile the wrappers collapse (display:contents) so the layout
