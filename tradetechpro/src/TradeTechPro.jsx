@@ -1900,6 +1900,37 @@ export default function TradeTechPro() {
       ["💲", M.aqua, lang === "es" ? "Tus precios, tus reglas" : "Your prices, your rules", lang === "es" ? "Ajusta tus tarifas y mínimos" : "Set your rates and minimums"],
       ["💬", M.purple, lang === "es" ? "Envía por WhatsApp" : "Send on WhatsApp", lang === "es" ? "Mensaje listo con tu marca" : "Branded message, ready to send"],
     ];
+    // Desktop onboarding: a centered two-column card (brand panel + form) instead
+    // of the stranded phone column.
+    if (isDesktop) return (
+      <div style={{ width: "100%", maxWidth: 980, margin: "auto", background: "#fff", borderRadius: 28, overflow: "hidden", boxShadow: "0 40px 100px rgba(20,20,50,0.34)", display: "flex", minHeight: 580 }}>
+        <div className="relative overflow-hidden" style={{ width: "46%", background: M.headGrad, padding: "52px 44px", display: "flex", flexDirection: "column", justifyContent: "center", color: "#fff" }}>
+          <div className="absolute" style={{ left: 44, top: 40, width: 180, height: 180, borderRadius: 999, border: `1.5px solid ${M.mint}`, opacity: 0.22, animation: "ttpRipple 2.6s ease-out infinite" }} />
+          <div className="absolute" style={{ left: 44, top: 40, width: 180, height: 180, borderRadius: 999, border: `1.5px solid ${M.aqua}`, opacity: 0.22, animation: "ttpRipple 2.6s ease-out 1.3s infinite" }} />
+          <div className="relative">
+            <Wordmark size={40} />
+            <p className="font-extrabold" style={{ fontSize: 30, lineHeight: 1.12, letterSpacing: "-0.01em", marginTop: 18 }}>{lang === "es" ? "Bienvenida a Pauleza" : "Welcome to Pauleza"}</p>
+            <p style={{ color: "rgba(255,255,255,0.85)", fontSize: 15, fontWeight: 600, marginTop: 9 }}>{lang === "es" ? "Todo tu negocio de limpieza, en un solo lugar." : "Your whole cleaning business, in one place."}</p>
+            <div style={{ marginTop: 30 }}>
+              {feats.map(([icon, tint, name, desc], i) => (
+                <div key={name} className="flex items-center gap-3" style={{ marginTop: i ? 16 : 0 }}>
+                  <span className="flex items-center justify-center shrink-0" style={{ width: 44, height: 44, borderRadius: 13, background: `${tint}33`, border: `1.5px solid ${tint}`, fontSize: 20 }}>{icon}</span>
+                  <span className="min-w-0 flex-1"><span className="block font-extrabold" style={{ fontSize: 15.5 }}>{name}</span><span className="block" style={{ color: "rgba(255,255,255,0.8)", fontSize: 12.5, fontWeight: 600, marginTop: 1 }}>{desc}</span></span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+        <div style={{ flex: 1, padding: "52px 48px", display: "flex", flexDirection: "column", justifyContent: "center" }}>
+          <p style={{ color: M.teal, fontSize: 11, fontWeight: 900, letterSpacing: "0.18em", textTransform: "uppercase", marginBottom: 5 }}>{lang === "es" ? "Tu negocio" : "Your business"}</p>
+          <p className="font-bold" style={{ color: M.tealDeep, fontSize: 22, lineHeight: 1.2, marginBottom: 20 }}>{lang === "es" ? "Aparece en cada cotización que mandas." : "Shown on every quote you send."}</p>
+          <TextInput value={bizName} onChange={(v) => setBizName(v)} placeholder={lang === "es" ? "Nombre del negocio (ej. Brillo Cleaning)" : "Business name (e.g. Sparkle Maids)"} />
+          <TextInput value={userName} onChange={(v) => setUserName(v)} placeholder={lang === "es" ? "Tu nombre" : "Your name"} />
+          <PrimaryBtn onClick={finish} style={{ marginTop: 8, padding: 17, fontSize: 17 }}>{lang === "es" ? "Empezar →" : "Get started →"}</PrimaryBtn>
+          <p className="text-center" style={{ color: M.muted, fontSize: 12, fontWeight: 600, marginTop: 14 }}>{lang === "es" ? "Sin tarjeta · listo en 30 segundos" : "No card needed · ready in 30 seconds"}</p>
+        </div>
+      </div>
+    );
     return (
       <div className="flex-1 overflow-y-auto" style={{ background: M.bg }}>
         {/* Hero — the satellite radar signature behind the wordmark ties it to the quote flow */}
@@ -1944,6 +1975,7 @@ export default function TradeTechPro() {
   // Desktop shell: sidebar + a centered, framed content panel. Welcome stays a
   // full-bleed splash. Per-screen width so grids breathe and forms stay readable.
   const deskShell = isDesktop && screen !== "welcome";
+  const deskWelcome = isDesktop && screen === "welcome";
   const contentMax = ({ home: 1180, clients: 1220, result: 1160, ai: 1000, prices: 960, cobros: 960 })[screen] || 860;
   const deskBg = "#E6ECF6";
   const deskTitles = { home: t.nav.home, clients: t.nav.clients, prices: t.nav.prices, cobros: t.nav.cobros, quote: t.nav.quote };
@@ -1963,8 +1995,8 @@ export default function TradeTechPro() {
           .sheet-back { position: fixed !important; align-items: center !important; z-index: 80 !important; }
           .sheet-card { border-radius: 20px !important; max-width: 480px !important; box-shadow: 0 30px 90px rgba(20,20,50,.45) !important; max-height: 86vh; }
         }`}</style>
-      <div className={deskShell ? "flex w-full relative" : "w-full max-w-md flex flex-col relative"}
-        style={deskShell ? { minHeight: "100vh", background: "#fff" } : { background: M.bg, minHeight: "100vh" }}>
+      <div className={deskShell ? "flex w-full relative" : deskWelcome ? "w-full flex items-center justify-center relative" : "w-full max-w-md flex flex-col relative"}
+        style={deskShell ? { minHeight: "100vh", background: "#fff" } : deskWelcome ? { minHeight: "100vh", background: deskBg, padding: 32 } : { background: M.bg, minHeight: "100vh" }}>
         {deskShell && <SideNav />}
         {/* On desktop everything below lives in a centered, height-capped content
             panel; on mobile the wrappers collapse (display:contents) so the layout
