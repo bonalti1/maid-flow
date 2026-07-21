@@ -81,6 +81,19 @@ const AH = { "Content-Type": "application/json", Authorization: `Bearer ${sess}`
     c.data.status === "paused" && c.data.payStatus === "ok" && c.data.stripeCustomer === "cus_reg" && !!c.data.webhook && !!c.data.site && c.data.profile.biz === "New" && Number(c.data.profile.rates.RATE.regular.perSqft) === 0.15,
     JSON.stringify({ status: c.data.status, pay: c.data.payStatus, cust: c.data.stripeCustomer, wh: !!c.data.webhook, site: !!c.data.site, biz: c.data.profile.biz, rate: c.data.profile.rates?.RATE?.regular?.perSqft }));
 }
+// 7b. stored-XSS guard: a logo with an attribute-breakout payload is rejected,
+// a clean base64 data URL is kept (audit C-1).
+{
+  const evil = 'data:image/png;base64,x" onerror="alert(1)';
+  const good = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mhowever"; // shape only
+  await fetch(B + "/api/state", { method: "PUT", headers: AH, body: JSON.stringify({ profile: { profile: { logo: evil } } }) });
+  const evilLogo = (await db.getContractor(cleaner.id)).data.profile.logo; // capture primitive now (store returns a live ref)
+  await fetch(B + "/api/state", { method: "PUT", headers: AH, body: JSON.stringify({ profile: { profile: { logo: good } } }) });
+  const goodLogo = (await db.getContractor(cleaner.id)).data.profile.logo;
+  check("logo XSS payload rejected, clean data URL kept",
+    evilLogo === undefined && goodLogo === good,
+    JSON.stringify({ evil: evilLogo, good: goodLogo === good }));
+}
 // 8. paused account cannot generate a quote
 check("paused -> /api/quote 403", (await fetch(B + "/api/quote", { method: "POST", headers: AH, body: JSON.stringify({ sqft: 2000, cleaningType: "regular" }) })).status === 403);
 

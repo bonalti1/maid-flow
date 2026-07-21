@@ -5,7 +5,7 @@
 //   • Vite hashed assets (/assets/*, images) → cache-first (immutable, safe).
 //   • /api and /w → network-only. Offline navigation falls back to "/".
 // Bump CACHE on any caching-logic change so old shells are purged on activate.
-const CACHE = "pauleza-v3";
+const CACHE = "pauleza-v4";
 
 self.addEventListener("install", () => self.skipWaiting());
 self.addEventListener("activate", (e) => {
@@ -39,17 +39,22 @@ self.addEventListener("fetch", (e) => {
   if (req.method !== "GET" || url.origin !== self.location.origin) return; // let dynamic/cross-origin pass
   if (url.pathname.startsWith("/api/") || url.pathname.startsWith("/w/")) return;
 
-  // HTML / navigations → network-first so new deploys apply right away.
+  // HTML / navigations. ONLY the PWA shell ("/") is ever cached — every other
+  // server-rendered HTML page (/admin, /cs, /closer, /onboarding, /invite/*,
+  // /q/*, /site/*, tenant sites) is network-only, so authenticated pages, staff
+  // keys embedded in markup, and proposal PII are never stored in the cache and
+  // can't be read offline or by a same-origin script after logout/expiry.
   const isHTML = req.mode === "navigate" || (req.headers.get("accept") || "").includes("text/html");
   if (isHTML) {
+    if (url.pathname !== "/") return; // network-only for all non-shell HTML
     e.respondWith((async () => {
       const cache = await caches.open(CACHE);
       try {
         const resp = await fetch(req);
-        if (resp && resp.ok) cache.put(req, resp.clone());
+        if (resp && resp.ok) cache.put("/", resp.clone());
         return resp;
       } catch {
-        return (await cache.match(req)) || (await cache.match("/")) || Response.error();
+        return (await cache.match("/")) || Response.error();
       }
     })());
     return;

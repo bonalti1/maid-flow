@@ -1594,22 +1594,35 @@ function sanitizeRates(r) {
 app.put("/api/state", async (req, res) => {
   const c = await auth(req);
   if (!c) return res.status(401).json({ error: "no session" });
-  await db.saveState(c.id, req.body?.state || {});
+  // Only save state that was actually sent — a profile-only PUT must NOT wipe
+  // customers/quotes/appointments to {} (audit H-9).
+  if (req.body && Object.prototype.hasOwnProperty.call(req.body, "state")) {
+    await db.saveState(c.id, req.body.state || {});
+  }
   // Merge ONLY the self-editable profile subtree; never let this endpoint write
   // billing/pause/site/webhook fields, and never replace the whole data blob.
+  // PATCH semantics: only fields actually present in the payload are touched,
+  // merged onto the current profile — an omitted field is preserved, not wiped
+  // (mergeContractorData replaces data.profile wholesale, so we merge here).
   const p = req.body?.profile?.profile;
   if (p && typeof p === "object") {
+    const has = (k) => Object.prototype.hasOwnProperty.call(p, k);
     const str = (v, n = 200) => (v == null ? undefined : String(v).slice(0, n));
-    const profile = {
-      name: str(p.name, 80), biz: str(p.biz, 80), phone: str(p.phone, 30),
-      email: str(p.email, 120), zelle: str(p.zelle, 120),
-      // Where a HAPPY (4-5★) reviewer gets routed — her Google Business or
-      // Facebook page review link. https-only; empty clears it.
-      reviewLink: p.reviewLink === "" ? "" : (/^https:\/\/.{1,300}$/.test(String(p.reviewLink || "")) ? String(p.reviewLink) : undefined),
-      lang: p.lang === "en" ? "en" : "es",
-      logo: typeof p.logo === "string" && p.logo.length < 400000 ? p.logo : undefined,
-      rates: sanitizeRates(p.rates),
-    };
+    const profile = { ...(c.data?.profile || {}) };
+    if (has("name")) profile.name = str(p.name, 80);
+    if (has("biz")) profile.biz = str(p.biz, 80);
+    if (has("phone")) profile.phone = str(p.phone, 30);
+    if (has("email")) profile.email = str(p.email, 120);
+    if (has("zelle")) profile.zelle = str(p.zelle, 120);
+    // Where a HAPPY (4-5★) reviewer gets routed — her Google Business or
+    // Facebook page review link. https-only; empty clears it.
+    if (has("reviewLink")) profile.reviewLink = p.reviewLink === "" ? "" : (/^https:\/\/.{1,300}$/.test(String(p.reviewLink || "")) ? String(p.reviewLink) : undefined);
+    if (has("lang")) profile.lang = p.lang === "en" ? "en" : "es";
+    // Stored-XSS guard: a logo must be a clean base64 image data URL end-to-end
+    // (the anchored charset rejects any `"`/space/`<` attribute breakout). This
+    // is validated again at every render sink.
+    if (has("logo")) profile.logo = typeof p.logo === "string" && p.logo.length < 400000 && /^data:image\/(png|jpeg);base64,[A-Za-z0-9+/=]+$/.test(p.logo) ? p.logo : undefined;
+    if (has("rates")) profile.rates = sanitizeRates(p.rates);
     await db.mergeContractorData(c.id, { profile });
   }
   res.json({ ok: true });
@@ -1675,7 +1688,7 @@ app.post("/api/quote/share", async (req, res) => {
       lang: b.lang === "en" ? "en" : "es",
     },
   };
-  const id = crypto.randomBytes(8).toString("hex");
+  const id = crypto.randomBytes(16).toString("hex"); // 128-bit, non-enumerable for a long-lived public link
   await db.kvSet(`share:${id}`, rec);
   res.json({ ok: true, id, url: `${canonBase(req)}/q/${id}` });
 });
@@ -1876,7 +1889,14 @@ app.get("/api/leads.csv", async (req, res) => {
   const c = await auth(req);
   if (!c) return res.status(401).send("no session");
   const leads = await db.listLeads(c.id);
-  const cell = (v) => { const s = String(v == null ? "" : v); return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s; };
+  const cell = (v) => {
+    let s = String(v == null ? "" : v);
+    // CSV formula-injection guard: a lead field (attacker-supplied) starting with
+    // =, +, -, @ or a control char executes as a formula in Excel/Sheets. Prefix
+    // with a quote so it's rendered as text.
+    if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;
+    return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  };
   const head = ["date", "name", "phone", "company", "address", "source", "stage", "recommended", "note"];
   const rows = leads.map((l) => [
     (l.created_at || "").slice(0, 10), l.name, l.phone, l.info?.company || "", l.address,
@@ -2699,7 +2719,7 @@ app.get("/opina/:slug", async (req, res) => {
   if (!c || c.data?.status === "paused") return res.status(404).send("Not found");
   const p = c.data?.profile || {};
   const biz = String(p.biz || c.name || "").replace(/[&<>"'`]/g, "");
-  const logo = /^data:image\/(png|jpeg);base64,/.test(String(p.logo || "")) ? p.logo : null;
+  const logo = /^data:image\/(png|jpeg);base64,[A-Za-z0-9+/=]+$/.test(String(p.logo || "")) ? p.logo : null;
   const color = "#6B3FA0";
   // Back-to-app button when previewed from inside the app (?app=1). Real
   // client links (sent by WhatsApp/SMS) never carry that param.
@@ -3026,7 +3046,7 @@ function siteDataOf(c) {
     slug: c.slug,
     biz: p.biz || c.name,
     phone: String(p.phone || c.phone || "").replace(/\D/g, "").replace(/^1/, ""),
-    logo: /^data:image\/(png|jpeg);base64,/.test(String(p.logo || "")) ? p.logo : null,
+    logo: /^data:image\/(png|jpeg);base64,[A-Za-z0-9+/=]+$/.test(String(p.logo || "")) ? p.logo : null,
     license: p.license || "",
     template: site.template || "1",
     color: site.color || "#6B3FA0",
@@ -3066,7 +3086,7 @@ ${pPhone ? `<a href="tel:+1${pPhone}">📞 Llámanos / Call us</a>` : ""}
   if (!published && !preview) {
     const cProf = c.data?.profile || {};
     const cBiz = String(cProf.biz || c.name).replace(/[&<>"]/g, "");
-    const cLogo = /^data:image\/(png|jpeg);base64,/.test(String(cProf.logo || "")) ? cProf.logo : null;
+    const cLogo = /^data:image\/(png|jpeg);base64,[A-Za-z0-9+/=]+$/.test(String(cProf.logo || "")) ? cProf.logo : null;
     const cColor = /^#[0-9a-fA-F]{6}$/.test(String(c.data?.site?.color || "")) ? c.data.site.color : "#6B3FA0";
     return res.send(`<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${cBiz} — en construcción</title><style>

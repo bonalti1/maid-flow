@@ -30,7 +30,14 @@ const num = (v, f = 0) => { const n = Number(v); return Number.isFinite(n) ? n :
 // (undefined, "", NaN, negative, wrong type) falls back to the default, so a
 // half-typed or corrupt "Mis precios" entry can never produce NaN/negative
 // prices in the app or on the public widget.
-const okNum = (v, max = 1e6) => { const n = Number(v); return Number.isFinite(n) && n >= 0 && n <= max ? n : undefined; };
+const okNum = (v, max = 1e6) => {
+  // Reject the values Number() silently coerces to 0 (""/null/false/whitespace)
+  // so a blank "Mis precios" field falls back to the DEFAULT, not $0.
+  if (v === null || v === undefined || typeof v === "boolean") return undefined;
+  if (typeof v === "string" && v.trim() === "") return undefined;
+  const n = Number(v);
+  return Number.isFinite(n) && n >= 0 && n <= max ? n : undefined;
+};
 // Per-group sane upper bounds so an override can't invert the math (e.g. a
 // frequency discount > 1 would make the recurring price negative).
 const CAP = { RATE_perSqft: 100, RATE_min: 1e5, CONDITION: 10, FURNISHED: 10, FREQ_DISCOUNT: 0.95, PETS: 1e4, ADDON: 1e4, BATHROOM_ADDER: 1e4, BEDROOM_ADDER: 1e4 };
@@ -65,16 +72,26 @@ export function mergeRates(overrides) {
 }
 
 export function quote(i = {}, rates = DEFAULTS) {
-  const cleaningType = rates.RATE[i.cleaningType] ? i.cleaningType : 'regular';
-  const condition = rates.CONDITION[i.condition] ? i.condition : 'normal';
+  // Own-property lookups only, so keys like "__proto__"/"constructor" can't
+  // select a prototype value and poison the math into NaN.
+  const has = (o, k) => typeof k === "string" && Object.prototype.hasOwnProperty.call(o, k);
+  const cleaningType = has(rates.RATE, i.cleaningType) ? i.cleaningType : 'regular';
+  const condition = has(rates.CONDITION, i.condition) ? i.condition : 'normal';
   const r = rates.RATE[cleaningType];
-  const sqft = Math.max(0, num(i.sqft, 0));
+  // Clamp every homeowner/widget-supplied dimension to a sane non-negative range
+  // so negatives can't subtract below the minimum and huge values can't overflow.
+  const clamp = (v, hi) => Math.min(hi, Math.max(0, num(v, 0)));
+  const sqft = clamp(i.sqft, 1e6), baths = clamp(i.baths, 40), beds = clamp(i.beds, 40);
   let base = Math.max(r.min, r.perSqft * sqft);
-  base += num(i.baths) * rates.BATHROOM_ADDER + num(i.beds) * rates.BEDROOM_ADDER;
+  base += baths * rates.BATHROOM_ADDER + beds * rates.BEDROOM_ADDER;
   base *= rates.CONDITION[condition];
-  if (['move_in','move_out'].includes(cleaningType)) base *= (rates.FURNISHED[i.furnished] ?? rates.FURNISHED.partial);
-  base += rates.PETS[i.pets] ?? rates.PETS.none;
-  base += (Array.isArray(i.addOns) ? i.addOns : []).reduce((s,a) => s + (rates.ADDON[a] || 0), 0);
+  if (['move_in','move_out'].includes(cleaningType)) base *= (has(rates.FURNISHED, i.furnished) ? rates.FURNISHED[i.furnished] : rates.FURNISHED.partial);
+  base += has(rates.PETS, i.pets) ? rates.PETS[i.pets] : rates.PETS.none;
+  // De-dupe add-ons (each extra is billed once) and only count known keys.
+  const addOns = [...new Set(Array.isArray(i.addOns) ? i.addOns : [])];
+  base += addOns.reduce((s,a) => s + (has(rates.ADDON, a) ? rates.ADDON[a] : 0), 0);
+  // Final safety net: never emit a non-finite or negative price.
+  if (!Number.isFinite(base) || base < 0) base = r.min;
   const recommended = Math.round(base / 5) * 5;
   const range = [Math.round(base*0.88/5)*5, Math.round(base*1.12/5)*5];
   const freq = i.frequency;

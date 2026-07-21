@@ -63,4 +63,34 @@ test("custom add-on: cleaner's own extra prices through", () => {
   assert.equal(bad.ADDON.hackerKey, undefined);
 });
 
+// 8. Hardening (audit H-3): blank overrides fall back to default, not $0.
+test("hardening: blank/null/boolean overrides fall back to default (not 0)", () => {
+  const rates = mergeRates({ RATE: { regular: { perSqft: "", min: null } } });
+  assert.equal(rates.RATE.regular.perSqft, DEFAULTS.RATE.regular.perSqft);
+  assert.equal(rates.RATE.regular.min, DEFAULTS.RATE.regular.min);
+  const q = quote({ sqft: 100, cleaningType: "regular" }, rates);
+  assert.equal(q.recommended, 110); // still the real minimum, never 0
+});
+
+// 9. Hardening: negative/absurd dimensions are clamped, never negative price.
+test("hardening: negative beds/baths can't drive the price below the floor", () => {
+  const q = quote({ sqft: 100, cleaningType: "regular", baths: -100, beds: -100 });
+  assert.ok(q.recommended >= 0 && Number.isFinite(q.recommended));
+  assert.ok(q.range[0] >= 0 && q.range[1] >= q.range[0]);
+});
+
+// 10. Hardening: prototype-polluting keys can't produce NaN.
+test("hardening: __proto__ keys fall back to defaults, no NaN", () => {
+  const q = quote({ sqft: 1500, cleaningType: "__proto__", condition: "__proto__", pets: "__proto__", addOns: ["__proto__"] });
+  assert.equal(q.cleaningType, "regular");
+  assert.ok(Number.isFinite(q.recommended) && q.recommended > 0);
+});
+
+// 11. Hardening: duplicate add-ons are billed once.
+test("hardening: duplicate add-ons are billed once", () => {
+  const base = quote({ sqft: 1500, cleaningType: "regular" });
+  const dup = quote({ sqft: 1500, cleaningType: "regular", addOns: ["fridge", "fridge", "fridge"] });
+  assert.equal(dup.recommended - base.recommended, DEFAULTS.ADDON.fridge);
+});
+
 console.log(`\n${passed} passed`);
